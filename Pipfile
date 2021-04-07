@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 sceptre = "*"
+sceptre-ssm-resolver = "*"
 
 [dev-packages]
 pre-commit = "*"

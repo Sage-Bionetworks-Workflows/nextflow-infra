@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "edfa8ba707955c835f0bfbe7a060533e3890682a4b54eebff38b241e70fc2d18"
+            "sha256": "017fc883e7d8c764fd43ba9e1ea1e468675a887360b46719f082985fdbd0cdb7"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -207,6 +207,14 @@
             ],
             "index": "pypi",
             "version": "==2.4.0"
+        },
+        "sceptre-ssm-resolver": {
+            "hashes": [
+                "sha256:ac83ebed961bf65336c45c7c286fa1260744f172f2a4e136aea55608c1a8a09f",
+                "sha256:c51f8cad2a2cd7ab971032238f17d3114f2103bd3b92f9658acc07acdf08f717"
+            ],
+            "index": "pypi",
+            "version": "==1.1.0"
         },
         "six": {
             "hashes": [
