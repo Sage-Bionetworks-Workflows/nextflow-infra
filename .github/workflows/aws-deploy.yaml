@@ -16,7 +16,7 @@ jobs:
       - uses: pre-commit/action@v2.0.0
 
   sceptre-deploy:
-    if: ${{ github.event_name == 'push' }}
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     needs: pre-commit
     steps:
@@ -43,26 +43,34 @@ jobs:
           WORKON_HOME: ~/.local/share/virtualenvs
           PIPENV_CACHE_DIR: ~/.local/share/pipcache
         run: pipenv install --dev
-      - name: Login as AWS Service User (Under Dev Account)
+      - name: Assume AWS Role (Dev Account)
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.CI_SERVICE_USER_ACCESS_KEY }}
           aws-secret-access-key: ${{ secrets.CI_SERVICE_USER_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
-      - name: Deploy both 'dev' and 'prod' stack groups to 'dev' account using sceptre
+          role-to-assume: arn:aws:iam::035458030717:role/SceptreBuildAccessRole
+          role-duration-seconds: 1200
+      - name: Deploy 'dev' and 'prod' Stack Groups to Dev Account
         run: |
+          pipenv shell
           sceptre launch dev --yes
           sceptre launch prod --yes
+
+      # Commented out until the AWS account becomes available. Track this PR:
+      # https://github.com/Sage-Bionetworks-IT/organizations-infra/pull/135
+
       # - name: Assume AWS Role (Prod Account)
       #   uses: aws-actions/configure-aws-credentials@v1
-      #   if: ${{ github.ref == 'refs/heads/main' }}
+      #   if: github.ref == 'refs/heads/main'
       #   with:
       #     aws-access-key-id: ${{ secrets.CI_SERVICE_USER_ACCESS_KEY }}
       #     aws-secret-access-key: ${{ secrets.CI_SERVICE_USER_SECRET_ACCESS_KEY }}
       #     aws-region: us-east-1
-      #     role-to-assume: arn:aws:iam::0987654321:role/NextflowWorkflows-CIServiceRole
+      #     role-to-assume: arn:aws:iam::0123456789:role/SceptreBuildAccessRole
       #     role-duration-seconds: 1200
-      # - name: Deploy both 'prod' stack groups to 'prod' account using sceptre
-      #   if: ${{ github.ref == 'refs/heads/main' }}
+      # - name: Deploy 'prod' Stack Group to Prod Account
+      #   if: github.ref == 'refs/heads/main'
       #   run: |
+      #     pipenv shell
       #     sceptre launch prod --yes
