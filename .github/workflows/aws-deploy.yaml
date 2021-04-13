@@ -25,9 +25,6 @@ jobs:
         uses: actions/setup-python@v1
         with:
           python-version: 3.8
-      - name: Install pipenv
-        run: |
-          pip install pipenv
       - name: Cache Pipenv virtualenv
         uses: actions/cache@v2
         id: pipenv-cache
@@ -37,30 +34,35 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pipenv-v2-
       - name: Install Dependencies
+        uses: VaultVulp/action-pipenv@v2.0.1
         if: steps.pipenv-cache.outputs.cache-hit != 'true'
         env:
           PIPENV_NOSPIN: 'true'
           WORKON_HOME: ~/.local/share/virtualenvs
           PIPENV_CACHE_DIR: ~/.local/share/pipcache
-        run: pipenv install --dev
-      - name: Assume AWS Role (Dev Account)
+        with:
+          command: install --dev
+      # Deployment to Development/Sandbox AWS Account
+      - name: Assume AWS Role (Development Account)
         uses: aws-actions/configure-aws-credentials@v1
+        if: github.ref == 'refs/heads/develop'
         with:
           aws-access-key-id: ${{ secrets.CI_SERVICE_USER_ACCESS_KEY }}
           aws-secret-access-key: ${{ secrets.CI_SERVICE_USER_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
           role-to-assume: arn:aws:iam::035458030717:role/SceptreBuildAccessRole
           role-duration-seconds: 1200
-      - name: Deploy 'dev' and 'prod' Stack Groups to Dev Account
-        run: |
-          pipenv shell
-          sceptre launch dev --yes
-          sceptre launch prod --yes
+      - name: Deploy 'dev' Stack Group to AWS Dev Account
+        uses: VaultVulp/action-pipenv@v2.0.1
+        if: github.ref == 'refs/heads/develop'
+        with:
+          command: run sceptre launch dev --yes
 
       # Commented out until the AWS account becomes available. Track this PR:
       # https://github.com/Sage-Bionetworks-IT/organizations-infra/pull/135
 
-      # - name: Assume AWS Role (Prod Account)
+      # Deployment to Production AWS Account
+      # - name: Assume AWS Role (Production Account)
       #   uses: aws-actions/configure-aws-credentials@v1
       #   if: github.ref == 'refs/heads/main'
       #   with:
@@ -69,8 +71,8 @@ jobs:
       #     aws-region: us-east-1
       #     role-to-assume: arn:aws:iam::0123456789:role/SceptreBuildAccessRole
       #     role-duration-seconds: 1200
-      # - name: Deploy 'prod' Stack Group to Prod Account
+      # - name: Deploy 'prod' Stack Group to AWSProd Account
+      #   uses: VaultVulp/action-pipenv@v2.0.1
       #   if: github.ref == 'refs/heads/main'
-      #   run: |
-      #     pipenv shell
-      #     sceptre launch prod --yes
+      #   with:
+      #     command: run sceptre launch prod --yes
