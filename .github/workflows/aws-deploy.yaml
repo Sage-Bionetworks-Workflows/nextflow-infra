@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: '*'
   push:
-    branches: [main, develop]
+    branches: [main]
 
 jobs:
 
@@ -42,37 +42,13 @@ jobs:
           PIPENV_CACHE_DIR: ~/.local/share/pipcache
         with:
           command: install --dev
-      # Deployment to Development/Sandbox AWS Account
-      - name: Assume AWS Role (Development Account)
+      - name: Login Using CI Service User
         uses: aws-actions/configure-aws-credentials@v1
-        if: github.ref == 'refs/heads/develop'
         with:
-          aws-access-key-id: ${{ secrets.CI_SERVICE_USER_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.CI_SERVICE_USER_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.NEXTFLOW_PROD_CI_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.NEXTFLOW_PROD_CI_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
-          role-to-assume: arn:aws:iam::035458030717:role/SceptreBuildAccessRole
-          role-duration-seconds: 1200
-      - name: Deploy 'dev' Stack Group to AWS Dev Account
+      - name: Deploy to AWS Account
         uses: VaultVulp/action-pipenv@v2.0.1
-        if: github.ref == 'refs/heads/develop'
         with:
-          command: run sceptre launch dev --yes
-
-      # Commented out until the AWS account becomes available. Track this PR:
-      # https://github.com/Sage-Bionetworks-IT/organizations-infra/pull/135
-
-      # Deployment to Production AWS Account
-      # - name: Assume AWS Role (Production Account)
-      #   uses: aws-actions/configure-aws-credentials@v1
-      #   if: github.ref == 'refs/heads/main'
-      #   with:
-      #     aws-access-key-id: ${{ secrets.CI_SERVICE_USER_ACCESS_KEY }}
-      #     aws-secret-access-key: ${{ secrets.CI_SERVICE_USER_SECRET_ACCESS_KEY }}
-      #     aws-region: us-east-1
-      #     role-to-assume: arn:aws:iam::0123456789:role/SceptreBuildAccessRole
-      #     role-duration-seconds: 1200
-      # - name: Deploy 'prod' Stack Group to AWSProd Account
-      #   uses: VaultVulp/action-pipenv@v2.0.1
-      #   if: github.ref == 'refs/heads/main'
-      #   with:
-      #     command: run sceptre launch prod --yes
+          command: run sceptre launch prod --yes
