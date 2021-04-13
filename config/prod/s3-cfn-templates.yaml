@@ -1,0 +1,9 @@
+template_path: "remote/S3/public-bucket.yaml"
+stack_name: "cloudformation-templates"
+stack_tags:
+  Department: "CompOnc"
+  Project: "imCORE"
+  OwnerEmail: "bruno.grande@sagebase.org"
+hooks:
+  before_launch:
+    - !cmd "curl https://{{stack_group_config.admincentral_cf_bucket}}.s3.us-east-1.amazonaws.com/aws-infra/master/S3/public-bucket.yaml --create-dirs -o templates/remote/S3/public-bucket.yaml"
