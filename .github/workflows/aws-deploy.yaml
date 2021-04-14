@@ -1,4 +1,4 @@
-name: Validate and Deploy CloudFormation Templates
+name: aws-deploy
 
 on: push
 
