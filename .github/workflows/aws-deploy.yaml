@@ -2,10 +2,6 @@ name: aws-deploy
 
 on: push
 
-env:
-  AWS_ACCESS_KEY_ID: ${{ secrets.NEXTFLOW_PROD_CI_ACCESS_KEY }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.NEXTFLOW_PROD_CI_SECRET_ACCESS_KEY }}
-
 jobs:
   pre-commit:
     name: Run pre-commit hooks against all files
@@ -23,6 +19,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+      - name: Assume AWS Role
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.NEXTFLOW_PROD_CI_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.NEXTFLOW_PROD_CI_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::728882028485:role/workflows-nextflow-ci-service-account-ServiceRole-CTLXKJIOCRO4
+          role-duration-seconds: 1200
       - name: Deploy 'prod' templates
         uses: Rurquhart/sceptre-action@v1.0
         with:
