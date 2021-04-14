@@ -26,4 +26,5 @@ jobs:
       - name: Deploy 'prod' templates
         uses: Rurquhart/sceptre-action@v1.0
         with:
-          sceptre_subcommand: launch --yes dev
+          sceptre_version: 2.4.0
+          sceptre_subcommand: launch --yes prod
