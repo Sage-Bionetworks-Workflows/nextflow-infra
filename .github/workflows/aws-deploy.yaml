@@ -23,7 +23,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
       - name: Validate 'prod' templates
-        uses: Rurquhart/sceptre-action@v1
+        uses: Rurquhart/sceptre-action@v1.0
         with:
           sceptre_subcommand: validate prod
 
@@ -36,6 +36,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
       - name: Deploy 'prod' templates
-        uses: Rurquhart/sceptre-action@v1
+        uses: Rurquhart/sceptre-action@v1.0
         with:
           sceptre_subcommand: launch --yes dev
