@@ -6,4 +6,4 @@ stack_tags:
   OwnerEmail: "bruno.grande@sagebase.org"
 hooks:
   before_launch:
-    - !cmd "wget {{stack_group_config.aws_infra_templates_root_url}}/v0.2.3/templates/S3/public-bucket.yaml -N -P templates/remote"
+    - !cmd "curl {{stack_group_config.aws_infra_templates_root_url}}/v0.2.3/templates/S3/public-bucket.yaml --create-dirs -o templates/remote/S3/public-bucket.yaml"
