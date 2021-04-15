@@ -1,3 +1,4 @@
 project_code: aws-workflows-nextflow-infra
-region: us-east-1
-admincentral_cf_bucket: bootstrap-awss3cloudformationbucket-19qromfd235z9
+profile: {{ var.profile | default("default") }}
+region: {{ var.region | default("us-east-1") }}
+aws_infra_templates_root_url: https://raw.githubusercontent.com/Sage-Bionetworks/aws-infra/v0.2.3/templates
