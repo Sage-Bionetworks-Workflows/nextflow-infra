@@ -27,6 +27,10 @@ jobs:
           aws-region: us-east-1
           role-to-assume: arn:aws:iam::728882028485:role/workflows-nextflow-ci-service-account-ServiceRole-CTLXKJIOCRO4
           role-duration-seconds: 1200
+      - name: Add profile credentials to ~/.aws/credentials
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }} --profile default
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }} --profile default
       - name: Deploy 'prod' templates
         uses: Rurquhart/sceptre-action@v1.0
         with:
