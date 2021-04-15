@@ -1,0 +1,2 @@
+# Ignore anything downloaded by sceptre hooks during testing
+/templates/remote/
