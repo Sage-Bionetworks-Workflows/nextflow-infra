@@ -1,0 +1,2 @@
+template_path: nextflow-forge-iam-policy.yaml
+stack_name: nextflow-forge-iam-policy
