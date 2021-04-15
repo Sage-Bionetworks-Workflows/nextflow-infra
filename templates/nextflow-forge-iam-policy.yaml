@@ -1,0 +1,53 @@
+Description: Policy for NextFlow Forge service user
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  NextFlowForgePolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Action:
+            - ssm:GetParameters
+            - iam:CreateInstanceProfile
+            - iam:DeleteInstanceProfile
+            - iam:GetRole
+            - iam:RemoveRoleFromInstanceProfile
+            - iam:CreateRole
+            - iam:DeleteRole
+            - iam:AttachRolePolicy
+            - iam:PutRolePolicy
+            - iam:AddRoleToInstanceProfile
+            - iam:PassRole
+            - iam:DetachRolePolicy
+            - iam:ListAttachedRolePolicies
+            - iam:DeleteRolePolicy
+            - iam:ListRolePolicies
+            - batch:CreateComputeEnvironment
+            - batch:DescribeComputeEnvironments
+            - batch:CreateJobQueue
+            - batch:DescribeJobQueues
+            - batch:UpdateComputeEnvironment
+            - batch:DeleteComputeEnvironment
+            - batch:UpdateJobQueue
+            - batch:DeleteJobQueue
+            - fsx:DeleteFileSystem
+            - fsx:DescribeFileSystems
+            - fsx:CreateFileSystem
+            - ec2:DescribeSecurityGroups
+            - ec2:DescribeAccountAttributes
+            - ec2:DescribeSubnets
+            - ec2:DescribeLaunchTemplates
+            - ec2:DescribeLaunchTemplateVersions
+            - ec2:CreateLaunchTemplate
+            - ec2:DeleteLaunchTemplate
+            - ec2:DescribeKeyPairs
+            - ec2:DescribeVpcs
+            - ec2:DescribeInstanceTypeOfferings
+          Resource: "*"
+Outputs:
+  NextFlowForgePolicyArn:
+    Value: !Ref NextFlowForgePolicy
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-NextFlowForgePolicyArn'

@@ -1,0 +1,36 @@
+Description: Setup an AWS service account and role
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  ManagedPolicyArns:
+    Type: CommaDelimitedList
+    Default: ""
+    Description: >-
+      A list of managed policies for the role.
+      Example:
+        ["arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess", "arn:aws:iam::1111111111:policy/MY-EXISTING-POLICY"]
+Resources:
+  ServiceUser:
+    Type: 'AWS::IAM::User'
+    Properties:
+      ManagedPolicyArns: !Ref ManagedPolicyArns
+  ServiceUserAccessKey:
+    Type: 'AWS::IAM::AccessKey'
+    Properties:
+      UserName: !Ref ServiceUser
+Outputs:
+  ServiceUser:
+    Value: !Ref ServiceUser
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-ServiceUser'
+  ServiceUserArn:
+    Value: !GetAtt ServiceUser.Arn
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-ServiceUserArn'
+  ServiceUserAccessKey:
+    Value: !Ref ServiceUserAccessKey
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-ServiceUserAccessKey'
+  ServiceUserSecretAccessKey:
+    Value: !GetAtt ServiceUserAccessKey.SecretAccessKey
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-ServiceUserSecretAccessKey'
