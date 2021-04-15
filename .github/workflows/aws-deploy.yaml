@@ -28,7 +28,7 @@ jobs:
           role-to-assume: arn:aws:iam::728882028485:role/workflows-nextflow-ci-service-account-ServiceRole-CTLXKJIOCRO4
           role-duration-seconds: 1200
       - name: Deploy 'prod' templates
-        uses: Rurquhart/sceptre-action@v1.0
+        uses: Sage-Bionetworks/sceptre-action@v1.1
         with:
           sceptre_version: 2.4.0
           sceptre_subcommand: launch --yes prod
