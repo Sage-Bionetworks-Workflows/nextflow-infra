@@ -2,6 +2,8 @@ template_path: "nextflow-forge-service-user.yaml"
 stack_name: "nextflow-forge-service-user"
 dependencies:
   - prod/nextflow-forge-iam-policy.yaml
+  - prod/nextflow-launch-iam-policy.yaml
 parameters:
   ManagedPolicyArns:
     - !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
+    - !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn

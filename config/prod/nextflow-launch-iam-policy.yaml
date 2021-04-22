@@ -1,0 +1,2 @@
+template_path: nextflow-launch-iam-policy.yaml
+stack_name: nextflow-launch-iam-policy
