@@ -3,7 +3,6 @@ AWSTemplateFormatVersion: 2010-09-09
 Parameters:
   ManagedPolicyArns:
     Type: CommaDelimitedList
-    Default: ""
     Description: >-
       A list of managed policies for the role.
       Example:
