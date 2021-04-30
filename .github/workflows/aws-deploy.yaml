@@ -15,7 +15,7 @@ jobs:
     name: Deploy CloudFormation templates using sceptre
     runs-on: ubuntu-latest
     needs: pre-commit
-    if: github.ref == 'refs/heads/prod'
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -27,7 +27,17 @@ jobs:
           aws-region: us-east-1
           role-to-assume: arn:aws:iam::728882028485:role/workflows-nextflow-ci-service-account-ServiceRole-CTLXKJIOCRO4
           role-duration-seconds: 1200
-      - name: Deploy 'prod' templates
+      - name: Deploy common configuration
+        uses: Sage-Bionetworks/sceptre-action@v1.1
+        with:
+          sceptre_version: 2.4.0
+          sceptre_subcommand: launch --yes common
+      - name: Deploy develop configuration
+        uses: Sage-Bionetworks/sceptre-action@v1.1
+        with:
+          sceptre_version: 2.4.0
+          sceptre_subcommand: launch --yes develop
+      - name: Deploy common configuration
         uses: Sage-Bionetworks/sceptre-action@v1.1
         with:
           sceptre_version: 2.4.0
