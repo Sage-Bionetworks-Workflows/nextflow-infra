@@ -37,8 +37,3 @@ jobs:
         with:
           sceptre_version: 2.4.0
           sceptre_subcommand: launch --yes develop
-      - name: Deploy common configuration
-        uses: Sage-Bionetworks/sceptre-action@v1.1
-        with:
-          sceptre_version: 2.4.0
-          sceptre_subcommand: launch --yes prod
