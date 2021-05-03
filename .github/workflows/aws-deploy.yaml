@@ -22,10 +22,10 @@ jobs:
       - name: Assume AWS Role
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.NEXTFLOW_PROD_CI_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.NEXTFLOW_PROD_CI_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.NEXTFLOW_DEV_CI_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.NEXTFLOW_DEV_CI_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
-          role-to-assume: arn:aws:iam::728882028485:role/workflows-nextflow-ci-service-account-ServiceRole-CTLXKJIOCRO4
+          role-to-assume: arn:aws:iam::035458030717:role/workflows-nextflow-ci-service-account-ServiceRole-188LV3KMGCYBL
           role-duration-seconds: 1200
       - name: Deploy common configuration
         uses: Sage-Bionetworks/sceptre-action@v1.1
@@ -37,3 +37,16 @@ jobs:
         with:
           sceptre_version: 2.4.0
           sceptre_subcommand: launch --yes develop
+      - name: Assume AWS Role
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.NEXTFLOW_PROD_CI_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.NEXTFLOW_PROD_CI_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::728882028485:role/workflows-nextflow-ci-service-account-ServiceRole-CTLXKJIOCRO4
+          role-duration-seconds: 1200
+      - name: Deploy common configuration
+        uses: Sage-Bionetworks/sceptre-action@v1.1
+        with:
+          sceptre_version: 2.4.0
+          sceptre_subcommand: launch --yes common
