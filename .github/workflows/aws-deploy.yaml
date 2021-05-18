@@ -28,12 +28,12 @@ jobs:
           role-to-assume: arn:aws:iam::035458030717:role/workflows-nextflow-ci-service-account-ServiceRole-188LV3KMGCYBL
           role-duration-seconds: 1200
       - name: Deploy common configuration to develop account
-        uses: Sage-Bionetworks/sceptre-action@v1.1
+        uses: sceptre/github-action@v2.1.0
         with:
           sceptre_version: 2.4.0
           sceptre_subcommand: launch --yes common
       - name: Deploy develop configuration
-        uses: Sage-Bionetworks/sceptre-action@v1.1
+        uses: sceptre/github-action@v2.1.0
         with:
           sceptre_version: 2.4.0
           sceptre_subcommand: launch --yes develop
@@ -46,12 +46,12 @@ jobs:
           role-to-assume: arn:aws:iam::728882028485:role/workflows-nextflow-ci-service-account-ServiceRole-CTLXKJIOCRO4
           role-duration-seconds: 1200
       - name: Deploy common configuration to prod account
-        uses: Sage-Bionetworks/sceptre-action@v1.1
+        uses: sceptre/github-action@v2.1.0
         with:
           sceptre_version: 2.4.0
           sceptre_subcommand: launch --yes common
       - name: Deploy prod configuration
-        uses: Sage-Bionetworks/sceptre-action@v1.1
+        uses: sceptre/github-action@v2.1.0
         with:
           sceptre_version: 2.4.0
           sceptre_subcommand: launch --yes prod
