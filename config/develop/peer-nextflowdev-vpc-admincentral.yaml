@@ -1,0 +1,9 @@
+template_path: remote/peer-single-route.yaml
+stack_name: peer-nextflowdev-vpc-admincentral
+parameters:
+  PeeringConnectionId: pcx-095e016bd0315343a
+  VpcRouteTable: rtb-04ee748f3afc7ca26
+  VpnCidr: 10.1.0.0/16
+hooks:
+  before_launch:
+    - !cmd "wget {{stack_group_config.aws_infra_templates_root_url}}/v0.2.5/templates/peer-single-route.yaml -N -P templates/remote"
