@@ -1,0 +1,27 @@
+# Provision a service account for AWS API access keys
+template_path: "remote/service-user.yaml"
+stack_name: "bgrande-test-service-user"
+stack_tags:
+  Department: "CompOnc"
+  Project: "imCORE"
+  OwnerEmail: "bruno.grande@sagebase.org"
+parameters:
+  PolicyDocument: >-
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": "s3:*",
+          "Resource": [
+            "arn:aws:s3:::bgrande-scratch",
+            "arn:aws:s3:::bgrande-scratch/*",
+            "arn:aws:s3:::tcrb-open-access-data",
+            "arn:aws:s3:::tcrb-open-access-data/*"
+          ]
+        }
+      ]
+    }
+hooks:
+  before_launch:
+    - !cmd "wget {{stack_group_config.aws_infra_templates_root_url}}/v0.2.13/templates/IAM/service-user.yaml -N -P templates/remote"
