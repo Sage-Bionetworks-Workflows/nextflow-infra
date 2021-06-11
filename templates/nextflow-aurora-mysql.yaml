@@ -1,0 +1,166 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Serverless Aurora MySQL DB for NextFlow Tower
+
+Parameters:
+
+  VpcID:
+    Description: ID of VPC
+    Type: AWS::EC2::VPC::Id
+
+  SubnetIDs:
+    Description: A list of subnets in the chosen VPC
+    Type: List<AWS::EC2::Subnet::Id>
+
+  DBClusterIdentifier:
+    Description: Unique identifier of databse cluster.
+    Type: String
+    MinLength: 1
+    MaxLength: 63
+    AllowedPattern: "^(?!.*--)[a-zA-Z]+[0-9a-zA-Z-]*[0-9a-zA-Z]$"
+    ConstraintDescription: >
+      1 to 63 alphanumeric characters or hyphens.
+      First character must be a letter.
+      Can't contain two consecutive hyphens.
+      Can't end with a hyphen.
+    Default: tower
+
+  DBName:
+    Description: Optional. Database Name within cluster.
+    Type: String
+    MinLength: 1
+    MaxLength: 64
+    AllowedPattern: "^[a-zA-Z]+[0-9,a-z,A-Z$_]*$"
+    ConstraintDescription: >
+      1 to 64 alphanumeric characters, dollar sign, or underscore.
+      First character must be a letter.
+    Default: tower
+
+  SnapshotName:
+    Description: Optional. Snapshot ID to restore database. Leave this blank if you are not restoring from a snapshot.
+    Type: String
+    Default: ''
+
+Mappings:
+  ClusterSettings:
+    mysql:
+      version: 5.7.mysql_aurora.2.07.1
+      engine: aurora-mysql
+      family: aurora-mysql5.7
+
+Conditions:
+  UseSnapshotTrue: !Not [!Equals [!Ref SnapshotName, '']]
+  UseSnapshotFalse: !Equals [!Ref SnapshotName, '']
+
+Resources:
+
+  AuroraMasterSecret:
+    Condition: UseSnapshotFalse
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub '${AWS::StackName}-MasterSecret'
+      Description: !Sub 'Aurora MySQL Master User Secret for CloudFormation Stack ${AWS::StackName}'
+      GenerateSecretString:
+        SecretStringTemplate: '{"username": "admin"}'
+        GenerateStringKey: password
+        ExcludeCharacters: '"@/\$`&'
+        PasswordLength: 16
+
+  SecretAuroraClusterAttachment:
+    Condition: UseSnapshotFalse
+    Type: AWS::SecretsManager::SecretTargetAttachment
+    Properties:
+      SecretId: !Ref AuroraMasterSecret
+      TargetId: !Ref AuroraCluster
+      TargetType: AWS::RDS::DBCluster
+
+  AuroraSecretResourcePolicy:
+    Condition: UseSnapshotFalse
+    Type: AWS::SecretsManager::ResourcePolicy
+    Properties:
+      SecretId: !Ref AuroraMasterSecret
+      ResourcePolicy:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Effect: Deny
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: secretsmanager:DeleteSecret
+            Resource: '*'
+
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Aurora DB Subnet Group
+      SubnetIds: !Ref SubnetIDs
+
+  ClusterSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VpcID
+      GroupDescription: Aurora Cluster Security Group
+
+  AuroraCluster:
+    Type: AWS::RDS::DBCluster
+    DeletionPolicy: Snapshot
+    UpdateReplacePolicy: Snapshot
+    Properties:
+      Engine: !FindInMap [ ClusterSettings, mysql, engine ]
+      EngineMode: serverless
+      EngineVersion: !FindInMap [ ClusterSettings, mysql, version ]
+      DatabaseName: !Ref DBName
+      DBClusterIdentifier: !Ref DBClusterIdentifier
+      MasterUsername: !If
+        - UseSnapshotTrue
+        - !Ref 'AWS::NoValue'
+        - !Sub '{{resolve:secretsmanager:${AuroraMasterSecret}:SecretString:username}}'
+      MasterUserPassword: !If
+        - UseSnapshotTrue
+        - !Ref 'AWS::NoValue'
+        - !Sub '{{resolve:secretsmanager:${AuroraMasterSecret}:SecretString:password}}'
+      SnapshotIdentifier: !If [UseSnapshotTrue, !Ref SnapshotName, !Ref 'AWS::NoValue']
+      StorageEncrypted:  !If [UseSnapshotTrue, !Ref 'AWS::NoValue', true]
+      EnableHttpEndpoint: true
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VpcSecurityGroupIds:
+        - !Ref ClusterSecurityGroup
+
+Outputs:
+
+  AuroraMasterSecretArn:
+    Condition: UseSnapshotFalse
+    Value: !Ref AuroraMasterSecret
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-AuroraMasterSecretArn'
+
+  AuroraClusterName:
+    Value: !Ref AuroraCluster
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-DBClusterName'
+
+  AuroraClusterEndpointAddress:
+    Value: !GetAtt AuroraCluster.Endpoint.Address
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-DBClusterEndpointAddress'
+
+  AuroraClusterEndpointPort:
+    Value: !GetAtt AuroraCluster.Endpoint.Port
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-DBClusterEndpointPort'
+
+  AuroraClusterSecurityGroupID:
+    Value: !Ref ClusterSecurityGroup
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-DBClusterSecurityGroupID'
+
+  ClusterVpcID:
+    Value: !Ref VpcID
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-DBClusterVpcID'
+
+  ClusterSubnets:
+    Value: !Join
+      - ','
+      - !Ref SubnetIDs
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-DBClusterSubnetsList'
