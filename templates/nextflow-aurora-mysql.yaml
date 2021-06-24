@@ -65,6 +65,18 @@ Resources:
         ExcludeCharacters: '"@/\$`&'
         PasswordLength: 16
 
+  AuroraTowerUserSecret:
+    Condition: UseSnapshotFalse
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub '${AWS::StackName}-TowerUserSecret'
+      Description: !Sub 'Aurora MySQL Tower User Secret for CloudFormation Stack ${AWS::StackName}'
+      GenerateSecretString:
+        SecretStringTemplate: '{"username": "tower"}'
+        GenerateStringKey: password
+        ExcludeCharacters: '"@/\$`&'
+        PasswordLength: 16
+
   SecretAuroraClusterAttachment:
     Condition: UseSnapshotFalse
     Type: AWS::SecretsManager::SecretTargetAttachment
@@ -73,11 +85,26 @@ Resources:
       TargetId: !Ref AuroraCluster
       TargetType: AWS::RDS::DBCluster
 
-  AuroraSecretResourcePolicy:
+  AuroraMasterSecretResourcePolicy:
     Condition: UseSnapshotFalse
     Type: AWS::SecretsManager::ResourcePolicy
     Properties:
       SecretId: !Ref AuroraMasterSecret
+      ResourcePolicy:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Effect: Deny
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: secretsmanager:DeleteSecret
+            Resource: '*'
+
+  AuroraTowerUserSecretResourcePolicy:
+    Condition: UseSnapshotFalse
+    Type: AWS::SecretsManager::ResourcePolicy
+    Properties:
+      SecretId: !Ref AuroraTowerUserSecret
       ResourcePolicy:
         Version: '2012-10-17'
         Statement:
@@ -125,6 +152,137 @@ Resources:
       VpcSecurityGroupIds:
         - !Ref ClusterSecurityGroup
 
+  # this custom resource exists to trigger the bootstrap lambda on creation
+  BootstrapLambdaTrigger:
+    Condition: UseSnapshotFalse
+    Type: Custom::BootstrapLambdaTrigger
+    Properties:
+      ServiceToken: !GetAtt BootstrapLambdaFunction.Arn
+
+  BootstrapLambdaRole:
+    Condition: UseSnapshotFalse
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole'
+      Policies:
+        -
+          PolicyName: "SecretAccess"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action: "secretsmanager:GetSecretValue"
+                Resource:
+                  - !Ref AuroraMasterSecret
+                  - !Ref AuroraTowerUserSecret
+        -
+          PolicyName: "DataAccess"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action: "rds-data:*"
+                Resource: "*"
+
+  BootstrapLambdaFunction:
+    Condition: UseSnapshotFalse
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Bootstrap newly Created Aurora Database
+      Handler: index.lambda_handler
+      Role: !GetAtt BootstrapLambdaRole.Arn
+      Runtime: python3.7
+      Environment:
+        Variables:
+          Cluster_ARN: !Sub 'arn:aws:rds:${AWS::Region}:${AWS::AccountId}:cluster:${AuroraCluster}'
+          Master_Secret_ARN: !Ref AuroraMasterSecret
+          Tower_User_Secret_ARN: !Ref AuroraTowerUserSecret
+          Region: !Ref 'AWS::Region'
+          DBName: !Ref DBName
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+          import logging
+          from os import environ
+
+          log = logging.getLogger(__name__)
+          log.setLevel(logging.DEBUG)
+
+          def submit_sql(sql):
+            return boto3.client('rds-data').execute_statement(
+              secretArn=environ['Master_Secret_ARN'],
+              database=environ['DBName'],
+              resourceArn=environ['Cluster_ARN'],
+              schema='mysql',
+              sql=sql
+            )
+
+
+          def bootstrap():
+            try:
+              secret_response = boto3.client('secretsmanager').get_secret_value(SecretId=environ['Tower_User_Secret_ARN'])
+              secret_string = secret_response['SecretString']
+              alter_db_response = submit_sql("ALTER DATABASE tower CHARACTER SET utf8 COLLATE utf8_bin;")
+              log.debug(f"Alter DB response: {alter_db_response}")
+              create_user_response = submit_sql("CREATE USER 'tower' IDENTIFIED BY '" + secret_string + "';")
+              log.debug(f"Create user response: {create_user_response}")
+              grant_response = submit_sql("GRANT ALL PRIVILEGES ON tower.* TO tower@'%' ;")
+              log.debug(f"Grant privileges response: {grant_response}")
+              return {
+                'status': cfnresponse.SUCCESS,
+                'message': 'Succeeded bootstrapping tower database',
+                'error': None
+              }
+
+            except Exception as e:
+              log.error(f'An error was encountered when bootstrapping: {e}')
+              return {
+                'status': cfnresponse.FAILED,
+                'message': 'Failed bootstrapping tower database',
+                'error': e
+              }
+
+
+          def lambda_handler(event, context):
+            status = cfnresponse.SUCCESS
+            message = 'no-op'
+            error = None
+            if event['RequestType'] == 'Create':
+              log.info('Received Create event: bootstrapping database')
+              bootstrap_response = bootstrap()
+              status = bootstrap_response['status']
+              message = bootstrap_response['message']
+              error = bootstrap_response['error']
+            elif event['RequestType'] == 'Update':
+              log.info('Received Update event: do nothing')
+            elif event['RequestType'] == 'Delete':
+              log.info('Received Delete event: do nothing')
+            else:
+              message = f'Lambda cannot process event: {event}'
+              error = ValueError(message)
+              log.info(message)
+            cfnresponse.send(
+              event=event,
+              context=context,
+              responseStatus=status,
+              responseData={ 'message': message },
+              reason=str(error))
+
+
 Outputs:
 
   AuroraMasterSecretArn:
@@ -132,6 +290,12 @@ Outputs:
     Value: !Ref AuroraMasterSecret
     Export:
       Name: !Sub '${AWS::Region}-${AWS::StackName}-AuroraMasterSecretArn'
+
+  AuroraTowerUserSecretArn:
+    Condition: UseSnapshotFalse
+    Value: !Ref AuroraTowerUserSecret
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-AuroraTowerUserSecretArn'
 
   AuroraClusterName:
     Value: !Ref AuroraCluster
@@ -164,3 +328,15 @@ Outputs:
       - !Ref SubnetIDs
     Export:
       Name: !Sub '${AWS::Region}-${AWS::StackName}-DBClusterSubnetsList'
+
+  BoostrapLambdaFunctionArn:
+    Condition: UseSnapshotFalse
+    Value: !GetAtt BootstrapLambdaFunction.Arn
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-BoostrapLambdaFunctionArn'
+
+  BootstrapLambdaRoleArn:
+    Condition: UseSnapshotFalse
+    Value: !GetAtt BootstrapLambdaRole.Arn
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-BoostrapLambdaRoleArn'
