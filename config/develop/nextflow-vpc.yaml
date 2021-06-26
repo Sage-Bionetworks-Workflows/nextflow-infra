@@ -5,4 +5,4 @@ parameters:
   VpcSubnetPrefix: "172.21"
 hooks:
   before_launch:
-    - !cmd "wget {{stack_group_config.aws_infra_templates_root_url}}/v0.2.5/templates/VPC/vpc-20-private.yaml -N -P templates/remote"
+    - !cmd "wget {{stack_group_config.aws_infra_templates_root_url}}/v0.2.5/templates/VPC/vpc-20-private.yaml -O templates/remote/vpc-20-private.yaml"
