@@ -1,0 +1,11 @@
+template_path: nextflow-ecs-cluster.yaml
+stack_name: nextflow-ecs-cluster
+parameters:
+  VpcId: !stack_output_external nextflow-vpc::VPCId
+  SubnetIds: 'subnet-07a638a0fca14feae'
+  SecurityIngressFromPort: '80'
+  SecurityIngressToPort: '8080'
+stack_tags:
+  Department: IBC
+  Project: Infrastructure
+  OwnerEmail: nextflow-admins@sagebase.org
