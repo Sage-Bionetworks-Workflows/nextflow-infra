@@ -1,0 +1,35 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: ECS Cluster Capacity Provider
+
+Parameters:
+
+  AutoScalingGroupArn:
+    Type: String
+
+  EcsClusterName:
+    Type: String
+
+Resources:
+
+  EcsCapacityProvider:
+    Type: AWS::ECS::CapacityProvider
+    Properties:
+      AutoScalingGroupProvider:
+        AutoScalingGroupArn: !Ref AutoScalingGroupArn
+
+  EcsClusterCapacityProviderAssociation:
+    Type: AWS::ECS::ClusterCapacityProviderAssociations
+    Properties:
+      CapacityProviders:
+        - !Ref EcsCapacityProvider
+      Cluster: !Ref EcsClusterName
+      DefaultCapacityProviderStrategy:
+        - CapacityProvider: !Ref EcsCapacityProvider
+
+Outputs:
+
+  EcsCapacityProviderName:
+    Value: !Ref EcsCapacityProvider
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsCapacityProvider'
