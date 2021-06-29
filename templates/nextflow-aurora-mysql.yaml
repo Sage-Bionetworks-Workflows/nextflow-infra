@@ -35,6 +35,13 @@ Parameters:
       First character must be a letter.
     Default: tower
 
+  DBUserName:
+    Description: Optional. Username to be created for database.
+    Type: String
+    MinLength: 1
+    MaxLength: 32
+    Default: tower
+
   SnapshotName:
     Description: Optional. Snapshot ID to restore database. Leave this blank if you are not restoring from a snapshot.
     Type: String
@@ -65,14 +72,14 @@ Resources:
         ExcludeCharacters: '"@/\$`&'
         PasswordLength: 16
 
-  AuroraTowerUserSecret:
+  AuroraNextflowTowerDatabaseUserSecret:
     Condition: UseSnapshotFalse
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !Sub '${AWS::StackName}-TowerUserSecret'
-      Description: !Sub 'Aurora MySQL Tower User Secret for CloudFormation Stack ${AWS::StackName}'
+      Name: !Sub '${AWS::StackName}-NextflowTowerDatabaseUserSecret'
+      Description: !Sub 'Aurora MySQL ${DBUserName} User Secret for CloudFormation Stack ${AWS::StackName}'
       GenerateSecretString:
-        SecretStringTemplate: '{"username": "tower"}'
+        SecretStringTemplate: !Sub '{"username": "${DBUserName}"}'
         GenerateStringKey: password
         ExcludeCharacters: '"@/\$`&'
         PasswordLength: 16
@@ -100,11 +107,11 @@ Resources:
             Action: secretsmanager:DeleteSecret
             Resource: '*'
 
-  AuroraTowerUserSecretResourcePolicy:
+  AuroraNextflowTowerDatabaseUserSecretResourcePolicy:
     Condition: UseSnapshotFalse
     Type: AWS::SecretsManager::ResourcePolicy
     Properties:
-      SecretId: !Ref AuroraTowerUserSecret
+      SecretId: !Ref AuroraNextflowTowerDatabaseUserSecret
       ResourcePolicy:
         Version: '2012-10-17'
         Statement:
@@ -186,7 +193,7 @@ Resources:
                 Action: "secretsmanager:GetSecretValue"
                 Resource:
                   - !Ref AuroraMasterSecret
-                  - !Ref AuroraTowerUserSecret
+                  - !Ref AuroraNextflowTowerDatabaseUserSecret
         -
           PolicyName: "DataAccess"
           PolicyDocument:
@@ -207,15 +214,15 @@ Resources:
       Runtime: python3.7
       Environment:
         Variables:
-          Cluster_ARN: !Sub 'arn:aws:rds:${AWS::Region}:${AWS::AccountId}:cluster:${AuroraCluster}'
-          Master_Secret_ARN: !Ref AuroraMasterSecret
-          Tower_User_Secret_ARN: !Ref AuroraTowerUserSecret
-          Region: !Ref 'AWS::Region'
-          DBName: !Ref DBName
+          CLUSTER_ARN: !Sub 'arn:aws:rds:${AWS::Region}:${AWS::AccountId}:cluster:${AuroraCluster}'
+          MASTER_SECRET_ARN: !Ref AuroraMasterSecret
+          DB_NAME: !Ref DBName
+          DB_USER_SECRET_ARN: !Ref AuroraNextflowTowerDatabaseUserSecret
       Code:
         ZipFile: |
           import boto3
           import cfnresponse
+          import json
           import logging
           from os import environ
 
@@ -224,9 +231,9 @@ Resources:
 
           def submit_sql(sql):
             return boto3.client('rds-data').execute_statement(
-              secretArn=environ['Master_Secret_ARN'],
-              database=environ['DBName'],
-              resourceArn=environ['Cluster_ARN'],
+              secretArn=environ['MASTER_SECRET_ARN'],
+              database=environ['DB_NAME'],
+              resourceArn=environ['CLUSTER_ARN'],
               schema='mysql',
               sql=sql
             )
@@ -234,17 +241,20 @@ Resources:
 
           def bootstrap():
             try:
-              secret_response = boto3.client('secretsmanager').get_secret_value(SecretId=environ['Tower_User_Secret_ARN'])
-              secret_string = secret_response['SecretString']
-              alter_db_response = submit_sql("ALTER DATABASE tower CHARACTER SET utf8 COLLATE utf8_bin;")
+              db_name = environ['DB_NAME']
+              secret_response = boto3.client('secretsmanager').get_secret_value(SecretId=environ['DB_USER_SECRET_ARN'])
+              secret = json.loads(secret_response['SecretString'])
+              username = secret['username']
+              password = secret['password']
+              alter_db_response = submit_sql(f"ALTER DATABASE {db_name} CHARACTER SET utf8 COLLATE utf8_bin;")
               log.debug(f"Alter DB response: {alter_db_response}")
-              create_user_response = submit_sql("CREATE USER 'tower' IDENTIFIED BY '" + secret_string + "';")
+              create_user_response = submit_sql(f"CREATE USER '{username}' IDENTIFIED BY '{password}';")
               log.debug(f"Create user response: {create_user_response}")
-              grant_response = submit_sql("GRANT ALL PRIVILEGES ON tower.* TO tower@'%' ;")
+              grant_response = submit_sql(f"GRANT ALL PRIVILEGES ON {db_name}.* TO {username}@'%' ;")
               log.debug(f"Grant privileges response: {grant_response}")
               return {
                 'status': cfnresponse.SUCCESS,
-                'message': 'Succeeded bootstrapping tower database',
+                'message': f'Succeeded bootstrapping {db_name} database',
                 'error': None
               }
 
@@ -252,7 +262,7 @@ Resources:
               log.error(f'An error was encountered when bootstrapping: {e}')
               return {
                 'status': cfnresponse.FAILED,
-                'message': 'Failed bootstrapping tower database',
+                'message': f'Failed bootstrapping {db_name} database',
                 'error': e
               }
 
@@ -291,11 +301,11 @@ Outputs:
     Export:
       Name: !Sub '${AWS::Region}-${AWS::StackName}-AuroraMasterSecretArn'
 
-  AuroraTowerUserSecretArn:
+  AuroraNextflowTowerDatabaseUserSecretArn:
     Condition: UseSnapshotFalse
-    Value: !Ref AuroraTowerUserSecret
+    Value: !Ref AuroraNextflowTowerDatabaseUserSecret
     Export:
-      Name: !Sub '${AWS::Region}-${AWS::StackName}-AuroraTowerUserSecretArn'
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-AuroraNextflowTowerDatabaseUserSecretArn'
 
   AuroraClusterName:
     Value: !Ref AuroraCluster
