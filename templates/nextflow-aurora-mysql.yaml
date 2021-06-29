@@ -35,6 +35,13 @@ Parameters:
       First character must be a letter.
     Default: tower
 
+  DBUserName:
+    Description: Optional. Username to be created for database.
+    Type: String
+    MinLength: 1
+    MaxLength: 32
+    Default: tower
+
   SnapshotName:
     Description: Optional. Snapshot ID to restore database. Leave this blank if you are not restoring from a snapshot.
     Type: String
@@ -65,6 +72,18 @@ Resources:
         ExcludeCharacters: '"@/\$`&'
         PasswordLength: 16
 
+  AuroraNextflowTowerDatabaseUserSecret:
+    Condition: UseSnapshotFalse
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub '${AWS::StackName}-NextflowTowerDatabaseUserSecret'
+      Description: !Sub 'Aurora MySQL ${DBUserName} User Secret for CloudFormation Stack ${AWS::StackName}'
+      GenerateSecretString:
+        SecretStringTemplate: !Sub '{"username": "${DBUserName}"}'
+        GenerateStringKey: password
+        ExcludeCharacters: '"@/\$`&'
+        PasswordLength: 16
+
   SecretAuroraClusterAttachment:
     Condition: UseSnapshotFalse
     Type: AWS::SecretsManager::SecretTargetAttachment
@@ -73,11 +92,26 @@ Resources:
       TargetId: !Ref AuroraCluster
       TargetType: AWS::RDS::DBCluster
 
-  AuroraSecretResourcePolicy:
+  AuroraMasterSecretResourcePolicy:
     Condition: UseSnapshotFalse
     Type: AWS::SecretsManager::ResourcePolicy
     Properties:
       SecretId: !Ref AuroraMasterSecret
+      ResourcePolicy:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Effect: Deny
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: secretsmanager:DeleteSecret
+            Resource: '*'
+
+  AuroraNextflowTowerDatabaseUserSecretResourcePolicy:
+    Condition: UseSnapshotFalse
+    Type: AWS::SecretsManager::ResourcePolicy
+    Properties:
+      SecretId: !Ref AuroraNextflowTowerDatabaseUserSecret
       ResourcePolicy:
         Version: '2012-10-17'
         Statement:
@@ -125,6 +159,140 @@ Resources:
       VpcSecurityGroupIds:
         - !Ref ClusterSecurityGroup
 
+  # this custom resource exists to trigger the bootstrap lambda on creation
+  BootstrapLambdaTrigger:
+    Condition: UseSnapshotFalse
+    Type: Custom::BootstrapLambdaTrigger
+    Properties:
+      ServiceToken: !GetAtt BootstrapLambdaFunction.Arn
+
+  BootstrapLambdaRole:
+    Condition: UseSnapshotFalse
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole'
+      Policies:
+        -
+          PolicyName: "SecretAccess"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action: "secretsmanager:GetSecretValue"
+                Resource:
+                  - !Ref AuroraMasterSecret
+                  - !Ref AuroraNextflowTowerDatabaseUserSecret
+        -
+          PolicyName: "DataAccess"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action: "rds-data:*"
+                Resource: "*"
+
+  BootstrapLambdaFunction:
+    Condition: UseSnapshotFalse
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Bootstrap newly Created Aurora Database
+      Handler: index.lambda_handler
+      Role: !GetAtt BootstrapLambdaRole.Arn
+      Runtime: python3.7
+      Environment:
+        Variables:
+          CLUSTER_ARN: !Sub 'arn:aws:rds:${AWS::Region}:${AWS::AccountId}:cluster:${AuroraCluster}'
+          MASTER_SECRET_ARN: !Ref AuroraMasterSecret
+          DB_NAME: !Ref DBName
+          DB_USER_SECRET_ARN: !Ref AuroraNextflowTowerDatabaseUserSecret
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+          import json
+          import logging
+          from os import environ
+
+          log = logging.getLogger(__name__)
+          log.setLevel(logging.DEBUG)
+
+          def submit_sql(sql):
+            return boto3.client('rds-data').execute_statement(
+              secretArn=environ['MASTER_SECRET_ARN'],
+              database=environ['DB_NAME'],
+              resourceArn=environ['CLUSTER_ARN'],
+              schema='mysql',
+              sql=sql
+            )
+
+
+          def bootstrap():
+            try:
+              db_name = environ['DB_NAME']
+              secret_response = boto3.client('secretsmanager').get_secret_value(SecretId=environ['DB_USER_SECRET_ARN'])
+              secret = json.loads(secret_response['SecretString'])
+              username = secret['username']
+              password = secret['password']
+              alter_db_response = submit_sql(f"ALTER DATABASE {db_name} CHARACTER SET utf8 COLLATE utf8_bin;")
+              log.debug(f"Alter DB response: {alter_db_response}")
+              create_user_response = submit_sql(f"CREATE USER '{username}' IDENTIFIED BY '{password}';")
+              log.debug(f"Create user response: {create_user_response}")
+              grant_response = submit_sql(f"GRANT ALL PRIVILEGES ON {db_name}.* TO {username}@'%' ;")
+              log.debug(f"Grant privileges response: {grant_response}")
+              return {
+                'status': cfnresponse.SUCCESS,
+                'message': f'Succeeded bootstrapping {db_name} database',
+                'error': None
+              }
+
+            except Exception as e:
+              log.error(f'An error was encountered when bootstrapping: {e}')
+              return {
+                'status': cfnresponse.FAILED,
+                'message': f'Failed bootstrapping {db_name} database',
+                'error': e
+              }
+
+
+          def lambda_handler(event, context):
+            status = cfnresponse.SUCCESS
+            message = 'no-op'
+            error = None
+            if event['RequestType'] == 'Create':
+              log.info('Received Create event: bootstrapping database')
+              bootstrap_response = bootstrap()
+              status = bootstrap_response['status']
+              message = bootstrap_response['message']
+              error = bootstrap_response['error']
+            elif event['RequestType'] == 'Update':
+              log.info('Received Update event: do nothing')
+            elif event['RequestType'] == 'Delete':
+              log.info('Received Delete event: do nothing')
+            else:
+              message = f'Lambda cannot process event: {event}'
+              error = ValueError(message)
+              log.info(message)
+            cfnresponse.send(
+              event=event,
+              context=context,
+              responseStatus=status,
+              responseData={ 'message': message },
+              reason=str(error))
+
+
 Outputs:
 
   AuroraMasterSecretArn:
@@ -132,6 +300,12 @@ Outputs:
     Value: !Ref AuroraMasterSecret
     Export:
       Name: !Sub '${AWS::Region}-${AWS::StackName}-AuroraMasterSecretArn'
+
+  AuroraNextflowTowerDatabaseUserSecretArn:
+    Condition: UseSnapshotFalse
+    Value: !Ref AuroraNextflowTowerDatabaseUserSecret
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-AuroraNextflowTowerDatabaseUserSecretArn'
 
   AuroraClusterName:
     Value: !Ref AuroraCluster
@@ -164,3 +338,15 @@ Outputs:
       - !Ref SubnetIDs
     Export:
       Name: !Sub '${AWS::Region}-${AWS::StackName}-DBClusterSubnetsList'
+
+  BoostrapLambdaFunctionArn:
+    Condition: UseSnapshotFalse
+    Value: !GetAtt BootstrapLambdaFunction.Arn
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-BoostrapLambdaFunctionArn'
+
+  BootstrapLambdaRoleArn:
+    Condition: UseSnapshotFalse
+    Value: !GetAtt BootstrapLambdaRole.Arn
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-BoostrapLambdaRoleArn'
