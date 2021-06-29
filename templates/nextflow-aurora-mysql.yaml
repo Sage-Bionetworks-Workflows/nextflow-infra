@@ -373,6 +373,15 @@ Outputs:
     Export:
       Name: !Sub '${AWS::Region}-${AWS::StackName}-DBClusterEndpointPort'
 
+  DBUrl:
+    Value: !Join
+      - ''
+      - - !Sub 'jdbc:mysql://${AuroraCluster.Endpoint.Address}:'
+        - !Sub '${AuroraCluster.Endpoint.Port}/${DBName}'
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-DBUrl'
+
+
   AuroraClusterSecurityGroupID:
     Value: !Ref ClusterSecurityGroup
     Export:
