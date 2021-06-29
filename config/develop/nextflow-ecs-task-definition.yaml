@@ -1,0 +1,20 @@
+template_path: nextflow-ecs-task-definition.yaml
+stack_name: nextflow-ecs-task-definition
+dependencies:
+  - develop/nextflow-aurora-mysql.yaml
+  - develop/nextflow-ecs-cluster.yaml
+parameters:
+  ClusterName: !stack_output_external nextflow-ecs-cluster::EcsClusterName
+  TowerDbUrl: !stack_output_external nextflow-aurora-mysql::DBUrl
+  TowerSmtpHost: ''
+  TowerSmtpPort: ''
+  TowerSmtpUser: ''
+  TowerSmtpPassword: ''
+  TowerContactEmail: nextflow-admins@sagebase.org
+  TowerServerUrl: !rcmd >-
+    aws autoscaling describe-auto-scaling-groups
+    | jq -r '.AutoScalingGroups | .[] | select(.AutoScalingGroupName | startswith("nextflow-ecs-cluster-EcsAutoScalingGroup")) | .Instances | .[0].InstanceId'
+stack_tags:
+  Department: IBC
+  Project: Infrastructure
+  OwnerEmail: nextflow-admins@sagebase.org
