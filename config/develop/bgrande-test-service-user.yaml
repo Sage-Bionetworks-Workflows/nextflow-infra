@@ -24,5 +24,4 @@ parameters:
     }
 hooks:
   before_launch:
-    - !cmd "mkdir -p templates/remote/"
     - !cmd "wget {{stack_group_config.aws_infra_templates_root_url}}/v0.2.13/templates/IAM/service-user.yaml -O templates/remote/service-user.yaml"

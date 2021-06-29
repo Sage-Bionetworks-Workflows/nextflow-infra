@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+      - name: Create directory for remote sceptre templates
+        run:  mkdir -p templates/remote/
       - name: Assume AWS Role
         uses: aws-actions/configure-aws-credentials@v1
         with:

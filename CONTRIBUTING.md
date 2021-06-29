@@ -9,6 +9,9 @@ You must first install [`pipenv`](https://pipenv.pypa.io/en/latest/install/#inst
 For testing, you can use the `workflows-nextflow-dev` AWS account that was set up [here](https://github.com/Sage-Bionetworks-IT/organizations-infra/blob/3dfe3fe2db327bd07cf31610cd77f02c3bacc130/org-formation/organization.yaml#L316-L326). You can [open an issue](https://github.com/Sage-Bionetworks-Workflows/aws-workflows-nextflow-infra/issues/new/choose) to request for access to the AWS account. One of the project admins will create an IAM user in this AWS account and share the credentials in a secure way.
 
 ```
+# Create directory for remote sceptre templates
+mkdir -p templates/remote/
+
 # Install dependencies in isolated virtual environment
 pipenv install --dev
 
