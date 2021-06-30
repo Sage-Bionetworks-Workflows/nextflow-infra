@@ -6,4 +6,4 @@ parameters:
   VpnCidr: 10.1.0.0/16
 hooks:
   before_launch:
-    - !cmd "wget {{stack_group_config.aws_infra_templates_root_url}}/v0.2.5/templates/peer-single-route.yaml -N -P templates/remote"
+    - !cmd "wget {{stack_group_config.aws_infra_templates_root_url}}/v0.2.5/templates/peer-single-route.yaml -O templates/remote/peer-single-route.yaml"
