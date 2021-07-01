@@ -4,10 +4,11 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-sceptre = "2.4.0"
+sceptre = "2.5.0"
+sceptre-cmd-resolver = "1.1.2"
 
 [dev-packages]
 pre-commit = "*"
 
 [requires]
-python_version = "3.8"
+python_version = "3.9"
