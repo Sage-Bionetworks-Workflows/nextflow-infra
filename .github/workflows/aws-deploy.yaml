@@ -17,11 +17,32 @@ jobs:
     needs: pre-commit
     if: github.ref == 'refs/heads/main'
     steps:
+
       - name: Checkout repository
         uses: actions/checkout@v2
+
       - name: Create directory for remote sceptre templates
-        run:  mkdir -p templates/remote/
-      - name: Assume AWS Role
+        run: mkdir -p templates/remote/
+
+      - name: Set up python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Set up dependency caching
+        uses: actions/cache@v2
+        with:
+          path: ~/.local/share/virtualenvs
+          key: ${{ runner.os }}-pipenv-${{ hashFiles('Pipfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pipenv-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install pipenv
+          pipenv install
+
+      - name: Assume AWS role in dev account
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.NEXTFLOW_DEV_CI_ACCESS_KEY }}
@@ -29,17 +50,14 @@ jobs:
           aws-region: us-east-1
           role-to-assume: arn:aws:iam::035458030717:role/workflows-nextflow-ci-service-account-ServiceRole-188LV3KMGCYBL
           role-duration-seconds: 1200
+
       - name: Deploy common configuration to develop account
-        uses: Sceptre/github-ci-action@v2.1.0
-        with:
-          sceptre_version: 2.4.0
-          sceptre_subcommand: launch --yes common
+        run: pipenv run sceptre launch common --yes
+
       - name: Deploy develop configuration
-        uses: Sceptre/github-ci-action@v2.1.0
-        with:
-          sceptre_version: 2.4.0
-          sceptre_subcommand: launch --yes develop
-      - name: Assume AWS Role
+        run: pipenv run sceptre launch develop --yes
+
+      - name: Assume AWS role in prod account
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.NEXTFLOW_PROD_CI_ACCESS_KEY }}
@@ -47,13 +65,9 @@ jobs:
           aws-region: us-east-1
           role-to-assume: arn:aws:iam::728882028485:role/workflows-nextflow-ci-service-account-ServiceRole-CTLXKJIOCRO4
           role-duration-seconds: 1200
+
       - name: Deploy common configuration to prod account
-        uses: Sceptre/github-ci-action@v2.1.0
-        with:
-          sceptre_version: 2.4.0
-          sceptre_subcommand: launch --yes common
+        run: pipenv run sceptre launch common --yes
+
       - name: Deploy prod configuration
-        uses: Sceptre/github-ci-action@v2.1.0
-        with:
-          sceptre_version: 2.4.0
-          sceptre_subcommand: launch --yes prod
+        run: pipenv run sceptre launch prod --yes
