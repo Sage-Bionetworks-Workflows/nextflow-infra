@@ -3,11 +3,9 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 name = "pypi"
 
-[packages]
+[dev-packages]
 sceptre = "2.5.0"
 sceptre-cmd-resolver = "1.1.2"
-
-[dev-packages]
 pre-commit = "*"
 
 [requires]

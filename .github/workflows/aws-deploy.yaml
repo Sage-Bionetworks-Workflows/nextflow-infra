@@ -40,7 +40,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install pipenv
-          pipenv install
+          pipenv install --dev
 
       - name: Assume AWS role in dev account
         uses: aws-actions/configure-aws-credentials@v1
