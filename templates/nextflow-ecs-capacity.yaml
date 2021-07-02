@@ -6,9 +6,13 @@ Parameters:
 
   AutoScalingGroupArn:
     Type: String
+    Description: >
+      The ARN of the autoscaling group that will be used
+      as a capacity provider to an ECS cluster.
 
   EcsClusterName:
     Type: String
+    Description: The ECS cluster to associate with the capacity provider.
 
 Resources:
 
