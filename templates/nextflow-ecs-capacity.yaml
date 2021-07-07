@@ -36,4 +36,4 @@ Outputs:
   EcsCapacityProviderName:
     Value: !Ref EcsCapacityProvider
     Export:
-      Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsCapacityProvider'
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsCapacityProviderName'
