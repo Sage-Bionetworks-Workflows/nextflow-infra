@@ -4,6 +4,8 @@ dependencies:
   - develop/nextflow-ecs-cluster.yaml
 parameters:
   EcsClusterName: !stack_output_external nextflow-ecs-cluster::EcsClusterName
+  # rcmd is used to derive this parameter because the Autoscaling ARN is
+  # accessible through neither Ref nor GetAtt.
   AutoScalingGroupArn: !rcmd >-
     aws autoscaling describe-auto-scaling-groups
     | jq -r '.AutoScalingGroups | .[] | select(.AutoScalingGroupName | startswith("nextflow-ecs-cluster-EcsAutoScalingGroup")) | .AutoScalingGroupARN'
