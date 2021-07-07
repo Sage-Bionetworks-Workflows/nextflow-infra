@@ -5,9 +5,7 @@ dependencies:
 parameters:
   VpcId: !stack_output_external nextflow-vpc::VPCId
   SubnetIds:
-    - !stack_output_external nextflow-vpc::PrivateSubnet
-    - !stack_output_external nextflow-vpc::PrivateSubnet1
-    - !stack_output_external nextflow-vpc::PrivateSubnet2
+    - !stack_output_external nextflow-vpc::PublicSubnet
   SecurityIngressFromPort: '80'
   SecurityIngressToPort: '8080'
 stack_tags:
