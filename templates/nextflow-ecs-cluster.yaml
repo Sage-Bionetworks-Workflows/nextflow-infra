@@ -1,0 +1,184 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: ECS Cluster for NextFlow Tower
+
+Parameters:
+
+  EcsClusterName:
+    Type: String
+    Description: >
+      Specifies the ECS Cluster Name with which the resources would be
+      associated
+    Default: 'nf-tower'
+
+  EcsAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Description: Specifies the AMI ID for your container instances.
+    Default: '/aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id'
+
+  EcsInstanceType:
+    Type: String
+    Description: Specifies the EC2 instance type for your container instances.
+    Default: 'c4.2xlarge'
+
+  VpcId:
+    Description: ID of VPC
+    Type: AWS::EC2::VPC::Id
+
+  SubnetIds:
+    Type: CommaDelimitedList
+    Description: >
+      Specifies the Comma separated list of existing VPC Subnet
+      Ids where ECS instances will run.
+
+  AutoscalingGroupMaxSize:
+    Type: Number
+    Description: >
+      Specifies the number of instances to launch and register to the cluster.
+      Defaults to 1.
+    Default: '1'
+
+  SecurityIngressFromPort:
+    Type: Number
+    Description: >
+      Optional - Specifies the Start of Security Group port to open on
+      ECS instances - defaults to port 0
+    Default: '0'
+
+  SecurityIngressToPort:
+    Type: Number
+    Description: >
+      Optional - Specifies the End of Security Group port to open on ECS
+      instances - defaults to port 65535
+    Default: '65535'
+
+  SecurityIngressCidrIp:
+    Type: String
+    Description: >
+      Optional - Specifies the CIDR/IP range for Security Ports - defaults
+      to 0.0.0.0/0
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
+    Default: '0.0.0.0/0'
+
+  RootEbsVolumeSize:
+    Type: Number
+    Description: Optional - Specifies the Size in GBs of the root EBS volume
+    Default: 30
+
+  EbsVolumeType:
+    Type: String
+    Description: Specifies the Type of (Amazon EBS) volume.
+    AllowedValues:
+      - io1
+      - gp2
+      - sc1
+      - st1
+      - standard
+    ConstraintDescription: Must be a valid EC2 volume type.
+    Default: 'gp2'
+
+  RootDeviceName:
+    Type: String
+    Description: Optional - Specifies the device mapping for the root EBS volume.
+    Default: '/dev/xvda'
+
+
+Resources:
+
+  EcsCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Ref EcsClusterName
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
+
+  EcsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+  EcsInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref EcsRole
+
+  EcsSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ECS Allowed Ports
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref SecurityIngressFromPort
+          ToPort: !Ref SecurityIngressToPort
+          CidrIp: !Ref SecurityIngressCidrIp
+
+  EcsLaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      ImageId: !Ref EcsAmiId
+      InstanceType: !Ref EcsInstanceType
+      AssociatePublicIpAddress: true
+      IamInstanceProfile: !Ref EcsInstanceProfile
+      SecurityGroups:
+        - !Ref EcsSecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: !Ref RootDeviceName
+          Ebs:
+            VolumeSize: !Ref RootEbsVolumeSize
+            VolumeType: !Ref EbsVolumeType
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          echo ECS_CLUSTER=${EcsClusterName} >> /etc/ecs/ecs.config
+          echo ECS_BACKEND_HOST= >> /etc/ecs/ecs.config
+
+  EcsAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier: !Ref SubnetIds
+      LaunchConfigurationName: !Ref EcsLaunchConfiguration
+      MinSize: '0'
+      MaxSize: !Ref AutoscalingGroupMaxSize
+      DesiredCapacity: !Ref AutoscalingGroupMaxSize
+
+Outputs:
+
+  EcsClusterName:
+    Value: !Ref EcsCluster
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsClusterName'
+
+  EcsRoleArn:
+    Value: !GetAtt EcsRole.Arn
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsRoleArn'
+
+  EcsSecurityGroupId:
+    Value: !Ref EcsSecurityGroup
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsSecurityGroupId'
+
+  EcsLaunchConfigurationName:
+    Value: !Ref EcsLaunchConfiguration
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsLaunchConfiguration'
+
+  EcsAutoScalingGroupName:
+    Value: !Ref EcsAutoScalingGroup
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsAutoScalingGroupName'
