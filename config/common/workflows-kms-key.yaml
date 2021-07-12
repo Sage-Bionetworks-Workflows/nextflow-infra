@@ -1,7 +1,7 @@
 template_path: workflows-kms-key.yaml
 stack_name: workflows-infra-kms-key
 parameters:
-  TemplateRootUrl: 'https://s3.amazonaws.com/{{stack_group_config.admincentral_cf_bucket}}'
+  TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
 stack_tags:
   Department: IBC
   Project: Infrastructure
