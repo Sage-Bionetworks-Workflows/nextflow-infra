@@ -52,7 +52,7 @@ Resources:
             - elasticfilesystem:DeleteMountTarget
             - elasticfilesystem:DeleteFileSystem
             - elasticfilesystem:UpdateFileSystem
-            - elasticfilesystem:PutLifecycleConfiguration
+            - elasticfilesystem:PutLifecycleConfiguration 
           Resource: "*"
 Outputs:
   NextFlowForgePolicyArn:
