@@ -135,6 +135,30 @@ Resources:
       VpcId: !Ref VpcID
       GroupDescription: Aurora Cluster Security Group
 
+  CloudWatchDBClusterAuditLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/rds/cluster/${DBClusterIdentifier}/audit'
+      RetentionInDays: 30
+
+  CloudWatchDBClusterErrorLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/rds/cluster/${DBClusterIdentifier}/error'
+      RetentionInDays: 30
+
+  CloudWatchDBClusterGeneralLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/rds/cluster/${DBClusterIdentifier}/general'
+      RetentionInDays: 30
+
+  CloudWatchDBClusterSlowQueryLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/rds/cluster/${DBClusterIdentifier}/slowquery'
+      RetentionInDays: 30
+
   AuroraClusterParameterGroup:
     Type: AWS::RDS::DBClusterParameterGroup
     Properties:
@@ -147,6 +171,11 @@ Resources:
     Type: AWS::RDS::DBCluster
     DeletionPolicy: Snapshot
     UpdateReplacePolicy: Snapshot
+    DependsOn:
+      - CloudWatchDBClusterAuditLogGroup
+      - CloudWatchDBClusterErrorLogGroup
+      - CloudWatchDBClusterGeneralLogGroup
+      - CloudWatchDBClusterSlowQueryLogGroup
     Properties:
       Engine: !FindInMap [ ClusterSettings, mysql, engine ]
       EngineMode: serverless
