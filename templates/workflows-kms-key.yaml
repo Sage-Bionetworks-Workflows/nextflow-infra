@@ -1,0 +1,35 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: KMS key for workflows infrastructure
+
+Parameters:
+  TemplateRootUrl:
+    Type: String
+    Description: URL of S3 bucket where templates are deployed
+    ConstraintDescription: Must be a valid S3 HTTP URL
+
+Resources:
+  WorkflowsKeyStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub ${TemplateRootUrl}/aws-infra/v0.2.19/KMS/kms-key.yaml
+      TimeoutInMinutes: 5
+      Parameters:
+        AliasName: 'alias/workflows-infra'
+        AdminPrincipalArns: !Join
+          - ','
+          - - !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            - !ImportValue
+              'Fn::Sub': '${AWS::Region}-workflows-nextflow-ci-service-account-ServiceUserArn'
+        UserPrincipalArns: !ImportValue
+          'Fn::Sub': '${AWS::Region}-workflows-nextflow-ci-service-account-ServiceUserArn'
+
+Outputs:
+  Key:
+    Value: !Sub ${WorkflowsKeyStack.Outputs.Key}
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-Key'
+  Alias:
+    Value: !Sub ${WorkflowsKeyStack.Outputs.Alias}
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-Alias'
