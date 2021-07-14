@@ -135,6 +135,14 @@ Resources:
       VpcId: !Ref VpcID
       GroupDescription: Aurora Cluster Security Group
 
+  AuroraClusterParameterGroup:
+    Type: AWS::RDS::DBClusterParameterGroup
+    Properties:
+      Description: Custom Database Parameters
+      Family: !FindInMap [ ClusterSettings, mysql, family ]
+      Parameters:
+        long_query_time: "10"
+
   AuroraCluster:
     Type: AWS::RDS::DBCluster
     DeletionPolicy: Snapshot
@@ -155,6 +163,7 @@ Resources:
         - !Sub '{{resolve:secretsmanager:${AuroraMasterSecret}:SecretString:password}}'
       SnapshotIdentifier: !If [UseSnapshotTrue, !Ref SnapshotName, !Ref 'AWS::NoValue']
       StorageEncrypted:  !If [UseSnapshotTrue, !Ref 'AWS::NoValue', true]
+      DBClusterParameterGroupName: !Ref AuroraClusterParameterGroup
       EnableCloudwatchLogsExports: !FindInMap [ ClusterSettings, mysql, logtypes ]
       EnableHttpEndpoint: true
       DBSubnetGroupName: !Ref DBSubnetGroup
