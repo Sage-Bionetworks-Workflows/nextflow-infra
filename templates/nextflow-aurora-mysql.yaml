@@ -53,7 +53,6 @@ Mappings:
       version: 5.7.mysql_aurora.2.07.1
       engine: aurora-mysql
       family: aurora-mysql5.7
-      logtypes: ["audit", "error", "general", "slowquery"]
 
 Conditions:
   UseSnapshotTrue: !Not [!Equals [!Ref SnapshotName, '']]
@@ -165,7 +164,13 @@ Resources:
       Description: Custom Database Parameters
       Family: !FindInMap [ ClusterSettings, mysql, family ]
       Parameters:
+        log_output: FILE
+        general_log: "1"
+        server_audit_logging: "1"
+        log_queries_not_using_indexes: "1"
+        slow_query_log: "1"
         long_query_time: "10"
+        server_audit_events: "CONNECT,QUERY,QUERY_DCL,QUERY_DDL,QUERY_DML,TABLE"
 
   AuroraCluster:
     Type: AWS::RDS::DBCluster
@@ -193,7 +198,6 @@ Resources:
       SnapshotIdentifier: !If [UseSnapshotTrue, !Ref SnapshotName, !Ref 'AWS::NoValue']
       StorageEncrypted:  !If [UseSnapshotTrue, !Ref 'AWS::NoValue', true]
       DBClusterParameterGroupName: !Ref AuroraClusterParameterGroup
-      EnableCloudwatchLogsExports: !FindInMap [ ClusterSettings, mysql, logtypes ]
       EnableHttpEndpoint: true
       DBSubnetGroupName: !Ref DBSubnetGroup
       VpcSecurityGroupIds:
