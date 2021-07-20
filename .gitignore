@@ -1,2 +1,5 @@
 # Ignore anything downloaded by sceptre hooks during testing
 /templates/remote/
+
+# Ignore stack group used for local testing
+/config/test/
