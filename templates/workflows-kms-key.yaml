@@ -8,7 +8,15 @@ Parameters:
     Description: URL of S3 bucket where templates are deployed
     ConstraintDescription: Must be a valid S3 HTTP URL
 
+Mappings:
+  Accounts:
+    "035458030717":
+      AdminRole: "arn:aws:iam::035458030717:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_Administrator_580e9f32ac55c4e7"
+    "728882028485":
+      AdminRole: "arn:aws:iam::728882028485:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_Administrator_3a9d61d0884be260"
+
 Resources:
+
   WorkflowsKeyStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -21,8 +29,12 @@ Resources:
           - - !Sub 'arn:aws:iam::${AWS::AccountId}:root'
             - !ImportValue
               'Fn::Sub': '${AWS::Region}-workflows-nextflow-ci-service-account-ServiceUserArn'
-        UserPrincipalArns: !ImportValue
-          'Fn::Sub': '${AWS::Region}-workflows-nextflow-ci-service-account-ServiceUserArn'
+            - !FindInMap [Accounts, !Ref AWS::AccountId, AdminRole]
+        UserPrincipalArns: !Join
+          - ','
+          - - !ImportValue
+              'Fn::Sub': '${AWS::Region}-workflows-nextflow-ci-service-account-ServiceUserArn'
+            - !FindInMap [Accounts, !Ref AWS::AccountId, AdminRole]
 
 Outputs:
   Key:
@@ -33,3 +45,7 @@ Outputs:
     Value: !Sub ${WorkflowsKeyStack.Outputs.Alias}
     Export:
       Name: !Sub '${AWS::Region}-${AWS::StackName}-Alias'
+  KeyArn:
+    Value: !Sub 'arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${WorkflowsKeyStack.Outputs.Key}'
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-KeyArn'
