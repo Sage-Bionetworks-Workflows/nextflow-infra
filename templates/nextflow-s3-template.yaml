@@ -55,10 +55,10 @@ Resources:
         #   - Enabled
         #   - Suspended
         # Default: Suspended
-      # BucketEncryption:
-      #   ServerSideEncryptionConfiguration:
-      #     - ServerSideEncryptionByDefault:
-      #         SSEAlgorithm: AES256
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
 
   # Policy
   BucketPolicy:
@@ -68,20 +68,6 @@ Resources:
       PolicyDocument:
         Version: 2012-10-17
         Statement:
-
-          # - Sid: DenyAllBucketAccess
-          #   # denies access to everyone
-          #   Effect: Deny
-          #   Principal:
-          #     AWS: "*"
-          #   NotAction:
-          #     - "s3:Delete*"
-          #     - "s3:GetBucket*"
-          #     - "s3:ListBucket*"
-          #     - "s3:PutBucket*"
-          #   Resource:
-          #     - !Sub arn:aws:s3:::${Bucket}/*
-          #     - !Sub arn:aws:s3:::${Bucket}
 
           - Sid: BucketLocationAccess
             # gives grantees access to the bucket
