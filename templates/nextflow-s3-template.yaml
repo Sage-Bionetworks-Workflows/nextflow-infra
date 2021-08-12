@@ -30,12 +30,12 @@ Parameters:
   ReadAccess:
     Type: CommaDelimitedList
     # Default: "[]"
-    # Description: Grant bucket access to accounts, groups, and users.
+    # Description: Grant read access to accounts, groups, and users.
     ConstraintDescription: List of ARNs (i.e. ["arn:aws:iam::011223344556:user/jsmith", "arn:aws:iam::544332211006:user/rjones"]
   WriteAccess:
     Type: CommaDelimitedList
     # Default: "[]"
-    # Description: Grant bucket access to accounts, groups, and users.
+    # Description: Grant write access to accounts, groups, and users.
     ConstraintDescription: List of ARNs (i.e. ["arn:aws:iam::011223344556:user/jsmith", "arn:aws:iam::544332211006:user/rjones"]
 
 Conditions:
@@ -55,48 +55,48 @@ Resources:
         #   - Enabled
         #   - Suspended
         # Default: Suspended
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
+      # BucketEncryption:
+      #   ServerSideEncryptionConfiguration:
+      #     - ServerSideEncryptionByDefault:
+      #         SSEAlgorithm: AES256
 
   # Policy
   BucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
-      Bucket: !Ref Bucket
+      Bucket: !Ref Bucket  
       PolicyDocument:
         Version: 2012-10-17
         Statement:
 
-          - Sid: DenyAllBucketAccess
-            # denies access to everyone
-            Effect: Deny
-            Principal:
-              AWS: "*"
-            Action:
-              - "s3:*"
-            Condition:
-              StringEquals:
-                "aws:PrincipalAccount":
-                  - Fn::ImportValue: !Sub "${nextflow-forge-service-user}-ServiceUser"
-            Resource:
-              - !Sub arn:aws:s3:::${Bucket}/*
-              - !Sub arn:aws:s3:::${Bucket}
+          # - Sid: DenyAllBucketAccess
+          #   # denies access to everyone
+          #   Effect: Deny
+          #   Principal:
+          #     AWS: "*"
+          #   Action:
+          #     - "s3:*"
+          #   Condition:
+          #     StringNotLike:
+          #       "aws:PrincipalAccount":
+          #         - arn:aws:iam::035458030717:root
+          #         - arn:aws:iam::035458030717:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_Administrator_580e9f32ac55c4e7
+          #   Resource:
+          #     - !Sub arn:aws:s3:::${Bucket}/*
+          #     - !Sub arn:aws:s3:::${Bucket}
 
-          - Sid: BucketAccess
+          - Sid: BucketLocationAccess
             # gives grantees access to the bucket
             Effect: Allow
             Principal:
-              AWS: !Ref BucketAccess
+              AWS: !Join
+                - ","
+                - - Fn::ImportValue: !Sub "${AWS::Region}-nextflow-forge-service-user-ServiceUserArn"
+                  - !Join [",", !Ref BucketAccess]
             Action:
               - "s3:ListBucket"
               - "s3:ListBucket*"
               - "s3:GetBucketLocation"
-            Condition:
-              StringEquals:
-                "aws:PrincipalAccount":
-                  - Fn::ImportValue: !Sub "${nextflow-forge-service-user}-ServiceUser"
             Resource:
               - !Sub arn:aws:s3:::${Bucket}/*
               - !Sub arn:aws:s3:::${Bucket}
@@ -105,16 +105,15 @@ Resources:
             # give grantees read access to objects
             Effect: Allow
             Principal:
-              AWS: !Ref ReadAccess
+              AWS: !Join
+                - ","
+                - - Fn::ImportValue: !Sub "${AWS::Region}-nextflow-forge-service-user-ServiceUserArn"
+                  - !Join [",", !Ref ReadAccess]
             Action:
               - "s3:GetObject"
               - "s3:GetObjectAcl"
               - "s3:AbortMultipartUpload"
               - "s3:ListMultipartUploadParts"
-            Condition:
-              StringEquals:
-                "aws:PrincipalAccount":
-                  - Fn::ImportValue: !Sub "${nextflow-forge-service-user}-ServiceUser"
             Resource:
               - !Sub arn:aws:s3:::${Bucket}/*
               - !Sub arn:aws:s3:::${Bucket}
@@ -122,14 +121,13 @@ Resources:
           - Sid: WriteAccess
             Effect: Allow
             Principal:
-              AWS: !Ref WriteAccess
+              AWS: !Join
+                - ","
+                - - Fn::ImportValue: !Sub "${AWS::Region}-nextflow-forge-service-user-ServiceUserArn"
+                  - !Join [",", !Ref WriteAccess]
             Action:
               - "s3:*Object*"
               - "s3:*MultipartUpload*"
-            Condition:
-              StringEquals:
-                "aws:PrincipalAccount":
-                  - Fn::ImportValue: !Sub "${nextflow-forge-service-user}-ServiceUser"
             Resource:
               - !Sub arn:aws:s3:::${Bucket}/*
               - !Sub arn:aws:s3:::${Bucket}
