@@ -74,13 +74,11 @@ Resources:
           #   Effect: Deny
           #   Principal:
           #     AWS: "*"
-          #   Action:
-          #     - "s3:*"
-          #   Condition:
-          #     StringNotLike:
-          #       "aws:PrincipalAccount":
-          #         - arn:aws:iam::035458030717:root
-          #         - arn:aws:iam::035458030717:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_Administrator_580e9f32ac55c4e7
+          #   NotAction:
+          #     - "s3:Delete*"
+          #     - "s3:GetBucket*"
+          #     - "s3:ListBucket*"
+          #     - "s3:PutBucket*"
           #   Resource:
           #     - !Sub arn:aws:s3:::${Bucket}/*
           #     - !Sub arn:aws:s3:::${Bucket}
@@ -98,11 +96,9 @@ Resources:
                           - ","
                           - !Ref BucketAccess
             Action:
-              - "s3:ListBucket"
               - "s3:ListBucket*"
               - "s3:GetBucketLocation"
             Resource:
-              - !Sub arn:aws:s3:::${Bucket}/*
               - !Sub arn:aws:s3:::${Bucket}
 
           - Sid: ReadObjectAccess
@@ -124,7 +120,6 @@ Resources:
               - "s3:ListMultipartUploadParts"
             Resource:
               - !Sub arn:aws:s3:::${Bucket}/*
-              - !Sub arn:aws:s3:::${Bucket}
 
           - Sid: WriteAccess
             Effect: Allow
@@ -140,6 +135,8 @@ Resources:
             Action:
               - "s3:*Object*"
               - "s3:*MultipartUpload*"
+              - "s3:ListBucket*"
+              - "s3:GetBucketLocation"
             Resource:
               - !Sub arn:aws:s3:::${Bucket}/*
               - !Sub arn:aws:s3:::${Bucket}
