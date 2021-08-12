@@ -89,10 +89,14 @@ Resources:
             # gives grantees access to the bucket
             Effect: Allow
             Principal:
-              AWS: !Join
+              AWS: !Split
                 - ","
-                - - Fn::ImportValue: !Sub "${AWS::Region}-nextflow-forge-service-user-ServiceUserArn"
-                  - !Join [",", !Ref BucketAccess]
+                - !Join
+                    - ","
+                    - - Fn::ImportValue: !Sub "${AWS::Region}-nextflow-forge-service-user-ServiceUserArn"
+                      - !Join
+                          - ","
+                          - !Ref BucketAccess
             Action:
               - "s3:ListBucket"
               - "s3:ListBucket*"
@@ -105,10 +109,14 @@ Resources:
             # give grantees read access to objects
             Effect: Allow
             Principal:
-              AWS: !Join
+              AWS: !Split
                 - ","
-                - - Fn::ImportValue: !Sub "${AWS::Region}-nextflow-forge-service-user-ServiceUserArn"
-                  - !Join [",", !Ref ReadAccess]
+                - !Join
+                    - ","
+                    - - Fn::ImportValue: !Sub "${AWS::Region}-nextflow-forge-service-user-ServiceUserArn"
+                      - !Join
+                          - ","
+                          - !Ref ReadAccess
             Action:
               - "s3:GetObject"
               - "s3:GetObjectAcl"
@@ -121,10 +129,14 @@ Resources:
           - Sid: WriteAccess
             Effect: Allow
             Principal:
-              AWS: !Join
+              AWS: !Split
                 - ","
-                - - Fn::ImportValue: !Sub "${AWS::Region}-nextflow-forge-service-user-ServiceUserArn"
-                  - !Join [",", !Ref WriteAccess]
+                - !Join
+                    - ","
+                    - - Fn::ImportValue: !Sub "${AWS::Region}-nextflow-forge-service-user-ServiceUserArn"
+                      - !Join
+                          - ","
+                          - !Ref WriteAccess
             Action:
               - "s3:*Object*"
               - "s3:*MultipartUpload*"
