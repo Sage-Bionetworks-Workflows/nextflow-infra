@@ -47,6 +47,11 @@ Parameters:
     Type: String
     Default: ''
 
+  KmsKeyAlias:
+    Description: Optional. KMS key alias used to encrypt secrets stored in Secrets Manager.
+    Type: String
+    Default: 'alias/workflows-infra'
+
 Mappings:
   ClusterSettings:
     mysql:
@@ -71,6 +76,7 @@ Resources:
         GenerateStringKey: password
         ExcludeCharacters: '"@/\$`&'
         PasswordLength: 16
+      KmsKeyId: !Ref KmsKeyAlias
 
   AuroraNextflowTowerDatabaseUserSecret:
     Condition: UseSnapshotFalse
@@ -83,6 +89,7 @@ Resources:
         GenerateStringKey: password
         ExcludeCharacters: '"@/\$`&'
         PasswordLength: 16
+      KmsKeyId: !Ref KmsKeyAlias
 
   SecretAuroraClusterAttachment:
     Condition: UseSnapshotFalse

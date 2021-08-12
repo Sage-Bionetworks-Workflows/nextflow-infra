@@ -1,0 +1,10 @@
+template_path: remote/R53-hostedzone.yaml
+stack_name: nextflow-r53-hostedzone
+parameters:
+  Department: IBC
+  Project: Infrastructure
+  OwnerEmail: nextflow-admins@sagebase.org
+  DnsDomainName: tower-dev.sagebionetworks.org
+hooks:
+  before_launch:
+    - !cmd "wget {{stack_group_config.aws_infra_templates_root_url}}/v0.2.20/templates/R53-hostedzone.yaml -O templates/remote/R53-hostedzone.yaml"
