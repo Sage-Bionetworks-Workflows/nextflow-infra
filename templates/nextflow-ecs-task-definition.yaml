@@ -1,0 +1,188 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Nextflow Tower ECS template
+Parameters:
+  ClusterName:
+    Type: String
+    Description: ECS cluster name
+  TowerSmtpHost:
+    Type: String
+    Description: SMTP server hostname
+  TowerSmtpPort:
+    Type: String
+    Description: SMTP server port
+  TowerSmtpUser:
+    Type: String
+    Description: SMTP server username
+    NoEcho: 'true'
+  TowerSmtpPassword:
+    Type: String
+    Description: SMTP server password
+    NoEcho: 'true'
+  TowerContactEmail:
+    Type: String
+    Description: Email for login emails
+  TowerServerUrl:
+    Type: String
+    Description: IP address of container instance
+  TowerJwtSecret:
+    Type: String
+    Description: '>256 bit random string'
+    NoEcho: 'true'
+  TowerCryptoSecretkey:
+    Type: String
+    Description: '>256 bit random string'
+    NoEcho: 'true'
+  TowerLicense:
+    Type: String
+    Description: The Tower License
+    NoEcho: 'true'
+  TowerDbUrl:
+    Type: String
+    Description: MySQL DB connection URL
+  TowerDbUser:
+    Type: String
+    Description: MySQL DB username
+  TowerDbPassword:
+    Type: String
+    Description: MySQL DB password
+    NoEcho: 'true'
+Resources:
+  TowerTask:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: bridge
+      ContainerDefinitions:
+        - Name: redis
+          Image: redis:5.0.8
+          Memory: 2000
+          Cpu: 0
+          PortMappings:
+            - ContainerPort: 6379
+              HostPort: 6379
+          Command:
+            - --appendonly yes
+        - Name: cron
+          Image: 195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/backend:v21.06.0
+          Memory: 2000
+          Cpu: 0
+          Links:
+            - redis
+          DependsOn:
+            - ContainerName: redis
+              Condition: START
+          WorkingDirectory: /work
+          EntryPoint:
+            - /bin/sh
+          Command:
+            - -c
+            - /migrate-db.sh; /tower.sh
+          Environment:
+            - Name: TOWER_CONTACT_EMAIL
+              Value: !Ref 'TowerContactEmail'
+            - Name: TOWER_SMTP_HOST
+              Value: !Ref 'TowerSmtpHost'
+            - Name: TOWER_SMTP_PORT
+              Value: !Ref 'TowerSmtpPort'
+            - Name: TOWER_SMTP_USER
+              Value: !Ref 'TowerSmtpUser'
+            - Name: TOWER_SMTP_PASSWORD
+              Value: !Ref 'TowerSmtpPassword'
+            - Name: TOWER_DB_URL
+              Value: !Ref 'TowerDbUrl'
+            - Name: TOWER_DB_DRIVER
+              Value: com.mysql.cj.jdbc.Driver
+            - Name: TOWER_DB_DIALECT
+              Value: io.seqera.util.MySQL55DialectCollateBin
+            - Name: TOWER_DB_USER
+              Value: !Ref 'TowerDbUser'
+            - Name: TOWER_DB_PASSWORD
+              Value: !Ref 'TowerDbPassword'
+            - Name: TOWER_SERVER_URL
+              Value: !Ref 'TowerServerUrl'
+            - Name: MICRONAUT_ENVIRONMENTS
+              Value: prod,redis,cron,awsbatch-platform
+            - Name: TOWER_JWT_SECRET
+              Value: !Ref 'TowerJwtSecret'
+            - Name: TOWER_CRYPTO_SECRETKEY
+              Value: !Ref 'TowerCryptoSecretkey'
+            - Name: TOWER_LICENSE
+              Value: !Ref 'TowerLicense'
+            - Name: FLYWAY_LOCATIONS
+              Value: classpath:db-schema/mysql
+        - Name: frontend
+          Image: 195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/frontend:v21.06.0
+          Memory: 2000
+          Cpu: 0
+          Essential: false
+          PortMappings:
+            - ContainerPort: 80
+              HostPort: 80
+          Links:
+            - backend
+          DependsOn:
+            - ContainerName: backend
+              Condition: START
+        - Name: backend
+          Hostname: backend
+          Memory: 2000
+          Cpu: 0
+          Image: 195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/backend:v21.06.0
+          PortMappings:
+            - ContainerPort: 8080
+              HostPort: 8080
+          Essential: false
+          Links:
+            - redis
+            - cron
+          WorkingDirectory: /work
+          DependsOn:
+            - ContainerName: cron
+              Condition: START
+            - ContainerName: redis
+              Condition: START
+          Environment:
+            - Name: TOWER_CONTACT_EMAIL
+              Value: !Ref 'TowerContactEmail'
+            - Name: TOWER_SMTP_HOST
+              Value: !Ref 'TowerSmtpHost'
+            - Name: TOWER_SMTP_PORT
+              Value: !Ref 'TowerSmtpPort'
+            - Name: TOWER_SMTP_USER
+              Value: !Ref 'TowerSmtpUser'
+            - Name: TOWER_SMTP_PASSWORD
+              Value: !Ref 'TowerSmtpPassword'
+            - Name: TOWER_DB_URL
+              Value: !Ref 'TowerDbUrl'
+            - Name: TOWER_DB_DRIVER
+              Value: com.mysql.cj.jdbc.Driver
+            - Name: TOWER_DB_DIALECT
+              Value: io.seqera.util.MySQL55DialectCollateBin
+            - Name: TOWER_DB_USER
+              Value: !Ref 'TowerDbUser'
+            - Name: TOWER_DB_PASSWORD
+              Value: !Ref 'TowerDbPassword'
+            - Name: TOWER_SERVER_URL
+              Value: !Ref 'TowerServerUrl'
+            - Name: MICRONAUT_ENVIRONMENTS
+              Value: prod,redis,ha,awsbatch-platform
+            - Name: TOWER_JWT_SECRET
+              Value: !Ref 'TowerJwtSecret'
+            - Name: TOWER_CRYPTO_SECRETKEY
+              Value: !Ref 'TowerCryptoSecretkey'
+            - Name: TOWER_LICENSE
+              Value: !Ref 'TowerLicense'
+            - Name: FLYWAY_LOCATIONS
+              Value: classpath:db-schema/mysql
+          EntryPoint:
+            - /bin/sh
+          Command:
+            - -c
+            - /tower.sh
+  TowerService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !Ref 'ClusterName'
+      DesiredCount: 1
+      ServiceName: TowerService
+      TaskDefinition: !Ref 'TowerTask'
+      LaunchType: EC2
