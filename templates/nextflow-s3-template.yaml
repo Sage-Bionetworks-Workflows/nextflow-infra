@@ -21,15 +21,15 @@ Parameters:
   BucketName:
     Type: String
     Description: (Optional) Name of the created bucket.
-  ReadWriteAccess:
+  ReadWriteAccessArns:
     Type: CommaDelimitedList
-    Default: "[]"
-    Description: (Optional) Grant read/write access to accounts, groups, and users.
+    # Default: "[]"
+    Description: (Required) Grant read/write access to accounts, groups, and users.
     ConstraintDescription: List of ARNs (i.e. ["arn:aws:iam::011223344556:user/jsmith", "arn:aws:iam::544332211006:user/rjones"]
-  ReadOnlyAccess:
+  ReadOnlyAccessArns:
     Type: CommaDelimitedList
-    Default: "[]"
-    Description: (Optional) Grant read access to accounts, groups, and users.
+    # Default: "[]"
+    Description: (Required) Grant read access to accounts, groups, and users.
     ConstraintDescription: List of ARNs (i.e. ["arn:aws:iam::011223344556:user/jsmith", "arn:aws:iam::544332211006:user/rjones"]
 
 # Conditions
@@ -51,6 +51,9 @@ Resources:
     Properties:
       BucketName: !If [HasBucketName, !Ref BucketName, !Ref 'AWS::NoValue']
       AccessControl: Private
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred      
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -93,7 +96,7 @@ Resources:
               - !Sub arn:aws:s3:::${Bucket}/*
 
           - Sid: ReadWriteAccess
-            # gives grantees read/write access to the bucket
+            # gives grantees read/write write access to the bucket with required --acl
             Effect: Allow
             Principal:
               AWS: !Split
@@ -103,28 +106,41 @@ Resources:
                     - - Fn::ImportValue: !Sub "${AWS::Region}-nextflow-forge-service-user-ServiceUserArn"
                       - !Join
                           - ","
-                          - !Ref ReadWriteAccess
+                          - !Ref ReadWriteAccessArns
             Action:
-              - "s3:*Object*"
-              - "s3:*MultipartUpload*"
-              - "s3:ListBucket*"
-              - "s3:GetBucketLocation"
+              - "s3:*Object*"  
+            Condition:
+              StringEquals:
+                s3:x-amz-acl: bucket-owner-full-control
             Resource:
+              - !Sub arn:aws:s3:::${Bucket}/*    
+
+          - Sid: ReadWriteBucketAccess
+            # gives grantees with read/write access read access to the bucket
+            Effect: Allow
+            Principal:
+              AWS: !Split
+                - ","
+                - !Join
+                    - ","
+                    - - Fn::ImportValue: !Sub "${AWS::Region}-nextflow-forge-service-user-ServiceUserArn"
+                      - !Join
+                          - ","
+                          - !Ref ReadWriteAccessArns
+            Action:
+              - "s3:AbortMultipartUpload"
+              - "s3:ListMultipartUploadParts"
+              - "s3:ListBucket*"
+              - "s3:GetBucketLocation"   
+            Resource:
+              - !Sub arn:aws:s3:::${Bucket}
               - !Sub arn:aws:s3:::${Bucket}/*
-              - !Sub arn:aws:s3:::${Bucket}            
 
           - Sid: ReadOnlyAccess
             # gives grantees read (only) access to the bucket
             Effect: Allow
             Principal:
-              AWS: !Split
-                - ","
-                - !Join
-                    - ","
-                    - - Fn::ImportValue: !Sub "${AWS::Region}-nextflow-forge-service-user-ServiceUserArn"
-                      - !Join
-                          - ","
-                          - !Ref ReadOnlyAccess
+              AWS: !Ref ReadOnlyAccessArns
             Action:
               - "s3:ListBucket*"
               - "s3:GetBucketLocation"
