@@ -37,6 +37,7 @@ Conditions:
   HasBucketName: !Not [!Equals [!Ref BucketName, ""]]
   HasReadWriteAccessArns: !Not [!Equals [!Join [",", !Ref ReadWriteAccessArns], "[]"]]
   HasReadOnlyAccessArns: !Not [!Equals [!Join [",", !Ref ReadOnlyAccessArns], "[]"]]
+  NoReadWriteAccessArns: !Equals [!Join [",", !Ref ReadWriteAccessArns], "[]"]
 
 # Mappings
 Mappings:
@@ -96,6 +97,23 @@ Resources:
             Resource:
               - !Sub arn:aws:s3:::${Bucket}
               - !Sub arn:aws:s3:::${Bucket}/*
+
+          - !If
+            - NoReadWriteAccessArns
+            - Sid: ForgeUserReadWriteAccess
+              # gives grantees read/write write access to the bucket with required --acl
+              Effect: Allow
+              Principal:
+                AWS:
+                  - Fn::ImportValue: !Sub "${AWS::Region}-nextflow-forge-service-user-ServiceUserArn"
+              Action:
+                - "s3:*Object*"  
+              Condition:
+                StringEquals:
+                  s3:x-amz-acl: bucket-owner-full-control
+              Resource:
+                - !Sub arn:aws:s3:::${Bucket}/*   
+            - !Ref AWS::NoValue 
 
           - !If
             - HasReadWriteAccessArns
