@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Private S3 Bucket
+Description: Private S3 Bucket for Nextflow
 
 # Parameters
 Parameters:
@@ -101,7 +101,7 @@ Resources:
           - !If
             - NoReadWriteAccessArns
             - Sid: ForgeUserReadWriteAccess
-              # gives grantees read/write write access to the bucket with required --acl
+              # gives forge user read/write write access to the bucket if no read/write arns are supplied
               Effect: Allow
               Principal:
                 AWS:
