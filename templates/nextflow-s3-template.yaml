@@ -97,14 +97,18 @@ Resources:
               - !Sub arn:aws:s3:::${Bucket}
               - !Sub arn:aws:s3:::${Bucket}/*
 
-          - Sid: ForgeUserFullAccess
-            # gives forge user full access to bucket
+          - Sid: ForgeUserAccess
+            # gives forge user access to bucket
             Effect: Allow
             Principal:
               AWS:
                 - Fn::ImportValue: !Sub "${AWS::Region}-nextflow-forge-service-user-ServiceUserArn"
             Action:
-              - "s3:*"
+              - "s3:ListBucket"
+              - "s3:GetObject"
+              - "s3:PutObject"
+              - "s3:PutObjectTagging"
+              - "s3:DeleteObject"
             Resource:
               - !Sub arn:aws:s3:::${Bucket}
               - !Sub arn:aws:s3:::${Bucket}/*
@@ -115,8 +119,7 @@ Resources:
               # gives grantees read/write write access to the bucket (objects) with required --acl
               Effect: Allow
               Principal:
-                AWS:
-                  - !Ref ReadWriteAccessArns
+                AWS: !Ref ReadWriteAccessArns
               Action:
                 - "s3:*Object*"  
               Condition:
@@ -132,8 +135,7 @@ Resources:
               # gives grantees with read/write access read access to the bucket
               Effect: Allow
               Principal:
-                AWS:
-                  - !Ref ReadWriteAccessArns
+                AWS: !Ref ReadWriteAccessArns
               Action:
                 - "s3:AbortMultipartUpload"
                 - "s3:ListMultipartUploadParts"
