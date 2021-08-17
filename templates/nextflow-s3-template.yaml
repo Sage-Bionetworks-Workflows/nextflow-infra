@@ -37,7 +37,6 @@ Conditions:
   HasBucketName: !Not [!Equals [!Ref BucketName, ""]]
   HasReadWriteAccessArns: !Not [!Equals [!Join [",", !Ref ReadWriteAccessArns], "[]"]]
   HasReadOnlyAccessArns: !Not [!Equals [!Join [",", !Ref ReadOnlyAccessArns], "[]"]]
-  NoReadWriteAccessArns: !Equals [!Join [",", !Ref ReadWriteAccessArns], "[]"]
 
 # Mappings
 Mappings:
@@ -98,37 +97,26 @@ Resources:
               - !Sub arn:aws:s3:::${Bucket}
               - !Sub arn:aws:s3:::${Bucket}/*
 
-          - !If
-            - NoReadWriteAccessArns
-            - Sid: ForgeUserReadWriteAccess
-              # gives forge user read/write write access to the bucket if no read/write arns are supplied
-              Effect: Allow
-              Principal:
-                AWS:
-                  - Fn::ImportValue: !Sub "${AWS::Region}-nextflow-forge-service-user-ServiceUserArn"
-              Action:
-                - "s3:*Object*"  
-              Condition:
-                StringEquals:
-                  s3:x-amz-acl: bucket-owner-full-control
-              Resource:
-                - !Sub arn:aws:s3:::${Bucket}/*   
-            - !Ref AWS::NoValue 
+          - Sid: ForgeUserFullAccess
+            # gives forge user full access to bucket
+            Effect: Allow
+            Principal:
+              AWS:
+                - Fn::ImportValue: !Sub "${AWS::Region}-nextflow-forge-service-user-ServiceUserArn"
+            Action:
+              - "s3:*"
+            Resource:
+              - !Sub arn:aws:s3:::${Bucket}
+              - !Sub arn:aws:s3:::${Bucket}/*
 
           - !If
             - HasReadWriteAccessArns
             - Sid: ReadWriteAccess
-              # gives grantees read/write write access to the bucket with required --acl
+              # gives grantees read/write write access to the bucket (objects) with required --acl
               Effect: Allow
               Principal:
-                AWS: !Split
-                  - ","
-                  - !Join
-                      - ","
-                      - - Fn::ImportValue: !Sub "${AWS::Region}-nextflow-forge-service-user-ServiceUserArn"
-                        - !Join
-                            - ","
-                            - !Ref ReadWriteAccessArns
+                AWS:
+                  - !Ref ReadWriteAccessArns
               Action:
                 - "s3:*Object*"  
               Condition:
@@ -144,14 +132,8 @@ Resources:
               # gives grantees with read/write access read access to the bucket
               Effect: Allow
               Principal:
-                AWS: !Split
-                  - ","
-                  - !Join
-                      - ","
-                      - - Fn::ImportValue: !Sub "${AWS::Region}-nextflow-forge-service-user-ServiceUserArn"
-                        - !Join
-                            - ","
-                            - !Ref ReadWriteAccessArns
+                AWS:
+                  - !Ref ReadWriteAccessArns
               Action:
                 - "s3:AbortMultipartUpload"
                 - "s3:ListMultipartUploadParts"
@@ -180,7 +162,6 @@ Resources:
                 - !Sub arn:aws:s3:::${Bucket}
                 - !Sub arn:aws:s3:::${Bucket}/*
             - !Ref AWS::NoValue 
-
 
 # Outputs
 Outputs:
