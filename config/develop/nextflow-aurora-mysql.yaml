@@ -1,14 +1,13 @@
 template_path: nextflow-aurora-mysql.yaml
 stack_name: nextflow-aurora-mysql
 dependencies:
-  - common/workflows-kms-key.yaml
   - develop/nextflow-vpc.yaml
 parameters:
   VpcID: !stack_output_external nextflow-vpc::VPCId
   SubnetIDs:
     - !stack_output_external nextflow-vpc::PrivateSubnet1
     - !stack_output_external nextflow-vpc::PrivateSubnet2
-  KmsKeyAlias: !stack_output_external workflows-infra-kms-key::Alias
+  TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
 stack_tags:
   Department: IBC
   Project: Infrastructure
