@@ -4,15 +4,15 @@ dependencies:
   - develop/nextflow-aurora-mysql.yaml
   - develop/nextflow-ecs-cluster.yaml
 parameters:
-  ClusterName: !stack_output_external nextflow-ecs-cluster::EcsClusterName
   TowerSmtpHost: 'email-smtp.us-east-1.amazonaws.com'
   TowerSmtpPort: '587'
   TowerSmtpUser: !ssm 'smtp-username'
   TowerSmtpPassword: !ssm 'smtp-password'
   TowerContactEmail: nextflow-admins@sagebase.org
-  TowerServerUrl: !rcmd >-
-    aws ec2 describe-instances --filter Name=tag:aws:cloudformation:stack-name,Values=nextflow-ecs-cluster
-    | jq -r '.Reservations[0].Instances[0].PublicIpAddress'
+  TowerServerUrl: http://tower-dev.sagebionetworks.org/
+  # TowerServerUrl: !rcmd >-
+  #   aws ec2 describe-instances --filter Name=tag:aws:cloudformation:stack-name,Values=nextflow-ecs-cluster
+  #   | jq -r '.Reservations[0].Instances[0].PublicIpAddress'
   TowerJwtSecret: !aws_secrets_manager nextflow-tower-secret/jwt::SecretString::secret
   TowerCryptoSecretkey: !aws_secrets_manager nextflow-tower-secret/crypto::SecretString::secret
   TowerLicense: !aws_secrets_manager nextflow/license::SecretString::license_key

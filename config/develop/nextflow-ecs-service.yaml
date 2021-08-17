@@ -1,0 +1,18 @@
+template_path: nextflow-ecs-service.yaml
+stack_name: nextflow-ecs-service
+dependencies:
+  - develop/nextflow-ecs-cluster.yaml
+  - develop/nextflow-ecs-task-definition.yaml
+parameters:
+  ClusterName: !stack_output_external nextflow-ecs-cluster::EcsClusterName
+  TaskDefinitionArn: !stack_output_external nextflow-ecs-task-definition::TaskDefinitionArn
+  VpcId: !stack_output_external nextflow-vpc::VPCId
+  SubnetIds:
+    - !stack_output_external nextflow-vpc::PublicSubnet
+    - !stack_output_external nextflow-vpc::PublicSubnet1
+  HostedZoneId: !stack_output_external nextflow-r53-hostedzone::HostedZoneId
+  SSLCertificateArn: !stack_output_external tower-dev-certificate::CertificateArn
+stack_tags:
+  Department: IBC
+  Project: Infrastructure
+  OwnerEmail: nextflow-admins@sagebase.org

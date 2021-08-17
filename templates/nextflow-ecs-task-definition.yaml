@@ -1,9 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Nextflow Tower ECS template
+Description: Nextflow Tower ECS Task Definition template
 Parameters:
-  ClusterName:
-    Type: String
-    Description: ECS cluster name
   TowerSmtpHost:
     Type: String
     Description: SMTP server hostname
@@ -178,11 +175,10 @@ Resources:
           Command:
             - -c
             - /tower.sh
-  TowerService:
-    Type: AWS::ECS::Service
-    Properties:
-      Cluster: !Ref 'ClusterName'
-      DesiredCount: 1
-      ServiceName: TowerService
-      TaskDefinition: !Ref 'TowerTask'
-      LaunchType: EC2
+
+Outputs:
+
+  TaskDefinitionArn:
+    Value: !Ref TowerTask
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-TaskDefinitionArn'

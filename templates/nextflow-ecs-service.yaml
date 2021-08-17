@@ -1,0 +1,205 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Nextflow Tower ECS Service template
+
+Parameters:
+
+  ClusterName:
+    Type: String
+    Description: ECS cluster name
+
+  TaskDefinitionArn:
+    Type: String
+    Description: ARN for the ECS task definition that the ECS service uses
+
+  VpcId:
+    Description: ID of VPC
+    Type: AWS::EC2::VPC::Id
+
+  SubnetIds:
+    Type: CommaDelimitedList
+    Description: List of public Subnet Ids for the load balancer
+
+  HostedZoneId:
+    Type: String
+    Description: ID of Route 53 hosted zone where a DNS record will be created
+
+  Hostname:
+    Type: String
+    Description: Domain name
+    Default: tower-dev.sagebionetworks.org
+
+  SSLCertificateArn:
+    Description: 'ARN for a certificate that exists in the account and is valid for the domain'
+    Type: String
+
+Resources:
+
+  EcsServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+              - ecs.amazonaws.com
+          Action:
+            - sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName: ecs-service
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+              - elasticloadbalancing:DeregisterInstancesFromLoadBalancer
+              - elasticloadbalancing:DeregisterTargets
+              - elasticloadbalancing:Describe*
+              - elasticloadbalancing:RegisterInstancesWithLoadBalancer
+              - elasticloadbalancing:RegisterTargets
+              - ec2:Describe*
+              - ec2:AuthorizeSecurityGroupIngress
+            Resource: '*'
+
+  EcsAlbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Join
+        - '-'
+        - - !Ref 'AWS::StackName'
+          - EcsAlbSecurityGroup
+      GroupDescription: Security Group for Nextflow ECS load balancer
+      VpcId: !Ref VpcId
+
+  EcsAlbSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !GetAtt EcsAlbSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      CidrIp: 0.0.0.0/0
+
+  EcsApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: Nextflow-Tower-ALB
+      Scheme: internet-facing
+      LoadBalancerAttributes:
+      - Key: idle_timeout.timeout_seconds
+        Value: '30'
+      Subnets: !Ref SubnetIds
+      SecurityGroups:
+        #- !Ref SecurityGroupId
+        - !GetAtt EcsAlbSecurityGroup.GroupId
+
+  # EcsSecurityGroupAlbPorts:
+  #   Type: AWS::EC2::SecurityGroupIngress
+  #   Properties:
+  #     GroupId: !Ref SecurityGroupId
+  #     IpProtocol: tcp
+  #     FromPort: 31000
+  #     ToPort: 61000
+  #     SourceSecurityGroupId: !Ref SecurityGroupId
+
+  EcsTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: EcsApplicationLoadBalancer
+    Properties:
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      Port: 80
+      Protocol: HTTP
+      UnhealthyThresholdCount: 2
+      VpcId: !Ref VpcId
+
+  EcsAlbListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    DependsOn: EcsServiceRole
+    Properties:
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref EcsTargetGroup
+      LoadBalancerArn: !Ref EcsApplicationLoadBalancer
+      Certificates:
+        - CertificateArn: !Ref SSLCertificateArn
+      Port: 443
+      Protocol: HTTPS
+
+  TowerService:
+    Type: AWS::ECS::Service
+    DependsOn: EcsAlbListener
+    Properties:
+      Cluster: !Ref ClusterName
+      DesiredCount: 1
+      ServiceName: Nextflow-Tower-Service
+      TaskDefinition: !Ref TaskDefinitionArn
+      LaunchType: EC2
+      Role: !Ref EcsServiceRole
+      LoadBalancers:
+      - ContainerName: frontend
+        ContainerPort: 80
+        TargetGroupArn: !Ref EcsTargetGroup
+
+  AutoscalingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+              - application-autoscaling.amazonaws.com
+          Action:
+            - sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName: service-autoscaling
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+              - application-autoscaling:*
+              - cloudwatch:DescribeAlarms
+              - cloudwatch:PutMetricAlarm
+              - ecs:DescribeServices
+              - ecs:UpdateService
+            Resource: '*'
+
+  ServiceScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity: 1
+      MinCapacity: 1
+      ResourceId: !Join ['', [service/, !Ref ClusterName, /, !GetAtt TowerService.Name]]
+      RoleARN: !GetAtt AutoscalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  ServiceScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: AStepPolicy
+      PolicyType: StepScaling
+      ScalingTargetId: !Ref ServiceScalingTarget
+      StepScalingPolicyConfiguration:
+        AdjustmentType: PercentChangeInCapacity
+        Cooldown: 60
+        MetricAggregationType: Average
+        StepAdjustments:
+        - MetricIntervalLowerBound: 0
+          ScalingAdjustment: 200
+
+  ConnectDNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref Hostname
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt EcsApplicationLoadBalancer.DNSName
+        HostedZoneId: !GetAtt EcsApplicationLoadBalancer.CanonicalHostedZoneID

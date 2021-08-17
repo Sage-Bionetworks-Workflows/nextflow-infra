@@ -6,8 +6,8 @@ parameters:
   VpcId: !stack_output_external nextflow-vpc::VPCId
   SubnetIds:
     - !stack_output_external nextflow-vpc::PublicSubnet
-  SecurityIngressFromPort: '80'
-  SecurityIngressToPort: '8080'
+  # SecurityIngressFromPort: '80'
+  # SecurityIngressToPort: '8080'
 stack_tags:
   Department: IBC
   Project: Infrastructure
