@@ -8,20 +8,20 @@ Parameters:
     Description: (Optional) Name of the created bucket.
   ReadWriteAccessArns:
     Type: CommaDelimitedList
-    Default: "[]"
+    Default: ""
     Description: (Optional) Grant read/write access to accounts, groups, and users.
     ConstraintDescription: List of ARNs (i.e. ["arn:aws:iam::011223344556:user/jsmith", "arn:aws:iam::544332211006:user/rjones"]
   ReadOnlyAccessArns:
     Type: CommaDelimitedList
-    Default: "[]"
+    Default: ""
     Description: (Optional) Grant read access to accounts, groups, and users.
     ConstraintDescription: List of ARNs (i.e. ["arn:aws:iam::011223344556:user/jsmith", "arn:aws:iam::544332211006:user/rjones"]
 
 # Conditions
 Conditions:
   HasBucketName: !Not [!Equals [!Ref BucketName, ""]]
-  HasReadWriteAccessArns: !Not [!Equals [!Join [",", !Ref ReadWriteAccessArns], "[]"]]
-  HasReadOnlyAccessArns: !Not [!Equals [!Join [",", !Ref ReadOnlyAccessArns], "[]"]]
+  HasReadWriteAccessArns: !Not [!Equals [!Join [",", !Ref ReadWriteAccessArns], ""]]
+  HasReadOnlyAccessArns: !Not [!Equals [!Join [",", !Ref ReadOnlyAccessArns], ""]]
 
 # Mappings
 Mappings:

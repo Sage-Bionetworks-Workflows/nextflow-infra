@@ -1,0 +1,7 @@
+template_path: nextflow-s3-template.yaml
+profile: nf-sceptre
+region: us-east-1
+parameters:
+  BucketName: "dhan-test-s3-bucket"
+  ReadOnlyAccessArns: ["arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/daisy.han@sagebase.org"]
+  ReadWriteAccessArns: ["arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/daisy.han@sagebase.org"]
