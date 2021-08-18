@@ -40,7 +40,7 @@ Resources:
       AccessControl: Private
       OwnershipControls:
         Rules:
-          - ObjectOwnership: BucketOwnerPreferred      
+          - ObjectOwnership: BucketOwnerPreferred
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -50,7 +50,7 @@ Resources:
   BucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
-      Bucket: !Ref Bucket  
+      Bucket: !Ref Bucket
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -106,13 +106,13 @@ Resources:
               Principal:
                 AWS: !Ref ReadWriteAccessArns
               Action:
-                - "s3:*Object*"  
+                - "s3:*Object*"
               Condition:
                 StringEquals:
                   s3:x-amz-acl: bucket-owner-full-control
               Resource:
-                - !Sub arn:aws:s3:::${Bucket}/*   
-            - !Ref AWS::NoValue 
+                - !Sub arn:aws:s3:::${Bucket}/*
+            - !Ref AWS::NoValue
 
           - !If
             - HasReadWriteAccessArns
@@ -124,11 +124,11 @@ Resources:
               Action:
                 - "s3:*MultipartUpload*"
                 - "s3:ListBucket*"
-                - "s3:GetBucketLocation"   
+                - "s3:GetBucketLocation"
               Resource:
                 - !Sub arn:aws:s3:::${Bucket}
                 - !Sub arn:aws:s3:::${Bucket}/*
-            - !Ref AWS::NoValue 
+            - !Ref AWS::NoValue
 
           - !If
             - HasReadOnlyAccessArns
@@ -145,7 +145,7 @@ Resources:
               Resource:
                 - !Sub arn:aws:s3:::${Bucket}
                 - !Sub arn:aws:s3:::${Bucket}/*
-            - !Ref AWS::NoValue 
+            - !Ref AWS::NoValue
 
 # Outputs
 Outputs:
