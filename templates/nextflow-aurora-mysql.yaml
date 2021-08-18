@@ -47,6 +47,10 @@ Parameters:
     Type: String
     Default: ''
 
+  EcsSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Security group ID for ECS cluster to grant database access
+
   TemplateRootUrl:
     Type: String
     Description: URL of S3 bucket where templates are deployed
@@ -166,6 +170,12 @@ Resources:
     Properties:
       VpcId: !Ref VpcID
       GroupDescription: Aurora Cluster Security Group
+      SecurityGroupIngress:
+        - Description: Inbound rule to allow database access to ECS cluster
+          SourceSecurityGroupId: !Ref EcsSecurityGroupId
+          IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
 
   CloudWatchDBClusterAuditLogGroup:
     Type: AWS::Logs::LogGroup
