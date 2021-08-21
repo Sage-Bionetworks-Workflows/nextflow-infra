@@ -8,7 +8,7 @@ parameters:
   SubnetIDs:
     - !stack_output_external nextflow-vpc::PrivateSubnet1
     - !stack_output_external nextflow-vpc::PrivateSubnet2
-  EcsSecurityGroupId: !stack_output_external nextflow-ecs-cluster::EcsSecurityGroupId
+  EcsSecurityGroupId: !stack_output_external nextflow-ecs-security-group::SecurityGroupId
   TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
 stack_tags:
   Department: IBC

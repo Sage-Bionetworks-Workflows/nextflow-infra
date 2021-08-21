@@ -21,9 +21,9 @@ Parameters:
     Description: Specifies the EC2 instance type for your container instances.
     Default: 'c4.2xlarge'
 
-  VpcId:
-    Description: ID of VPC
-    Type: AWS::EC2::VPC::Id
+  EcsSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Security group ID for ECS cluster to grant database access
 
   SubnetIds:
     Type: CommaDelimitedList
@@ -94,21 +94,6 @@ Resources:
       Roles:
         - !Ref EcsRole
 
-  EcsSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: ECS Allowed Ports
-      VpcId: !Ref VpcId
-
-  EcsSecurityGroupHTTPinbound:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: !Ref 'EcsSecurityGroup'
-      IpProtocol: tcp
-      FromPort: 80
-      ToPort: 80
-      CidrIp: 0.0.0.0/0
-
   CloudwatchLogsGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -123,7 +108,7 @@ Resources:
       AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref EcsInstanceProfile
       SecurityGroups:
-        - !Ref EcsSecurityGroup
+        - !Ref EcsSecurityGroupId
       BlockDeviceMappings:
         - DeviceName: !Ref RootDeviceName
           Ebs:
@@ -155,11 +140,6 @@ Outputs:
     Value: !GetAtt EcsRole.Arn
     Export:
       Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsRoleArn'
-
-  EcsSecurityGroupId:
-    Value: !Ref EcsSecurityGroup
-    Export:
-      Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsSecurityGroupId'
 
   EcsLaunchConfigurationName:
     Value: !Ref EcsLaunchConfiguration
