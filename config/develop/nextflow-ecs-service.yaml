@@ -10,7 +10,6 @@ parameters:
   SubnetIds:
     - !stack_output_external nextflow-vpc::PublicSubnet
     - !stack_output_external nextflow-vpc::PublicSubnet1
-  HostedZoneId: !stack_output_external nextflow-r53-hostedzone::HostedZoneId
   SSLCertificateArn: !stack_output_external tower-dev-certificate::CertificateArn
 stack_tags:
   Department: IBC

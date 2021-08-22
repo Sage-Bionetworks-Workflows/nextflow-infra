@@ -20,15 +20,6 @@ Parameters:
     Type: CommaDelimitedList
     Description: List of public Subnet Ids for the load balancer
 
-  HostedZoneId:
-    Type: String
-    Description: ID of Route 53 hosted zone where a DNS record will be created
-
-  Hostname:
-    Type: String
-    Description: Domain name
-    Default: tower-dev.sagebionetworks.org
-
   SSLCertificateArn:
     Description: 'ARN for a certificate that exists in the account and is valid for the domain'
     Type: String
@@ -194,12 +185,15 @@ Resources:
         - MetricIntervalLowerBound: 0
           ScalingAdjustment: 200
 
-  ConnectDNSRecord:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      HostedZoneId: !Ref HostedZoneId
-      Name: !Ref Hostname
-      Type: A
-      AliasTarget:
-        DNSName: !GetAtt EcsApplicationLoadBalancer.DNSName
-        HostedZoneId: !GetAtt EcsApplicationLoadBalancer.CanonicalHostedZoneID
+Outputs:
+
+  LoadBalancerDnsName:
+    Value: !GetAtt EcsApplicationLoadBalancer.DNSName
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-LoadBalancerDnsName'
+
+  LoadBalancerCanonicalHostedZoneID:
+    Value: !GetAtt EcsApplicationLoadBalancer.CanonicalHostedZoneID
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-LoadBalancerCanonicalHostedZoneID'
+  

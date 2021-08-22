@@ -1,0 +1,34 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Nextflow Tower DNS alias record
+
+Parameters:
+
+  Hostname:
+    Type: String
+    Description: Domain name
+    Default: tower-dev.sagebionetworks.org
+
+  HostedZoneId:
+    Type: String
+    Description: ID of Route 53 hosted zone where a DNS record will be created
+
+  LoadBalancerDnsName:
+    Type: String
+    Description: ECS load balancer DNS name
+
+  LoadBalancerCanonicalHostedZoneId:
+    Type: String
+    Description: >
+      ID of the Amazon Route 53 hosted zone associated with the load balancer
+
+Resources:
+  ConnectDNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref Hostname
+      Type: A
+      AliasTarget:
+        DNSName: !Ref LoadBalancerDnsName
+        HostedZoneId: !Ref LoadBalancerCanonicalHostedZoneId
