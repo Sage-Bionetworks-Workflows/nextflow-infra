@@ -6,8 +6,6 @@ parameters:
   EcsSecurityGroupId: !stack_output_external nextflow-ecs-security-group::SecurityGroupId
   SubnetIds:
     - !stack_output_external nextflow-vpc::PublicSubnet
-  # SecurityIngressFromPort: '80'
-  # SecurityIngressToPort: '8080'
 sceptre_user_data:
   TowerConfigFileContents: |
     tower:

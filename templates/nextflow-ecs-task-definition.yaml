@@ -51,6 +51,54 @@ Parameters:
     Type: String
     Description: The client secret provided by GitHub for the OAuth app
     NoEcho: 'true'
+  RedisContainerName:
+    Type: String
+    Description: (Optional) Name of the container that runs redis
+    Default: redis
+  RedisContainerImage:
+    Type: String
+    Description: (Optional) Redis container docker image
+    Default: 'redis:5.0.8'
+  CronContainerName:
+    Type: String
+    Description: (Optional) Name of the cron container
+    Default: cron
+  CronContainerImage:
+    Type: String
+    Description: (Optional) Cron container docker image
+    Default: '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/backend:v21.06.0'
+  FrontendContainerName:
+    Type: String
+    Description: (Optional) Name of the container that runs the tower ui
+    Default: frontend
+  FrontendContainerImage:
+    Type: String
+    Description: (Optional) Frontend container docker image
+    Default: '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/frontend:v21.06.0'
+  FrontendContainerPort:
+    Type: Number
+    Description: (Optional) Port to open in frontend container
+    Default: 80
+  FrontendHostPort:
+    Type: Number
+    Description: (Optional) Port to open on host for frontend container
+    Default: 80
+  BackendContainerName:
+    Type: String
+    Description: (Optional) Name of the container that runs the tower server
+    Default: backend
+  BackendContainerImage:
+    Type: String
+    Description: (Optional) Backend container docker image
+    Default: '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/backend:v21.06.0'
+  BackendContainerPort:
+    Type: Number
+    Description: (Optional) Port to open in backend container
+    Default: 8080
+  BackendHostPort:
+    Type: Number
+    Description: (Optional) Port to open on host for backend container
+    Default: 8080
 Resources:
   TowerTask:
     Type: AWS::ECS::TaskDefinition
@@ -61,8 +109,8 @@ Resources:
           Host:
             SourcePath: '/opt/nextflow/tower.yml'
       ContainerDefinitions:
-        - Name: redis
-          Image: redis:5.0.8
+        - Name: !Ref RedisContainerName
+          Image: !Ref RedisContainerImage
           Memory: 2000
           Cpu: 0
           PortMappings:
@@ -70,14 +118,14 @@ Resources:
               HostPort: 6379
           Command:
             - --appendonly yes
-        - Name: cron
-          Image: 195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/backend:v21.06.0
+        - Name: !Ref CronContainerName
+          Image: !Ref CronContainerImage
           Memory: 2000
           Cpu: 0
           Links:
-            - redis
+            - !Ref RedisContainerName
           DependsOn:
-            - ContainerName: redis
+            - ContainerName: !Ref RedisContainerName
               Condition: START
           WorkingDirectory: /work
           EntryPoint:
@@ -122,12 +170,8 @@ Resources:
               Value: !Ref TowerGithubClientId
             - Name: TOWER_GITHUB_SECRET
               Value: !Ref TowerGithubSecret
-          MountPoints:
-            - ContainerPath: '/tower.yml'
-              ReadOnly: true
-              SourceVolume: tower_yaml
-        - Name: frontend
-          Image: 195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/frontend:v21.06.0
+        - Name: !Ref FrontendContainerName
+          Image: !Ref FrontendContainerImage
           Memory: 2000
           Cpu: 0
           Essential: false
@@ -135,15 +179,15 @@ Resources:
             - ContainerPort: 80
               HostPort: 80
           Links:
-            - backend
+            - !Ref BackendContainerName
           DependsOn:
-            - ContainerName: backend
+            - ContainerName: !Ref BackendContainerName
               Condition: START
-        - Name: backend
-          Hostname: backend
+        - Name: !Ref BackendContainerName
+          Hostname: !Ref BackendContainerName
           Memory: 2000
           Cpu: 0
-          Image: 195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/backend:v21.06.0
+          Image: !Ref BackendContainerImage
           PortMappings:
             - ContainerPort: 8080
               HostPort: 8080
@@ -210,3 +254,13 @@ Outputs:
     Value: !Ref TowerTask
     Export:
       Name: !Sub '${AWS::Region}-${AWS::StackName}-TaskDefinitionArn'
+
+  FrontendContainerName:
+    Value: !Ref FrontendContainerName
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-FrontendContainerName'
+
+  FrontendContainerPort:
+    Value: !Ref FrontendContainerPort
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-FrontendContainerPort'
