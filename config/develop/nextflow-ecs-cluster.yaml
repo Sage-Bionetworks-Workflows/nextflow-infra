@@ -1,4 +1,4 @@
-template_path: nextflow-ecs-cluster.yaml
+template_path: nextflow-ecs-cluster.j2
 stack_name: nextflow-ecs-cluster
 dependencies:
   - develop/nextflow-vpc.yaml
@@ -8,6 +8,13 @@ parameters:
     - !stack_output_external nextflow-vpc::PublicSubnet
   # SecurityIngressFromPort: '80'
   # SecurityIngressToPort: '8080'
+sceptre_user_data:
+  TowerConfigFileContents: |
+    tower:
+      auth:
+        github:
+          allow-list:
+            - tess.thyer@gmail.com
 stack_tags:
   Department: IBC
   Project: Infrastructure

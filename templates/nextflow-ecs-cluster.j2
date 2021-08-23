@@ -60,7 +60,6 @@ Parameters:
     Description: Optional - Specifies the device mapping for the root EBS volume.
     Default: '/dev/xvda'
 
-
 Resources:
 
   EcsCluster:
@@ -116,9 +115,27 @@ Resources:
             VolumeType: !Ref EbsVolumeType
       UserData:
         Fn::Base64: !Sub |
-          #!/bin/bash
-          echo ECS_CLUSTER=${EcsClusterName} >> /etc/ecs/ecs.config
-          echo ECS_BACKEND_HOST= >> /etc/ecs/ecs.config
+          MIME-Version: 1.0
+          Content-Type: multipart/mixed; boundary="==BOUNDARY=="
+
+          --==BOUNDARY==
+          Content-Type: text/cloud-config; charset="us-ascii"
+
+          #cloud-config
+          repo_update: true
+          repo_upgrade: security
+
+          write_files:
+          - path: /opt/nextflow/tower.yml
+            content: |
+              {{ sceptre_user_data.TowerConfigFileContents|indent(14) }}
+            permissions: '0755'
+          - path: /etc/ecs/ecs.config
+            content: |
+              ECS_CLUSTER=${EcsClusterName}
+              ECS_BACKEND_HOST=
+              ECS_IMAGE_PULL_BEHAVIOR=prefer-cached
+            append: true
 
   EcsAutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup

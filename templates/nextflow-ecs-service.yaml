@@ -82,17 +82,7 @@ Resources:
         Value: '30'
       Subnets: !Ref SubnetIds
       SecurityGroups:
-        #- !Ref SecurityGroupId
         - !GetAtt EcsAlbSecurityGroup.GroupId
-
-  # EcsSecurityGroupAlbPorts:
-  #   Type: AWS::EC2::SecurityGroupIngress
-  #   Properties:
-  #     GroupId: !Ref SecurityGroupId
-  #     IpProtocol: tcp
-  #     FromPort: 31000
-  #     ToPort: 61000
-  #     SourceSecurityGroupId: !Ref SecurityGroupId
 
   EcsTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup

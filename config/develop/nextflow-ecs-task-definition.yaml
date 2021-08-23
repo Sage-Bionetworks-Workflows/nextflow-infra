@@ -2,20 +2,21 @@ template_path: nextflow-ecs-task-definition.yaml
 stack_name: nextflow-ecs-task-definition
 dependencies:
   - develop/nextflow-aurora-mysql.yaml
-  - develop/nextflow-ecs-cluster.yaml
 parameters:
   TowerSmtpHost: 'email-smtp.us-east-1.amazonaws.com'
   TowerSmtpPort: '587'
   TowerSmtpUser: !ssm 'smtp-username'
   TowerSmtpPassword: !ssm 'smtp-password'
   TowerContactEmail: nextflow-admins@sagebase.org
-  TowerServerUrl: http://tower-dev.sagebionetworks.org/
+  TowerServerUrl: https://tower-dev.sagebionetworks.org/
   TowerJwtSecret: !aws_secrets_manager nextflow-tower-secret/jwt::SecretString::secret
   TowerCryptoSecretkey: !aws_secrets_manager nextflow-tower-secret/crypto::SecretString::secret
   TowerLicense: !aws_secrets_manager nextflow/license::SecretString::license_key
   TowerDbUrl: !stack_output_external nextflow-aurora-mysql::DBUrl
   TowerDbUser: !aws_secrets_manager nextflow-aurora-mysql-NextflowTowerDatabaseUserSecret::SecretString::username
   TowerDbPassword: !aws_secrets_manager nextflow-aurora-mysql-NextflowTowerDatabaseUserSecret::SecretString::password
+  TowerGithubClientId: !aws_secrets_manager nextflow/github_oauth_app::SecretString::client
+  TowerGithubSecret: !aws_secrets_manager nextflow/github_oauth_app::SecretString::secret
 stack_tags:
   Department: IBC
   Project: Infrastructure

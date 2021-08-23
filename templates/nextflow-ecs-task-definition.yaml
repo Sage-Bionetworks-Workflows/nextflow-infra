@@ -43,11 +43,23 @@ Parameters:
     Type: String
     Description: MySQL DB password
     NoEcho: 'true'
+  TowerGithubClientId:
+    Type: String
+    Description: The client id provided by GitHub for the OAuth app
+    NoEcho: 'true'
+  TowerGithubSecret:
+    Type: String
+    Description: The client secret provided by GitHub for the OAuth app
+    NoEcho: 'true'
 Resources:
   TowerTask:
     Type: AWS::ECS::TaskDefinition
     Properties:
       NetworkMode: bridge
+      Volumes:
+        - Name: tower_yaml
+          Host:
+            SourcePath: '/opt/nextflow/tower.yml'
       ContainerDefinitions:
         - Name: redis
           Image: redis:5.0.8
@@ -97,7 +109,7 @@ Resources:
             - Name: TOWER_SERVER_URL
               Value: !Ref 'TowerServerUrl'
             - Name: MICRONAUT_ENVIRONMENTS
-              Value: prod,redis,cron,awsbatch-platform
+              Value: prod,redis,cron,awsbatch-platform,auth-github
             - Name: TOWER_JWT_SECRET
               Value: !Ref 'TowerJwtSecret'
             - Name: TOWER_CRYPTO_SECRETKEY
@@ -106,6 +118,14 @@ Resources:
               Value: !Ref 'TowerLicense'
             - Name: FLYWAY_LOCATIONS
               Value: classpath:db-schema/mysql
+            - Name: TOWER_GITHUB_CLIENT
+              Value: !Ref TowerGithubClientId
+            - Name: TOWER_GITHUB_SECRET
+              Value: !Ref TowerGithubSecret
+          MountPoints:
+            - ContainerPath: '/tower.yml'
+              ReadOnly: true
+              SourceVolume: tower_yaml
         - Name: frontend
           Image: 195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/frontend:v21.06.0
           Memory: 2000
@@ -161,7 +181,7 @@ Resources:
             - Name: TOWER_SERVER_URL
               Value: !Ref 'TowerServerUrl'
             - Name: MICRONAUT_ENVIRONMENTS
-              Value: prod,redis,ha,awsbatch-platform
+              Value: prod,redis,ha,awsbatch-platform,auth-github
             - Name: TOWER_JWT_SECRET
               Value: !Ref 'TowerJwtSecret'
             - Name: TOWER_CRYPTO_SECRETKEY
@@ -170,11 +190,19 @@ Resources:
               Value: !Ref 'TowerLicense'
             - Name: FLYWAY_LOCATIONS
               Value: classpath:db-schema/mysql
+            - Name: TOWER_GITHUB_CLIENT
+              Value: !Ref TowerGithubClientId
+            - Name: TOWER_GITHUB_SECRET
+              Value: !Ref TowerGithubSecret
           EntryPoint:
             - /bin/sh
           Command:
             - -c
             - /tower.sh
+          MountPoints:
+            - ContainerPath: '/tower.yml'
+              ReadOnly: true
+              SourceVolume: tower_yaml
 
 Outputs:
 
