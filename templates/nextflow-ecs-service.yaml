@@ -91,7 +91,7 @@ Resources:
       IpProtocol: tcp
       FromPort: !Ref AlbListenerPort
       ToPort: !Ref AlbListenerPort
-      CidrIp: '0.0.0.0/0'
+      CidrIp: !Ref SecurityIngressCidrIp
 
   EcsApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -207,4 +207,3 @@ Outputs:
     Value: !GetAtt EcsApplicationLoadBalancer.CanonicalHostedZoneID
     Export:
       Name: !Sub '${AWS::Region}-${AWS::StackName}-LoadBalancerCanonicalHostedZoneID'
-  
