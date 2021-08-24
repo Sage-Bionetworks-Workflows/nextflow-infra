@@ -176,8 +176,8 @@ Resources:
           Cpu: 0
           Essential: false
           PortMappings:
-            - ContainerPort: 80
-              HostPort: 80
+            - ContainerPort: !Ref FrontendContainerPort
+              HostPort: !Ref FrontendHostPort
           Links:
             - !Ref BackendContainerName
           DependsOn:
@@ -189,8 +189,8 @@ Resources:
           Cpu: 0
           Image: !Ref BackendContainerImage
           PortMappings:
-            - ContainerPort: 8080
-              HostPort: 8080
+            - ContainerPort: !Ref BackendContainerPort
+              HostPort: !Ref BackendHostPort
           Essential: false
           Links:
             - redis
