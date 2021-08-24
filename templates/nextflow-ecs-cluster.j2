@@ -60,6 +60,10 @@ Parameters:
     Description: Optional - Specifies the device mapping for the root EBS volume.
     Default: '/dev/xvda'
 
+  EfsFileSystemId:
+    Type: String
+    Description: The ID of the EFS file system to mount as a volume
+
 Resources:
 
   EcsCluster:
@@ -135,6 +139,14 @@ Resources:
               ECS_CLUSTER=${EcsClusterName}
               ECS_IMAGE_PULL_BEHAVIOR=prefer-cached
             append: true
+
+          runcmd:
+            - mkdir -p /mnt/efs
+            - echo ${EfsFileSystemId}:/ /mnt/efs efs tls,_netdev >> /etc/fstab
+            - mount -a -t efs defaults
+            - cp /opt/nextflow/tower.yml /mnt/efs/tower.yml
+
+          --==BOUNDARY==--
 
   EcsAutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup

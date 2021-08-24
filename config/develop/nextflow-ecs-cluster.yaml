@@ -7,6 +7,7 @@ parameters:
   EcsSecurityGroupId: !stack_output_external nextflow-ecs-security-group::SecurityGroupId
   SubnetIds:
     - !stack_output_external nextflow-vpc::PrivateSubnet
+  EfsFileSystemId: !stack_output_external nextflow-efs-file-system::FileSystemId
 sceptre_user_data:
   TowerConfigFileContents: |
     tower:

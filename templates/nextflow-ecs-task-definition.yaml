@@ -102,15 +102,20 @@ Parameters:
     Type: Number
     Description: (Optional) Port to open on host for backend container
     Default: 8080
+  EfsFileSystemId:
+    Type: String
+    Description: The ID of the EFS file system to mount as a volume
 Resources:
   TowerTask:
     Type: AWS::ECS::TaskDefinition
     Properties:
       NetworkMode: bridge
       Volumes:
-        - Name: tower_yaml
-          Host:
-            SourcePath: '/opt/nextflow/tower.yml'
+        - Name: efs_volume
+          # Host:
+          #   SourcePath: '/opt/nextflow/tower.yml'
+          EFSVolumeConfiguration:
+            FilesystemId: !Ref EfsFileSystemId
       ContainerDefinitions:
         - Name: !Ref RedisContainerName
           Image: !Ref RedisContainerImage
@@ -247,9 +252,9 @@ Resources:
             - -c
             - /tower.sh
           MountPoints:
-            - ContainerPath: '/tower.yml'
+            - ContainerPath: '/efs'
               ReadOnly: true
-              SourceVolume: tower_yaml
+              SourceVolume: efs_volume
 
 Outputs:
 

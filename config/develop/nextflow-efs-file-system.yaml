@@ -1,0 +1,13 @@
+template_path: nextflow-efs-file-system.yaml
+stack_name: nextflow-efs-file-system
+dependencies:
+  - develop/nextflow-vpc.yaml
+  - develop/nextflow-ecs-security-group.yaml
+parameters:
+  VpcId: !stack_output_external nextflow-vpc::VPCId
+  SubnetId: !stack_output_external nextflow-vpc::PublicSubnet
+  EcsSecurityGroupId: !stack_output_external nextflow-ecs-security-group::SecurityGroupId
+stack_tags:
+  Department: IBC
+  Project: Infrastructure
+  OwnerEmail: nextflow-admins@sagebase.org

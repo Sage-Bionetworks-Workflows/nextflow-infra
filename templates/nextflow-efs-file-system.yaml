@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: EFS shared file system for ECS Tower Task containers
+
+Parameters:
+
+  VpcId:
+    Description: ID of VPC
+    Type: AWS::EC2::VPC::Id
+
+  SubnetId:
+    Description: The ID of the subnet to add the EFS mount target in.
+    Type: String
+
+  EcsSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Security group ID for ECS cluster to grant database access
+
+Resources:
+
+  FileSystem:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      AvailabilityZoneName: us-east-1a
+      BackupPolicy:
+        Status: DISABLED
+      Encrypted: false
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ECS Security Group
+      VpcId: !Ref VpcId
+
+  SecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroup
+      SourceSecurityGroupId: !Ref EcsSecurityGroupId
+      IpProtocol: tcp
+      FromPort: 2049
+      ToPort: 2049
+
+  MountTarget:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref FileSystem
+      SecurityGroups:
+        - !Ref SecurityGroup
+      SubnetId: !Ref SubnetId
+
+  # AccessPoint:
+  #   Type: AWS::EFS::AccessPoint
+  #   Properties:
+  #     FileSystemId: !Ref FileSystem
+  #     RootDirectory:
+  #       Path: '/nf-tower'
+
+Outputs:
+
+  FileSystemId:
+    Value: !Ref FileSystem
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-FileSystemId'
