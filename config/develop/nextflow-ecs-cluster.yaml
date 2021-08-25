@@ -2,6 +2,7 @@ template_path: nextflow-ecs-cluster.j2
 stack_name: nextflow-ecs-cluster
 dependencies:
   - develop/nextflow-vpc.yaml
+  - develop/nextflow-ecs-security-group.yaml
 parameters:
   EcsSecurityGroupId: !stack_output_external nextflow-ecs-security-group::SecurityGroupId
   SubnetIds:
@@ -11,8 +12,7 @@ sceptre_user_data:
     tower:
       auth:
         github:
-          allow-list:
-            - tess.thyer@gmail.com
+          allow-list: []
 stack_tags:
   Department: IBC
   Project: Infrastructure
