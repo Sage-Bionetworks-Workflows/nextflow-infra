@@ -58,24 +58,25 @@ Parameters:
     Default: redis
   RedisContainerImage:
     Type: String
-    Description: (Optional) Redis container docker image
-    Default: 'redis:5.0.8'
+    Description: Redis container docker image, e.g. 'redis:5.0.8'
   CronContainerName:
     Type: String
     Description: (Optional) Name of the cron container
     Default: cron
   CronContainerImage:
     Type: String
-    Description: (Optional) Cron container docker image
-    Default: '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/backend:v21.06.0'
+    Description: >
+      (Optional) Cron container docker image,
+      e.g. '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/backend:v21.06.0'
   FrontendContainerName:
     Type: String
     Description: (Optional) Name of the container that runs the tower ui
     Default: frontend
   FrontendContainerImage:
     Type: String
-    Description: (Optional) Frontend container docker image
-    Default: '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/frontend:v21.06.0'
+    Description: >
+      Frontend container docker image,
+      e.g. '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/frontend:v21.06.0'
   FrontendContainerPort:
     Type: Number
     Description: (Optional) Port to open in frontend container
@@ -90,8 +91,9 @@ Parameters:
     Default: backend
   BackendContainerImage:
     Type: String
-    Description: (Optional) Backend container docker image
-    Default: '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/backend:v21.06.0'
+    Description: >
+      Backend container docker image,
+      e.g. '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/backend:v21.06.0'
   BackendContainerPort:
     Type: Number
     Description: (Optional) Port to open in backend container
