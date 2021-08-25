@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 
-Description: AWS resources shared by ECS cluster and Aurora DB cluster
+Description: Security group shared by ECS cluster and Aurora DB cluster
 
 Parameters:
 
