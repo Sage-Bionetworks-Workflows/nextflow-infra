@@ -39,6 +39,7 @@ Parameters:
   TowerDbUser:
     Type: String
     Description: MySQL DB username
+    NoEcho: 'true'
   TowerDbPassword:
     Type: String
     Description: MySQL DB password
