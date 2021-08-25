@@ -178,6 +178,12 @@ Resources:
               Value: !Ref TowerGithubClientId
             - Name: TOWER_GITHUB_SECRET
               Value: !Ref TowerGithubSecret
+            - Name: TOWER_CONFIG_FILE
+              Value: /efs/tower.yml
+          MountPoints:
+            - ContainerPath: '/efs'
+              ReadOnly: true
+              SourceVolume: efs_volume
         - Name: !Ref FrontendContainerName
           Image: !Ref FrontendContainerImage
           Memory: 2000
@@ -246,6 +252,8 @@ Resources:
               Value: !Ref TowerGithubClientId
             - Name: TOWER_GITHUB_SECRET
               Value: !Ref TowerGithubSecret
+            - Name: TOWER_CONFIG_FILE
+              Value: /efs/tower.yml
           EntryPoint:
             - /bin/sh
           Command:

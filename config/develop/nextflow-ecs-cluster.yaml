@@ -13,7 +13,8 @@ sceptre_user_data:
     tower:
       auth:
         github:
-          allow-list: []
+          allow-list:
+            - tess.thyer@sagebionetworks.org
 stack_tags:
   Department: IBC
   Project: Infrastructure
