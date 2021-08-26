@@ -3,3 +3,6 @@
 
 # Ignore stack group used for local testing
 /config/test/
+
+# Ignore VS Code settings
+.vscode/settings.json
