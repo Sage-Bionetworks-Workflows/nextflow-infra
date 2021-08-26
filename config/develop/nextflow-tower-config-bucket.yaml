@@ -1,0 +1,15 @@
+# {% set stack_name = "nextflow-tower-config-bucket" %}
+template_path: nextflow-tower-config-bucket.yaml
+stack_name: {{ stack_name }}
+parameters:
+  BucketName: {{ stack_name }}
+  AdminArns:
+    - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
+    - arn:aws:iam::035458030717:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_Administrator_580e9f32ac55c4e7
+hooks:
+  after_launch:
+    - !cmd "aws s3 cp tower-config/ s3://{{ stack_name }}/ --recursive"
+stack_tags:
+  Department: IBC
+  Project: Infrastructure
+  OwnerEmail: nextflow-admins@sagebase.org

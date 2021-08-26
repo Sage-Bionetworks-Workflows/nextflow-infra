@@ -1,0 +1,5 @@
+tower:
+  auth:
+    github:
+      allow-list:
+        - tess.thyer@sagebionetworks.org
