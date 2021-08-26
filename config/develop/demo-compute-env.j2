@@ -9,7 +9,8 @@ parameters:
   TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
 sceptre_user_data:
   admin_role_ids:
-    {% for arn in stack_group_config.admin_role_arns %}
+    {% set arns = stack_group_config.admin_role_arns.split(',') %}
+    {% for arn in arns %}
     - !rcmd
         command: aws iam get-role --role-name {{ arn.split("/") | last() }} --output text --query Role.RoleId
     {% endfor %}

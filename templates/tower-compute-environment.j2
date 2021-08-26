@@ -5,21 +5,21 @@ Description: >-
 
 Parameters:
   ReadWriteAccessArns:
-    Type: List<String>
+    Type: CommaDelimitedList
     Default: ""
     Description: >-
       (Optional) List of IAM users and roles (strings) who
       should have read- and write-access to the S3 bucket
 
   ReadOnlyAccessArns:
-    Type: List<String>
+    Type: CommaDelimitedList
     Default: ""
     Description: >-
       (Optional) List of IAM users and roles (strings)
       who should only have read-access to the S3 bucket
 
   AdminRoleArns:
-    Type: List<String>
+    Type: CommaDelimitedList
     Description: >-
       List of IAM role ARNs (strings) with administrator
       access and should retain access to restricted resources
@@ -81,7 +81,6 @@ Resources:
 
   EncryptionKeyStack:
     Type: AWS::CloudFormation::Stack
-    DependsOn: ReadWriteAccessRole
     Properties:
       TemplateURL: !Sub ${TemplateRootUrl}/aws-infra/v0.2.19/KMS/kms-key.yaml
       TimeoutInMinutes: 5
@@ -113,10 +112,6 @@ Resources:
     # TODO: Look into intelligent tiering and lifecycle configuration
     Properties:
       BucketName: !Sub "${AWS::StackName}-bucket"
-      AccessControl: Private
-      OwnershipControls:
-        Rules:
-          - ObjectOwnership: BucketOwnerPreferred
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - BucketKeyEnabled: true
