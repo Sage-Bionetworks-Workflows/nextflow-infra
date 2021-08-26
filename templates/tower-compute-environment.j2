@@ -18,10 +18,10 @@ Parameters:
       (Optional) List of IAM users and roles (strings)
       who should only have read-access to the S3 bucket
 
-  AdminArns:
+  AdminRoleArns:
     Type: List<String>
     Description: >-
-      List of IAM users and roles (strings) with administrator
+      List of IAM role ARNs (strings) with administrator
       access and should retain access to restricted resources
       (e.g., private S3 bucket, KMS key, secrets)
 
@@ -81,6 +81,7 @@ Resources:
 
   EncryptionKeyStack:
     Type: AWS::CloudFormation::Stack
+    DependsOn: ReadWriteAccessRole
     Properties:
       TemplateURL: !Sub ${TemplateRootUrl}/aws-infra/v0.2.19/KMS/kms-key.yaml
       TimeoutInMinutes: 5
@@ -91,13 +92,13 @@ Resources:
           - - !Sub "arn:aws:iam::${AWS::AccountId}:root"
             - !Join
               - ","
-              - !Ref AdminArns
+              - !Ref AdminRoleArns
         UserPrincipalArns: !Join
           - ","
           - - !Sub "arn:aws:iam::${AWS::AccountId}:root"
             - !Join
               - ","
-              - !Ref AdminArns
+              - !Ref AdminRoleArns
             - !If
               - HasReadWriteAccessArns
               - !GetAtt ReadWriteAccessRole.Arn
@@ -107,13 +108,78 @@ Resources:
               - !GetAtt ReadOnlyAccessRole.Arn
               - !Ref AWS::NoValue
 
-  # TODO: Add inline policy for write-access to S3 bucket
+  Bucket:
+    Type: AWS::S3::Bucket
+    # TODO: Look into intelligent tiering and lifecycle configuration
+    Properties:
+      BucketName: !Sub "${AWS::StackName}-bucket"
+      AccessControl: Private
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - BucketKeyEnabled: true
+            ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+              KMSMasterKeyID: !GetAtt EncryptionKeyStack.Outputs.Key
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref Bucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: RestrictAccessToAdminsAndStackUsers
+            Effect: Deny
+            Principal: "*"
+            Condition:
+              StringNotLike:
+                aws:userId:
+                  - !Sub "${AWS::AccountId}"
+                  {% for role_id in sceptre_user_data.admin_role_ids -%}
+                  - "{{ role_id | trim() }}:*"
+                  {% endfor -%}
+                  - !If
+                    - HasReadWriteAccessArns
+                    - !Sub "${ReadWriteAccessRole.RoleId}:*"
+                    - !Ref AWS::NoValue
+                  - !If
+                    - HasReadOnlyAccessArns
+                    - !Sub "${ReadOnlyAccessRole.RoleId}:*"
+                    - !Ref AWS::NoValue
+            # TODO: Confirm that these are the actions to allow
+            NotAction:
+              - "s3:Delete*"
+              - "s3:GetBucket*"
+              - "s3:ListBucket*"
+              - "s3:PutBucket*"
+            Resource:
+              - !Sub "arn:aws:s3:::${Bucket}"
+              - !Sub "arn:aws:s3:::${Bucket}/*"
+
   TowerForgeServiceUser:
     Type: AWS::IAM::User
     Properties:
       ManagedPolicyArns:
         - !Ref TowerForgePolicyArn
         - !Ref TowerLaunchPolicyArn
+      Policies:
+        - PolicyName: TowerForgeServiceUserS3Access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              Effect: Allow
+              Action:
+                - "s3:ListBucket"
+                - "s3:GetObject"
+                - "s3:PutObject"
+                - "s3:PutObjectTagging"
+                - "s3:DeleteObject"
+              Resource:
+                - !Sub "arn:aws:s3:::${Bucket}"
+                - !Sub "arn:aws:s3:::${Bucket}/*"
 
   TowerForgeServiceUserAccessKey:
     Type: AWS::IAM::AccessKey
@@ -149,7 +215,8 @@ Resources:
             Action:
               - "kms:Decrypt"
             # TODO: Use ARN once KMS key template exposes it as an output
-            Resource: "*"
+            Resource:
+              - !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${EncryptionKeyStack.Outputs.Key}"
       Roles:
         - !If
           - HasReadWriteAccessArns
@@ -159,8 +226,6 @@ Resources:
           - HasReadOnlyAccessArns
           - !Ref ReadOnlyAccessRole
           - !Ref AWS::NoValue
-
-# TODO: Integrate S3 bucket template
 
 Outputs:
   ReadWriteAccessRole:
@@ -186,6 +251,16 @@ Outputs:
     Condition: HasReadOnlyAccessArns
     Export:
       Name: !Sub "${AWS::Region}-${AWS::StackName}-ReadOnlyAccessRoleArn"
+
+  Bucket:
+    Value: !Ref Bucket
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-Bucket"
+
+  BucketArn:
+    Value: !GetAtt Bucket.Arn
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-BucketArn"
 
   TowerForgeServiceUser:
     Value: !Ref TowerForgeServiceUser

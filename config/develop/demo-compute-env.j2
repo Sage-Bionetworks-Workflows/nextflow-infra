@@ -1,0 +1,19 @@
+template_path: tower-compute-environment.j2
+stack_name: demo-compute-env
+parameters:
+  ReadWriteAccessArns:
+    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/bruno.grande@sagebase.org
+  AdminRoleArns: {{stack_group_config.admin_role_arns}}
+  TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
+  TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
+  TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
+sceptre_user_data:
+  admin_role_ids:
+    {% for arn in stack_group_config.admin_role_arns %}
+    - !rcmd
+        command: aws iam get-role --role-name {{ arn.split("/") | last() }} --output text --query Role.RoleId
+    {% endfor %}
+stack_tags:
+  Department: IBC
+  Project: Infrastructure
+  OwnerEmail: nextflow-admins@sagebase.org
