@@ -1,0 +1,214 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Stack for provisioning the AWS resources needed for
+  configuring compute environments in Nextflow Tower.
+
+Parameters:
+  ReadWriteAccessArns:
+    Type: List<String>
+    Default: ""
+    Description: >-
+      (Optional) List of IAM users and roles (strings) who
+      should have read- and write-access to the S3 bucket
+
+  ReadOnlyAccessArns:
+    Type: List<String>
+    Default: ""
+    Description: >-
+      (Optional) List of IAM users and roles (strings)
+      who should only have read-access to the S3 bucket
+
+  AdminArns:
+    Type: List<String>
+    Description: >-
+      List of IAM users and roles (strings) with administrator
+      access and should retain access to restricted resources
+      (e.g., private S3 bucket, KMS key, secrets)
+
+  TowerForgePolicyArn:
+    Type: String
+    Description: ARN for Tower Forge IAM policy
+
+  TowerLaunchPolicyArn:
+    Type: String
+    Description: ARN for Tower Launch IAM policy
+
+  TemplateRootUrl:
+    Type: String
+    Description: URL of S3 bucket where templates are deployed
+    ConstraintDescription: Must be a valid S3 HTTP URL
+
+Conditions:
+  HasReadWriteAccessArns:
+    !Not [!Equals [!Join [",", !Ref ReadWriteAccessArns], ""]]
+  HasReadOnlyAccessArns:
+    !Not [!Equals [!Join [",", !Ref ReadOnlyAccessArns], ""]]
+  HasAnyAccessArns:
+    !Or [!Condition HasReadWriteAccessArns, !Condition HasReadOnlyAccessArns]
+
+Resources:
+  ReadWriteAccessRole:
+    Type: AWS::IAM::Role
+    Condition: HasReadWriteAccessArns
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-ReadWriteAccessRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS: !Ref ReadWriteAccessArns
+            Action:
+              - "sts:AssumeRole"
+
+  ReadOnlyAccessRole:
+    Type: AWS::IAM::Role
+    Condition: HasReadOnlyAccessArns
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-ReadOnlyAccessRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS: !Ref ReadOnlyAccessArns
+            Action:
+              - "sts:AssumeRole"
+
+  EncryptionKeyStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub ${TemplateRootUrl}/aws-infra/v0.2.19/KMS/kms-key.yaml
+      TimeoutInMinutes: 5
+      Parameters:
+        AliasName: !Sub "alias/${AWS::StackName}-EncryptionKey"
+        AdminPrincipalArns: !Join
+          - ","
+          - - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            - !Join
+              - ","
+              - !Ref AdminArns
+        UserPrincipalArns: !Join
+          - ","
+          - - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            - !Join
+              - ","
+              - !Ref AdminArns
+            - !If
+              - HasReadWriteAccessArns
+              - !GetAtt ReadWriteAccessRole.Arn
+              - !Ref AWS::NoValue
+            - !If
+              - HasReadOnlyAccessArns
+              - !GetAtt ReadOnlyAccessRole.Arn
+              - !Ref AWS::NoValue
+
+  # TODO: Add inline policy for write-access to S3 bucket
+  TowerForgeServiceUser:
+    Type: AWS::IAM::User
+    Properties:
+      ManagedPolicyArns:
+        - !Ref TowerForgePolicyArn
+        - !Ref TowerLaunchPolicyArn
+
+  TowerForgeServiceUserAccessKey:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref TowerForgeServiceUser
+
+  TowerForgeServiceUserAccessKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub "${AWS::StackName}-Credentials"
+      Description: !Sub "Tower Forge Credentials for Compute Environment ${AWS::StackName}"
+      SecretString: !Sub >-
+        {
+          "access_key_id":      "${TowerForgeServiceUserAccessKey}",
+          "secret_access_key":  "${TowerForgeServiceUserAccessKey.SecretAccessKey}"
+        }
+      KmsKeyId: !GetAtt EncryptionKeyStack.Outputs.Key
+
+  SharedAccessPolicy:
+    Type: AWS::IAM::Policy
+    Condition: HasAnyAccessArns
+    Properties:
+      PolicyName: !Sub "${AWS::StackName}-SharedAccessPolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "secretsmanager:GetSecretValue"
+            Resource:
+              - !Ref TowerForgeServiceUserAccessKeySecret
+          - Effect: Allow
+            Action:
+              - "kms:Decrypt"
+            # TODO: Use ARN once KMS key template exposes it as an output
+            Resource: "*"
+      Roles:
+        - !If
+          - HasReadWriteAccessArns
+          - !Ref ReadWriteAccessRole
+          - !Ref AWS::NoValue
+        - !If
+          - HasReadOnlyAccessArns
+          - !Ref ReadOnlyAccessRole
+          - !Ref AWS::NoValue
+
+# TODO: Integrate S3 bucket template
+
+Outputs:
+  ReadWriteAccessRole:
+    Value: !Ref ReadWriteAccessRole
+    Condition: HasReadWriteAccessArns
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-ReadWriteAccessRole"
+
+  ReadWriteAccessRoleArn:
+    Value: !GetAtt ReadWriteAccessRole.Arn
+    Condition: HasReadWriteAccessArns
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-ReadWriteAccessRoleArn"
+
+  ReadOnlyAccessRole:
+    Value: !Ref ReadOnlyAccessRole
+    Condition: HasReadOnlyAccessArns
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-ReadOnlyAccessRole"
+
+  ReadOnlyAccessRoleArn:
+    Value: !GetAtt ReadOnlyAccessRole.Arn
+    Condition: HasReadOnlyAccessArns
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-ReadOnlyAccessRoleArn"
+
+  TowerForgeServiceUser:
+    Value: !Ref TowerForgeServiceUser
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceUser"
+
+  TowerForgeServiceUserArn:
+    Value: !GetAtt TowerForgeServiceUser.Arn
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceUserArn"
+
+  TowerForgeServiceUserAccessKeySecret:
+    Value: !Sub "${AWS::StackName}-Credentials"
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceUserAccessKeySecretName"
+
+  TowerForgeServiceUserAccessKeySecretArn:
+    Value: !Ref TowerForgeServiceUserAccessKeySecret
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceUserAccessKeySecretArn"
+
+  SharedAccessPolicy:
+    Value: !Ref SharedAccessPolicy
+    Condition: HasAnyAccessArns
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-SharedAccessPolicy"
