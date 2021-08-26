@@ -6,7 +6,7 @@ dependencies:
 parameters:
   EcsSecurityGroupId: !stack_output_external nextflow-ecs-security-group::SecurityGroupId
   SubnetIds:
-    - !stack_output_external nextflow-vpc::PublicSubnet
+    - !stack_output_external nextflow-vpc::PrivateSubnet
 sceptre_user_data:
   TowerConfigFileContents: |
     tower:
