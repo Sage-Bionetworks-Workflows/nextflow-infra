@@ -5,9 +5,7 @@ dependencies:
   - develop/nextflow-ecs-security-group.yaml
 parameters:
   EcsSecurityGroupId: !stack_output_external nextflow-ecs-security-group::SecurityGroupId
-  SubnetIds:
-    - !stack_output_external nextflow-vpc::PrivateSubnet
-  EfsFileSystemId: !stack_output_external nextflow-efs-file-system::FileSystemId
+  SubnetId: !stack_output_external nextflow-vpc::PrivateSubnet
 stack_tags:
   Department: IBC
   Project: Infrastructure

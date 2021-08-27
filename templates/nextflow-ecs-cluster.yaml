@@ -25,11 +25,9 @@ Parameters:
     Type: AWS::EC2::SecurityGroup::Id
     Description: Security group ID for ECS cluster to grant database access
 
-  SubnetIds:
-    Type: CommaDelimitedList
-    Description: >
-      Specifies the Comma separated list of existing VPC Subnet
-      Ids where ECS instances will run.
+  SubnetId:
+    Type: String
+    Description: The VPC subnet where ECS instances will run.
 
   AutoscalingGroupMaxSize:
     Type: Number
@@ -59,10 +57,6 @@ Parameters:
     Type: String
     Description: Optional - Specifies the device mapping for the root EBS volume.
     Default: '/dev/xvda'
-
-  EfsFileSystemId:
-    Type: String
-    Description: The ID of the EFS file system to mount as a volume
 
 Resources:
 
@@ -136,17 +130,13 @@ Resources:
               ECS_IMAGE_PULL_BEHAVIOR=prefer-cached
             append: true
 
-          runcmd:
-            - mkdir -p /mnt/efs
-            - echo ${EfsFileSystemId}:/ /mnt/efs efs tls,_netdev >> /etc/fstab
-            - mount -a -t efs defaults
-
           --==BOUNDARY==--
 
   EcsAutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      VPCZoneIdentifier: !Ref SubnetIds
+      VPCZoneIdentifier:
+        - !Ref SubnetId
       LaunchConfigurationName: !Ref EcsLaunchConfiguration
       MinSize: '0'
       MaxSize: !Ref AutoscalingGroupMaxSize
@@ -173,3 +163,8 @@ Outputs:
     Value: !Ref EcsAutoScalingGroup
     Export:
       Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsAutoScalingGroupName'
+
+  EcsAutoScalingGroupSubnetId:
+    Value: !Ref SubnetId
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsAutoScalingGroupSubnetId'
