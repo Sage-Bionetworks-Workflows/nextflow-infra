@@ -52,18 +52,20 @@ Parameters:
       deleted from S3 and the LifecycleDataStorageClass
     Default: 365000
 
-  AdminRoleArns:
+  AdminArns:
     Type: List<String>
     Description: >-
-      List of IAM role ARNs (strings) with administrator
+      List of IAM user and role ARNs (strings) with administrator
       access and should retain access to restricted resources
       (e.g., private S3 bucket, KMS key, secrets).
-      You can provide role ARNs or assumed-role ARNs.
+      You can provide role ARNs or assumed-role ARNs, although
+      role ARNs are recommended such that anyone with access to
+      the admin role retains access to restricted resources. 
 
-  AdminRoleIds:
+  AdminIds:
     Type: List<String>
     Description: >-
-      List of IAM role IDs (strings) with administrator
+      List of IAM user and role IDs (strings) with administrator
       access and should retain access to restricted resources
       (e.g., private S3 bucket, KMS key, secrets). The role ID
       can be obtained in one of two ways.
@@ -132,7 +134,7 @@ Resources:
                         - !Ref ReadWriteAccessArns
                       - !Join
                         - "|"
-                        - !Ref AdminRoleArns
+                        - !Ref AdminArns
             Action:
               - "sts:AssumeRole"
 
@@ -158,7 +160,7 @@ Resources:
                         - !Ref ReadOnlyAccessArns
                       - !Join
                         - "|"
-                        - !Ref AdminRoleArns
+                        - !Ref AdminArns
             Action:
               - "sts:AssumeRole"
 
@@ -174,13 +176,13 @@ Resources:
           - - !Sub "arn:aws:iam::${AWS::AccountId}:root"
             - !Join
               - ","
-              - !Ref AdminRoleArns
+              - !Ref AdminArns
         UserPrincipalArns: !Join
           - ","
           - - !Sub "arn:aws:iam::${AWS::AccountId}:root"
             - !Join
               - ","
-              - !Ref AdminRoleArns
+              - !Ref AdminArns
             - !If
               - HasReadWriteAccessArns
               - !GetAtt ReadWriteAccessRole.Arn
@@ -232,7 +234,7 @@ Resources:
                           - "|"
                           - - !Join
                               - "|"
-                              - !Ref AdminRoleIds
+                              - !Ref AdminIds
                             - !If
                               - HasReadWriteAccessArns
                               - !GetAtt ReadWriteAccessRole.RoleId
