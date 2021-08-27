@@ -192,7 +192,6 @@ Resources:
 
   Bucket:
     Type: AWS::S3::Bucket
-    # TODO: Look into intelligent tiering and lifecycle configuration
     Properties:
       BucketName: !Sub "${AWS::Region}-${AWS::StackName}-tower-bucket"
       BucketEncryption:
