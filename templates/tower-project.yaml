@@ -19,7 +19,7 @@ Parameters:
       (Optional) List of IAM users and roles (strings)
       who should only have read-access to the S3 bucket.
       You can provide role ARNs or assumed-role ARNs.
-  
+
   EnableDataLifeCycle:
     Type: String
     Description: Enabled to enable bucket lifecycle rule, default is Disabled
@@ -48,7 +48,7 @@ Parameters:
   LifecycleDataExpiration:
     Type: Number
     Description: >-
-      Number of days (from creation) when objects are 
+      Number of days (from creation) when objects are
       deleted from S3 and the LifecycleDataStorageClass
     Default: 365000
 
@@ -66,7 +66,7 @@ Parameters:
       List of IAM role IDs (strings) with administrator
       access and should retain access to restricted resources
       (e.g., private S3 bucket, KMS key, secrets). The role ID
-      can be obtained in one of two ways. 
+      can be obtained in one of two ways.
 
       1) You can assume the role in question and run the following
       command, and the role ID is the substring before the colon.
@@ -75,15 +75,15 @@ Parameters:
 
       2) With the appropriate IAM permissions (with an admin role),
       you can run the following command, where `<role_name>` corresponds
-      to the role name (see examples below to extract the role name). 
+      to the role name (see examples below to extract the role name).
 
       aws iam get-role --role-name <role_name> --output text --query Role.RoleId
 
       For example, if the role ARN is
       arn:aws:iam::456789012345:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_Viewer_7e6c15a6e90908df
-      the role name is AWSReservedSSO_Viewer_7e6c15a6e90908df. 
-      If you have the ARN for an assumed role (distinguished by the 
-      `arn:aws:sts::` prefix and `assumed-role/` substring), you need 
+      the role name is AWSReservedSSO_Viewer_7e6c15a6e90908df.
+      If you have the ARN for an assumed role (distinguished by the
+      `arn:aws:sts::` prefix and `assumed-role/` substring), you need
       to exclude the session name at the end of the ARN. For instance,
       the following assumed-role ARN has the same role name as above:
       arn:aws:sts::035458030717:assumed-role/AWSReservedSSO_Viewer_fd80909e6a51c6e7/bruno.grande@sagebase.org.
@@ -123,7 +123,7 @@ Resources:
           - Effect: "Allow"
             Principal:
               AWS:
-                !Split 
+                !Split
                   - "|"
                   - !Join
                     - "|"
@@ -149,7 +149,7 @@ Resources:
           - Effect: "Allow"
             Principal:
               AWS:
-                !Split 
+                !Split
                   - "|"
                   - !Join
                     - "|"
@@ -230,7 +230,7 @@ Resources:
                         - "|"
                         - !Join
                           - "|"
-                          - - !Join 
+                          - - !Join
                               - "|"
                               - !Ref AdminRoleIds
                             - !If

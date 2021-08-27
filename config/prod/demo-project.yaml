@@ -6,10 +6,10 @@ parameters:
     - arn:aws:sts::035458030717:assumed-role/AWSReservedSSO_Viewer_fd80909e6a51c6e7/bruno.grande@sagebase.org
   ReadOnlyAccessArns:
     - arn:aws:sts::035458030717:assumed-role/AWSReservedSSO_Viewer_fd80909e6a51c6e7/tess.thyer@sagebase.org
-  AdminRoleArns: 
+  AdminRoleArns:
     - {{stack_group_config.sso_admin_role.arn}}
     - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
-  AdminRoleIds: 
+  AdminRoleIds:
     - {{stack_group_config.sso_admin_role.roleid}}
     - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleId
   TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'

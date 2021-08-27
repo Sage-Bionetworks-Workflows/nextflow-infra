@@ -1,5 +1,5 @@
-sso_admin_role: 
+sso_admin_role:
   arn: arn:aws:iam::035458030717:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_Administrator_580e9f32ac55c4e7
-  # See description for `AdminRoleIds` parameter in the `tower-compute-environment.yaml` 
+  # See description for `AdminRoleIds` parameter in the `tower-compute-environment.yaml`
   # template for instructions on how to get role ID from a role ARN
   roleid: AROAQQQLWTR6WYBXPF23K
