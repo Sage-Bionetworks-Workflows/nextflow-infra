@@ -99,6 +99,7 @@ Resources:
         BucketAccessRoleArn: !GetAtt S3BucketReaderRole.Arn
 
   EfsLocation:
+    DependsOn: MountTarget
     Type: AWS::DataSync::LocationEFS
     Properties:
       Ec2Config:
@@ -107,11 +108,34 @@ Resources:
         SubnetArn: !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${SubnetId}'
       EfsFilesystemArn: !GetAtt FileSystem.Arn
 
+  DataSyncTaskLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: '/aws/datasync/task/tower/config'
+      RetentionInDays: 30
+
   DataSyncTask:
     Type: AWS::DataSync::Task
     Properties:
       DestinationLocationArn: !Ref EfsLocation
       SourceLocationArn: !Ref S3Location
+      Schedule:
+        ScheduleExpression: 'rate(1 hour)'
+      CloudWatchLogGroupArn: !GetAtt DataSyncTaskLogGroup.Arn
+      Options:
+        LogLevel: TRANSFER
+        TransferMode: ALL
+        OverwriteMode: ALWAYS
+        PosixPermissions: PRESERVE
+        Gid: INT_VALUE
+        Uid: INT_VALUE
+
+  DataSyncCloudwatchPolicy:
+    Type: AWS::Logs::ResourcePolicy
+    Properties:
+      PolicyName: DataSyncCloudwatchPolicy
+      PolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"DataSyncLogsToCloudWatchLogs\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"datasync.amazonaws.com\"},\"Action\":[\"logs:PutLogEvents\",\"logs:CreateLogStream\"],\"Resource\":\"*\"}]}"
+
 
 Outputs:
 
