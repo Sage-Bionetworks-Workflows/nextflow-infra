@@ -5,25 +5,93 @@ Description: >-
 
 Parameters:
   ReadWriteAccessArns:
-    Type: CommaDelimitedList
+    Type: List<String>
     Default: ""
     Description: >-
       (Optional) List of IAM users and roles (strings) who
-      should have read- and write-access to the S3 bucket
+      should have read- and write-access to the S3 bucket.
+      You can provide role ARNs or assumed-role ARNs.
 
   ReadOnlyAccessArns:
-    Type: CommaDelimitedList
+    Type: List<String>
     Default: ""
     Description: >-
       (Optional) List of IAM users and roles (strings)
-      who should only have read-access to the S3 bucket
+      who should only have read-access to the S3 bucket.
+      You can provide role ARNs or assumed-role ARNs.
+  
+  EnableDataLifeCycle:
+    Type: String
+    Description: Enabled to enable bucket lifecycle rule, default is Disabled
+    AllowedValues:
+      - Enabled
+      - Disabled
+    Default: Disabled
+
+  LifecycleDataTransition:
+    Type: Number
+    Description: >-
+      Number of days until S3 objects are moved to LifecycleDataStorageClass
+    Default: 30
+
+  LifecycleDataStorageClass:
+    Type: String
+    Description: S3 bucket objects will transition into this storage class
+    AllowedValues:
+      - DEEP_ARCHIVE
+      - INTELLIGENT_TIERING
+      - STANDARD_IA
+      - ONEZONE_IA
+      - GLACIER
+    Default: GLACIER
+
+  LifecycleDataExpiration:
+    Type: Number
+    Description: >-
+      Number of days (from creation) when objects are 
+      deleted from S3 and the LifecycleDataStorageClass
+    Default: 365000
 
   AdminRoleArns:
-    Type: CommaDelimitedList
+    Type: List<String>
     Description: >-
       List of IAM role ARNs (strings) with administrator
       access and should retain access to restricted resources
-      (e.g., private S3 bucket, KMS key, secrets)
+      (e.g., private S3 bucket, KMS key, secrets).
+      You can provide role ARNs or assumed-role ARNs.
+
+  AdminRoleIds:
+    Type: List<String>
+    Description: >-
+      List of IAM role IDs (strings) with administrator
+      access and should retain access to restricted resources
+      (e.g., private S3 bucket, KMS key, secrets). The role ID
+      can be obtained in one of two ways. 
+
+      1) You can assume the role in question and run the following
+      command, and the role ID is the substring before the colon.
+
+      aws sts get-caller-identity --output text --query UserId
+
+      2) With the appropriate IAM permissions (with an admin role),
+      you can run the following command, where `<role_name>` corresponds
+      to the role name (see examples below to extract the role name). 
+
+      aws iam get-role --role-name <role_name> --output text --query Role.RoleId
+
+      For example, if the role ARN is
+      arn:aws:iam::456789012345:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_Viewer_7e6c15a6e90908df
+      the role name is AWSReservedSSO_Viewer_7e6c15a6e90908df. 
+      If you have the ARN for an assumed role (distinguished by the 
+      `arn:aws:sts::` prefix and `assumed-role/` substring), you need 
+      to exclude the session name at the end of the ARN. For instance,
+      the following assumed-role ARN has the same role name as above:
+      arn:aws:sts::035458030717:assumed-role/AWSReservedSSO_Viewer_fd80909e6a51c6e7/bruno.grande@sagebase.org.
+
+  TemplateRootUrl:
+    Type: String
+    Description: URL of S3 bucket where templates are deployed
+    ConstraintDescription: Must be a valid S3 HTTP URL
 
   TowerForgePolicyArn:
     Type: String
@@ -32,11 +100,6 @@ Parameters:
   TowerLaunchPolicyArn:
     Type: String
     Description: ARN for Tower Launch IAM policy
-
-  TemplateRootUrl:
-    Type: String
-    Description: URL of S3 bucket where templates are deployed
-    ConstraintDescription: Must be a valid S3 HTTP URL
 
 Conditions:
   HasReadWriteAccessArns:
@@ -51,7 +114,7 @@ Resources:
     Type: AWS::IAM::Role
     Condition: HasReadWriteAccessArns
     Properties:
-      RoleName: !Sub "${AWS::StackName}-ReadWriteAccessRole"
+      RoleName: !Sub "${AWS::Region}-${AWS::StackName}-ReadWriteAccessRole"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
       AssumeRolePolicyDocument:
@@ -59,7 +122,17 @@ Resources:
         Statement:
           - Effect: "Allow"
             Principal:
-              AWS: !Ref ReadWriteAccessArns
+              AWS:
+                !Split 
+                  - "|"
+                  - !Join
+                    - "|"
+                    - - !Join
+                        - "|"
+                        - !Ref ReadWriteAccessArns
+                      - !Join
+                        - "|"
+                        - !Ref AdminRoleArns
             Action:
               - "sts:AssumeRole"
 
@@ -67,7 +140,7 @@ Resources:
     Type: AWS::IAM::Role
     Condition: HasReadOnlyAccessArns
     Properties:
-      RoleName: !Sub "${AWS::StackName}-ReadOnlyAccessRole"
+      RoleName: !Sub "${AWS::Region}-${AWS::StackName}-ReadOnlyAccessRole"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
       AssumeRolePolicyDocument:
@@ -75,7 +148,17 @@ Resources:
         Statement:
           - Effect: "Allow"
             Principal:
-              AWS: !Ref ReadOnlyAccessArns
+              AWS:
+                !Split 
+                  - "|"
+                  - !Join
+                    - "|"
+                    - - !Join
+                        - "|"
+                        - !Ref ReadOnlyAccessArns
+                      - !Join
+                        - "|"
+                        - !Ref AdminRoleArns
             Action:
               - "sts:AssumeRole"
 
@@ -85,7 +168,7 @@ Resources:
       TemplateURL: !Sub ${TemplateRootUrl}/aws-infra/v0.3.1/KMS/kms-key.yaml
       TimeoutInMinutes: 5
       Parameters:
-        AliasName: !Sub "alias/${AWS::StackName}-EncryptionKey"
+        AliasName: !Sub "alias/${AWS::Region}-${AWS::StackName}-EncryptionKey"
         AdminPrincipalArns: !Join
           - ","
           - - !Sub "arn:aws:iam::${AWS::AccountId}:root"
@@ -111,13 +194,21 @@ Resources:
     Type: AWS::S3::Bucket
     # TODO: Look into intelligent tiering and lifecycle configuration
     Properties:
-      BucketName: !Sub "${AWS::StackName}-bucket"
+      BucketName: !Sub "${AWS::Region}-${AWS::StackName}-tower-bucket"
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - BucketKeyEnabled: true
             ServerSideEncryptionByDefault:
               SSEAlgorithm: aws:kms
               KMSMasterKeyID: !GetAtt EncryptionKeyStack.Outputs.Key
+      LifecycleConfiguration:
+        Rules:
+        - Id: DataLifecycleRule
+          Status: !Ref EnableDataLifeCycle
+          ExpirationInDays: !Ref LifecycleDataExpiration
+          Transitions:
+            - TransitionInDays: !Ref LifecycleDataTransition
+              StorageClass: !Ref LifecycleDataStorageClass
 
   BucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -131,25 +222,28 @@ Resources:
             Principal: "*"
             Condition:
               StringNotLike:
-                aws:userId:
-                  - !Sub "${AWS::AccountId}"
-                  {% for role_id in sceptre_user_data.admin_role_ids -%}
-                  - "{{ role_id | trim() }}:*"
-                  {% endfor -%}
-                  - !If
-                    - HasReadWriteAccessArns
-                    - !Sub "${ReadWriteAccessRole.RoleId}:*"
-                    - !Ref AWS::NoValue
-                  - !If
-                    - HasReadOnlyAccessArns
-                    - !Sub "${ReadOnlyAccessRole.RoleId}:*"
-                    - !Ref AWS::NoValue
-            # TODO: Confirm that these are the actions to allow
-            NotAction:
-              - "s3:Delete*"
-              - "s3:GetBucket*"
-              - "s3:ListBucket*"
-              - "s3:PutBucket*"
+                aws:userid:
+                  !Split
+                    - "|"
+                    - !Join
+                      - ":*|"
+                      - !Split
+                        - "|"
+                        - !Join
+                          - "|"
+                          - - !Join 
+                              - "|"
+                              - !Ref AdminRoleIds
+                            - !If
+                              - HasReadWriteAccessArns
+                              - !GetAtt ReadWriteAccessRole.RoleId
+                              - !Ref AWS::NoValue
+                            - !If
+                              - HasReadOnlyAccessArns
+                              - !GetAtt ReadOnlyAccessRole.RoleId
+                              - !Ref AWS::NoValue
+                            - !Ref AWS::AccountId
+            Action: "*"
             Resource:
               - !Sub "arn:aws:s3:::${Bucket}"
               - !Sub "arn:aws:s3:::${Bucket}/*"
@@ -184,7 +278,7 @@ Resources:
   TowerForgeServiceUserAccessKeySecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !Sub "${AWS::StackName}-Credentials"
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-Credentials"
       Description: !Sub "Tower Forge Credentials for Compute Environment ${AWS::StackName}"
       SecretString: !Sub >-
         {
@@ -197,7 +291,7 @@ Resources:
     Type: AWS::IAM::Policy
     Condition: HasAnyAccessArns
     Properties:
-      PolicyName: !Sub "${AWS::StackName}-SharedAccessPolicy"
+      PolicyName: !Sub "${AWS::Region}-${AWS::StackName}-SharedAccessPolicy"
       PolicyDocument:
         Version: "2012-10-17"
         Statement:

@@ -1,0 +1,22 @@
+template_path: tower-project.yaml
+stack_name: demo-project
+
+parameters:
+  ReadWriteAccessArns:
+    - arn:aws:sts::035458030717:assumed-role/AWSReservedSSO_Viewer_fd80909e6a51c6e7/bruno.grande@sagebase.org
+  ReadOnlyAccessArns:
+    - arn:aws:sts::035458030717:assumed-role/AWSReservedSSO_Viewer_fd80909e6a51c6e7/tess.thyer@sagebase.org
+  AdminRoleArns: 
+    - {{stack_group_config.sso_admin_role.arn}}
+    - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
+  AdminRoleIds: 
+    - {{stack_group_config.sso_admin_role.roleid}}
+    - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleId
+  TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
+  TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
+  TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
+
+stack_tags:
+  Department: IBC
+  Project: Infrastructure
+  OwnerEmail: nextflow-admins@sagebase.org
