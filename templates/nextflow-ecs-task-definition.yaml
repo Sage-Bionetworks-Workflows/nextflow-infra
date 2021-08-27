@@ -105,6 +105,12 @@ Parameters:
   EfsFileSystemId:
     Type: String
     Description: The ID of the EFS file system to mount as a volume
+  EfsVolumeMountPath:
+    Type: String
+    Description: Path where the EFS volume container tower configuration is mounted
+  TowerConfigFileName:
+    Type: String
+    Description: Name of the tower config YAML file
 Resources:
   TowerTask:
     Type: AWS::ECS::TaskDefinition
@@ -112,8 +118,6 @@ Resources:
       NetworkMode: bridge
       Volumes:
         - Name: efs_volume
-          # Host:
-          #   SourcePath: '/opt/nextflow/tower.yml'
           EFSVolumeConfiguration:
             FilesystemId: !Ref EfsFileSystemId
       ContainerDefinitions:
@@ -179,9 +183,9 @@ Resources:
             - Name: TOWER_GITHUB_SECRET
               Value: !Ref TowerGithubSecret
             - Name: TOWER_CONFIG_FILE
-              Value: /efs/tower.yml
+              Value: !Sub '${EfsVolumeMountPath}/${TowerConfigFileName}'
           MountPoints:
-            - ContainerPath: '/efs'
+            - ContainerPath: !Ref EfsVolumeMountPath
               ReadOnly: true
               SourceVolume: efs_volume
         - Name: !Ref FrontendContainerName
@@ -253,14 +257,14 @@ Resources:
             - Name: TOWER_GITHUB_SECRET
               Value: !Ref TowerGithubSecret
             - Name: TOWER_CONFIG_FILE
-              Value: /efs/tower.yml
+              Value: !Sub '${EfsVolumeMountPath}/${TowerConfigFileName}'
           EntryPoint:
             - /bin/sh
           Command:
             - -c
             - /tower.sh
           MountPoints:
-            - ContainerPath: '/efs'
+            - ContainerPath: !Ref EfsVolumeMountPath
               ReadOnly: true
               SourceVolume: efs_volume
 
