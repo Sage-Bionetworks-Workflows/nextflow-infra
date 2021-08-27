@@ -8,13 +8,6 @@ parameters:
   SubnetIds:
     - !stack_output_external nextflow-vpc::PrivateSubnet
   EfsFileSystemId: !stack_output_external nextflow-efs-file-system::FileSystemId
-sceptre_user_data:
-  TowerConfigFileContents: |
-    tower:
-      auth:
-        github:
-          allow-list:
-            - tess.thyer@sagebionetworks.org
 stack_tags:
   Department: IBC
   Project: Infrastructure
