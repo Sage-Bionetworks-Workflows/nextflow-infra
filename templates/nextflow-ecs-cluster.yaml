@@ -130,10 +130,6 @@ Resources:
           repo_upgrade: security
 
           write_files:
-          - path: /opt/nextflow/tower.yml
-            content: |
-              {{ sceptre_user_data.TowerConfigFileContents|indent(14) }}
-            permissions: '0755'
           - path: /etc/ecs/ecs.config
             content: |
               ECS_CLUSTER=${EcsClusterName}
@@ -144,7 +140,6 @@ Resources:
             - mkdir -p /mnt/efs
             - echo ${EfsFileSystemId}:/ /mnt/efs efs tls,_netdev >> /etc/fstab
             - mount -a -t efs defaults
-            - cp /opt/nextflow/tower.yml /mnt/efs/tower.yml
 
           --==BOUNDARY==--
 

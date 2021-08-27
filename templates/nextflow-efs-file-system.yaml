@@ -15,6 +15,10 @@ Parameters:
     Type: AWS::EC2::SecurityGroup::Id
     Description: Security group ID for ECS cluster to grant database access
 
+  NextflowTowerConfigBucketArn:
+    Type: String
+    Description: ARN of the S3 bucket where the tower config is stored
+
 Resources:
 
   FileSystem:
@@ -48,12 +52,66 @@ Resources:
         - !Ref SecurityGroup
       SubnetId: !Ref SubnetId
 
-  # AccessPoint:
-  #   Type: AWS::EFS::AccessPoint
-  #   Properties:
-  #     FileSystemId: !Ref FileSystem
-  #     RootDirectory:
-  #       Path: '/nf-tower'
+  S3BucketReaderRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: DataSyncAssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+              - datasync.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: BucketAllowances
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:GetBucketLocation'
+                  - 's3:ListBucket'
+                  - 's3: ListBucketMultipartUploads'
+                Resource: !Ref NextflowTowerConfigBucketArn
+        - PolicyName: ObjectAllowances
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+            - Effect: Allow
+              Action:
+                - 's3:AbortMultipartUpload'
+                - 's3:DeleteObject'
+                - 's3:GetObject'
+                - 's3:ListMultipartUploadParts'
+                - 's3:GetObjectTagging'
+                - 's3:PutObjectTagging'
+                - 's3:PutObject'
+              Resource: !Sub "${NextflowTowerConfigBucketArn}/*"
+
+  S3Location:
+    Type: AWS::DataSync::LocationS3
+    Properties:
+      S3BucketArn: !Ref NextflowTowerConfigBucketArn
+      S3Config:
+        BucketAccessRoleArn: !GetAtt S3BucketReaderRole.Arn
+
+  EfsLocation:
+    Type: AWS::DataSync::LocationEFS
+    Properties:
+      Ec2Config:
+        SecurityGroupArns:
+          - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/${EcsSecurityGroupId}'
+        SubnetArn: !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${SubnetId}'
+      EfsFilesystemArn: !GetAtt FileSystem.Arn
+
+  DataSyncTask:
+    Type: AWS::DataSync::Task
+    Properties:
+      DestinationLocationArn: !Ref EfsLocation
+      SourceLocationArn: !Ref S3Location
 
 Outputs:
 
