@@ -1,14 +1,11 @@
 template_path: tower-project.yaml
-stack_name: demo-project
+stack_name: example-project
 
 parameters:
   ReadWriteAccessArns:
     - arn:aws:sts::035458030717:assumed-role/AWSReservedSSO_Viewer_fd80909e6a51c6e7/bruno.grande@sagebase.org
   ReadOnlyAccessArns:
     - arn:aws:sts::035458030717:assumed-role/AWSReservedSSO_Viewer_fd80909e6a51c6e7/tess.thyer@sagebase.org
-  AdminArns:
-    - {{stack_group_config.sso_adm.arn}}
-    - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
   AdminIds:
     - {{stack_group_config.sso_admin_role.roleid}}
     - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleId

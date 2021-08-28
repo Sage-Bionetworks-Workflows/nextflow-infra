@@ -52,16 +52,6 @@ Parameters:
       deleted from S3 and the LifecycleDataStorageClass
     Default: 365000
 
-  AdminArns:
-    Type: List<String>
-    Description: >-
-      List of IAM user and role ARNs (strings) with administrator
-      access and should retain access to restricted resources
-      (e.g., private S3 bucket, KMS key, secrets).
-      You can provide role ARNs or assumed-role ARNs, although
-      role ARNs are recommended such that anyone with access to
-      the admin role retains access to restricted resources. 
-
   AdminIds:
     Type: List<String>
     Description: >-
@@ -116,7 +106,6 @@ Resources:
     Type: AWS::IAM::Role
     Condition: HasReadWriteAccessArns
     Properties:
-      RoleName: !Sub "${AWS::Region}-${AWS::StackName}-ReadWriteAccessRole"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
       AssumeRolePolicyDocument:
@@ -134,7 +123,7 @@ Resources:
                         - !Ref ReadWriteAccessArns
                       - !Join
                         - "|"
-                        - !Ref AdminArns
+                        - !Ref AdminIds
             Action:
               - "sts:AssumeRole"
 
@@ -142,7 +131,6 @@ Resources:
     Type: AWS::IAM::Role
     Condition: HasReadOnlyAccessArns
     Properties:
-      RoleName: !Sub "${AWS::Region}-${AWS::StackName}-ReadOnlyAccessRole"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
       AssumeRolePolicyDocument:
@@ -160,7 +148,7 @@ Resources:
                         - !Ref ReadOnlyAccessArns
                       - !Join
                         - "|"
-                        - !Ref AdminArns
+                        - !Ref AdminIds
             Action:
               - "sts:AssumeRole"
 
@@ -170,19 +158,19 @@ Resources:
       TemplateURL: !Sub ${TemplateRootUrl}/aws-infra/v0.3.1/KMS/kms-key.yaml
       TimeoutInMinutes: 5
       Parameters:
-        AliasName: !Sub "alias/${AWS::Region}-${AWS::StackName}-EncryptionKey"
+        AliasName: !Sub "alias/${AWS::StackName}-EncryptionKey"
         AdminPrincipalArns: !Join
           - ","
           - - !Sub "arn:aws:iam::${AWS::AccountId}:root"
             - !Join
               - ","
-              - !Ref AdminArns
+              - !Ref AdminIds
         UserPrincipalArns: !Join
           - ","
           - - !Sub "arn:aws:iam::${AWS::AccountId}:root"
             - !Join
               - ","
-              - !Ref AdminArns
+              - !Ref AdminIds
             - !If
               - HasReadWriteAccessArns
               - !GetAtt ReadWriteAccessRole.Arn
@@ -192,10 +180,9 @@ Resources:
               - !GetAtt ReadOnlyAccessRole.Arn
               - !Ref AWS::NoValue
 
-  Bucket:
+  TowerBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "${AWS::Region}-${AWS::StackName}-tower-bucket"
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - BucketKeyEnabled: true
@@ -211,10 +198,10 @@ Resources:
             - TransitionInDays: !Ref LifecycleDataTransition
               StorageClass: !Ref LifecycleDataStorageClass
 
-  BucketPolicy:
+  TowerBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
-      Bucket: !Ref Bucket
+      Bucket: !Ref TowerBucket
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -244,10 +231,14 @@ Resources:
                               - !GetAtt ReadOnlyAccessRole.RoleId
                               - !Ref AWS::NoValue
                             - !Ref AWS::AccountId
-            Action: "*"
+            NotAction:
+              - "s3:Delete*"
+              - "s3:GetBucket*"
+              - "s3:ListBucket*"
+              - "s3:PutBucket*"
             Resource:
-              - !Sub "arn:aws:s3:::${Bucket}"
-              - !Sub "arn:aws:s3:::${Bucket}/*"
+              - !Sub "arn:aws:s3:::${TowerBucket}"
+              - !Sub "arn:aws:s3:::${TowerBucket}/*"
 
   TowerForgeServiceUser:
     Type: AWS::IAM::User
@@ -268,8 +259,8 @@ Resources:
                 - "s3:PutObjectTagging"
                 - "s3:DeleteObject"
               Resource:
-                - !Sub "arn:aws:s3:::${Bucket}"
-                - !Sub "arn:aws:s3:::${Bucket}/*"
+                - !Sub "arn:aws:s3:::${TowerBucket}"
+                - !Sub "arn:aws:s3:::${TowerBucket}/*"
 
   TowerForgeServiceUserAccessKey:
     Type: AWS::IAM::AccessKey
@@ -279,7 +270,6 @@ Resources:
   TowerForgeServiceUserAccessKeySecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !Sub "${AWS::Region}-${AWS::StackName}-Credentials"
       Description: !Sub "Tower Forge Credentials for Compute Environment ${AWS::StackName}"
       SecretString: !Sub >-
         {
@@ -292,7 +282,7 @@ Resources:
     Type: AWS::IAM::Policy
     Condition: HasAnyAccessArns
     Properties:
-      PolicyName: !Sub "${AWS::Region}-${AWS::StackName}-SharedAccessPolicy"
+      PolicyName: !Sub "${AWS::StackName}-SharedAccessPolicy"
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -341,15 +331,15 @@ Outputs:
     Export:
       Name: !Sub "${AWS::Region}-${AWS::StackName}-ReadOnlyAccessRoleArn"
 
-  Bucket:
-    Value: !Ref Bucket
+  TowerBucket:
+    Value: !Ref TowerBucket
     Export:
-      Name: !Sub "${AWS::Region}-${AWS::StackName}-Bucket"
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerBucket"
 
-  BucketArn:
-    Value: !GetAtt Bucket.Arn
+  TowerBucketArn:
+    Value: !GetAtt TowerBucket.Arn
     Export:
-      Name: !Sub "${AWS::Region}-${AWS::StackName}-BucketArn"
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerBucketArn"
 
   TowerForgeServiceUser:
     Value: !Ref TowerForgeServiceUser
