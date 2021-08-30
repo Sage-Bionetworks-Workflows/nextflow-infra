@@ -106,8 +106,6 @@ Resources:
     Type: AWS::IAM::Role
     Condition: HasReadWriteAccessArns
     Properties:
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonS3FullAccess
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -131,8 +129,6 @@ Resources:
     Type: AWS::IAM::Role
     Condition: HasReadOnlyAccessArns
     Properties:
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -239,6 +235,24 @@ Resources:
             Resource:
               - !Sub "arn:aws:s3:::${TowerBucket}"
               - !Sub "arn:aws:s3:::${TowerBucket}/*"
+          - Sid: GrantWriteAccessToReadWriteAccessRole
+            Effect: Allow
+            Principal:
+              AWS: !GetAtt ReadWriteAccessRole.Arn
+            Action: "s3:*"
+            Resource:
+              - !Sub "arn:aws:s3:::${TowerBucket}"
+              - !Sub "arn:aws:s3:::${TowerBucket}/*"
+          - Sid: GrantReadAccessToReadOnlyAccessRole
+            Effect: Allow
+            Principal:
+              AWS: !GetAtt ReadOnlyAccessRole.Arn
+            Action:
+              - "s3:Get*"
+              - "s3:List*"
+            Resource:
+              - !Sub "arn:aws:s3:::${TowerBucket}"
+              - !Sub "arn:aws:s3:::${TowerBucket}/*"
 
   TowerForgeServiceUser:
     Type: AWS::IAM::User
@@ -296,6 +310,11 @@ Resources:
               - "kms:Decrypt"
             Resource:
               - !GetAtt EncryptionKeyStack.Outputs.KeyArn
+          - Effect: Allow
+            Action:
+              - "s3:ListAllMyBuckets"
+              - "s3:GetBucketLocation"
+            Resource: "arn:aws:s3:::*"
       Roles:
         - !If
           - HasReadWriteAccessArns
