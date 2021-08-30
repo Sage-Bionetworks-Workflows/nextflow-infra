@@ -105,6 +105,10 @@ Parameters:
   EfsFileSystemId:
     Type: String
     Description: The ID of the EFS file system to mount as a volume
+  EfsVolumeName:
+    Type: String
+    Description: The name of the EFS file system mounted as a volume
+    Default: 'efs_volume'
   EfsVolumeMountPath:
     Type: String
     Description: Path where the EFS volume container tower configuration is mounted
@@ -117,7 +121,7 @@ Resources:
     Properties:
       NetworkMode: bridge
       Volumes:
-        - Name: efs_volume
+        - Name: !Ref EfsVolumeName
           EFSVolumeConfiguration:
             FilesystemId: !Ref EfsFileSystemId
       ContainerDefinitions:
@@ -187,7 +191,7 @@ Resources:
           MountPoints:
             - ContainerPath: !Ref EfsVolumeMountPath
               ReadOnly: true
-              SourceVolume: efs_volume
+              SourceVolume: !Ref EfsVolumeName
         - Name: !Ref FrontendContainerName
           Image: !Ref FrontendContainerImage
           Memory: 2000
@@ -266,7 +270,7 @@ Resources:
           MountPoints:
             - ContainerPath: !Ref EfsVolumeMountPath
               ReadOnly: true
-              SourceVolume: efs_volume
+              SourceVolume: !Ref EfsVolumeName
 
 Outputs:
 
