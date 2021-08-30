@@ -52,33 +52,17 @@ Parameters:
       deleted from S3 and the LifecycleDataStorageClass
     Default: 365000
 
-  AdminIds:
+  AdminArns:
     Type: List<String>
     Description: >-
-      List of IAM user and role IDs (strings) with administrator
-      access and should retain access to restricted resources
-      (e.g., private S3 bucket, KMS key, secrets). The role ID
-      can be obtained in one of two ways.
-
-      1) You can assume the role in question and run the following
-      command, and the role ID is the substring before the colon.
-
-      aws sts get-caller-identity --output text --query UserId
-
-      2) With the appropriate IAM permissions (with an admin role),
-      you can run the following command, where `<role_name>` corresponds
-      to the role name (see examples below to extract the role name).
-
-      aws iam get-role --role-name <role_name> --output text --query Role.RoleId
-
-      For example, if the role ARN is
-      arn:aws:iam::456789012345:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_Viewer_7e6c15a6e90908df
-      the role name is AWSReservedSSO_Viewer_7e6c15a6e90908df.
-      If you have the ARN for an assumed role (distinguished by the
-      `arn:aws:sts::` prefix and `assumed-role/` substring), you need
-      to exclude the session name at the end of the ARN. For instance,
-      the following assumed-role ARN has the same role name as above:
-      arn:aws:sts::035458030717:assumed-role/AWSReservedSSO_Viewer_fd80909e6a51c6e7/bruno.grande@sagebase.org.
+      List of IAM user and role ARNs (strings) who should have access to 
+      project-specific resources (e.g., private S3 bucket, KMS key, secrets). 
+  
+  NonAdminArns:
+    Type: List<String>
+    Description: >-
+      List of IAM user and role ARNs (strings) who shouldn't have access to 
+      project-specific resources (e.g., private S3 bucket, KMS key, secrets). 
 
   TemplateRootUrl:
     Type: String
@@ -102,52 +86,6 @@ Conditions:
     !Or [!Condition HasReadWriteAccessArns, !Condition HasReadOnlyAccessArns]
 
 Resources:
-  ReadWriteAccessRole:
-    Type: AWS::IAM::Role
-    Condition: HasReadWriteAccessArns
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: "Allow"
-            Principal:
-              AWS:
-                !Split
-                  - "|"
-                  - !Join
-                    - "|"
-                    - - !Join
-                        - "|"
-                        - !Ref ReadWriteAccessArns
-                      - !Join
-                        - "|"
-                        - !Ref AdminIds
-            Action:
-              - "sts:AssumeRole"
-
-  ReadOnlyAccessRole:
-    Type: AWS::IAM::Role
-    Condition: HasReadOnlyAccessArns
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: "Allow"
-            Principal:
-              AWS:
-                !Split
-                  - "|"
-                  - !Join
-                    - "|"
-                    - - !Join
-                        - "|"
-                        - !Ref ReadOnlyAccessArns
-                      - !Join
-                        - "|"
-                        - !Ref AdminIds
-            Action:
-              - "sts:AssumeRole"
-
   EncryptionKeyStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -160,20 +98,24 @@ Resources:
           - - !Sub "arn:aws:iam::${AWS::AccountId}:root"
             - !Join
               - ","
-              - !Ref AdminIds
+              - !Ref AdminArns
         UserPrincipalArns: !Join
           - ","
           - - !Sub "arn:aws:iam::${AWS::AccountId}:root"
             - !Join
               - ","
-              - !Ref AdminIds
+              - !Ref AdminArns
             - !If
               - HasReadWriteAccessArns
-              - !GetAtt ReadWriteAccessRole.Arn
+              - !Join
+                - ","
+                - !Ref ReadWriteAccessArns
               - !Ref AWS::NoValue
             - !If
               - HasReadOnlyAccessArns
-              - !GetAtt ReadOnlyAccessRole.Arn
+              - !Join
+                - ","
+                - !Ref ReadOnlyAccessArns
               - !Ref AWS::NoValue
 
   TowerBucket:
@@ -201,58 +143,38 @@ Resources:
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
-          - Sid: RestrictAccessToAdminsAndStackUsers
+          - Sid: DenyAccessToNonAdmins
             Effect: Deny
-            Principal: "*"
-            Condition:
-              StringNotLike:
-                aws:userid:
-                  !Split
-                    - "|"
-                    - !Join
-                      - ":*|"
-                      - !Split
-                        - "|"
-                        - !Join
-                          - "|"
-                          - - !Join
-                              - "|"
-                              - !Ref AdminIds
-                            - !If
-                              - HasReadWriteAccessArns
-                              - !GetAtt ReadWriteAccessRole.RoleId
-                              - !Ref AWS::NoValue
-                            - !If
-                              - HasReadOnlyAccessArns
-                              - !GetAtt ReadOnlyAccessRole.RoleId
-                              - !Ref AWS::NoValue
-                            - !Ref AWS::AccountId
-            NotAction:
-              - "s3:Delete*"
-              - "s3:GetBucket*"
-              - "s3:ListBucket*"
-              - "s3:PutBucket*"
-            Resource:
-              - !Sub "arn:aws:s3:::${TowerBucket}"
-              - !Sub "arn:aws:s3:::${TowerBucket}/*"
-          - Sid: GrantWriteAccessToReadWriteAccessRole
-            Effect: Allow
             Principal:
-              AWS: !GetAtt ReadWriteAccessRole.Arn
+              AWS: !Ref NonAdminArns
             Action: "s3:*"
             Resource:
               - !Sub "arn:aws:s3:::${TowerBucket}"
               - !Sub "arn:aws:s3:::${TowerBucket}/*"
-          - Sid: GrantReadAccessToReadOnlyAccessRole
-            Effect: Allow
-            Principal:
-              AWS: !GetAtt ReadOnlyAccessRole.Arn
-            Action:
-              - "s3:Get*"
-              - "s3:List*"
-            Resource:
-              - !Sub "arn:aws:s3:::${TowerBucket}"
-              - !Sub "arn:aws:s3:::${TowerBucket}/*"
+          - !If
+            - HasReadWriteAccessArns
+            - Sid: GrantWriteAccessToReadWriteAccessArns
+              Effect: Allow
+              Principal:
+                AWS: !Ref ReadWriteAccessArns
+              Action: "s3:*"
+              Resource:
+                - !Sub "arn:aws:s3:::${TowerBucket}"
+                - !Sub "arn:aws:s3:::${TowerBucket}/*"
+            - !Ref AWS::NoValue
+          - !If
+            - HasReadOnlyAccessArns
+            - Sid: GrantReadAccessToReadOnlyAccessArns
+              Effect: Allow
+              Principal:
+                AWS: !Ref ReadOnlyAccessArns
+              Action:
+                - "s3:Get*"
+                - "s3:List*"
+              Resource:
+                - !Sub "arn:aws:s3:::${TowerBucket}"
+                - !Sub "arn:aws:s3:::${TowerBucket}/*"
+            - !Ref AWS::NoValue
 
   TowerForgeServiceUser:
     Type: AWS::IAM::User
@@ -281,74 +203,62 @@ Resources:
     Properties:
       UserName: !Ref TowerForgeServiceUser
 
-  TowerForgeServiceUserAccessKeySecret:
+  TowerProjectConfigurationSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Description: !Sub "Tower Forge Credentials for Compute Environment ${AWS::StackName}"
+      Name: !Sub "${AWS::StackName}-TowerProjectConfiguration"
+      Description: !Sub "Configuration for ${AWS::StackName} Project in Tower"
       SecretString: !Sub >-
         {
-          "access_key_id":      "${TowerForgeServiceUserAccessKey}",
-          "secret_access_key":  "${TowerForgeServiceUserAccessKey.SecretAccessKey}"
+          "forge_access_key_id":      "${TowerForgeServiceUserAccessKey}",
+          "forge_secret_access_key":  "${TowerForgeServiceUserAccessKey.SecretAccessKey}",
+          "bucket_name":              "${TowerBucket}"
         }
       KmsKeyId: !GetAtt EncryptionKeyStack.Outputs.Key
-
-  SharedAccessPolicy:
-    Type: AWS::IAM::Policy
+  
+  TowerProjectConfigurationSecretPolicy:
+    Type: AWS::SecretsManager::ResourcePolicy
     Condition: HasAnyAccessArns
     Properties:
-      PolicyName: !Sub "${AWS::StackName}-SharedAccessPolicy"
-      PolicyDocument:
+      BlockPublicPolicy: True
+      SecretId: !Ref TowerProjectConfigurationSecret
+      ResourcePolicy:
         Version: "2012-10-17"
         Statement:
-          - Effect: Allow
-            Action:
-              - "secretsmanager:GetSecretValue"
-            Resource:
-              - !Ref TowerForgeServiceUserAccessKeySecret
-          - Effect: Allow
-            Action:
-              - "kms:Decrypt"
-            Resource:
-              - !GetAtt EncryptionKeyStack.Outputs.KeyArn
-          - Effect: Allow
-            Action:
-              - "s3:ListAllMyBuckets"
-              - "s3:GetBucketLocation"
-            Resource: "arn:aws:s3:::*"
-      Roles:
-        - !If
-          - HasReadWriteAccessArns
-          - !Ref ReadWriteAccessRole
-          - !Ref AWS::NoValue
-        - !If
-          - HasReadOnlyAccessArns
-          - !Ref ReadOnlyAccessRole
-          - !Ref AWS::NoValue
+        - Sid: GrantReadAccessToReadWriteAccessArns
+          Effect: Allow
+          Action: "secretsmanager:GetSecretValue"
+          Principal:
+            AWS: !Split
+              - ","
+              - !Join
+                - ","
+                - - !If
+                    - HasReadWriteAccessArns
+                    - !Join
+                      - ","
+                      - !Ref ReadWriteAccessArns
+                    - !Ref AWS::NoValue
+                  - !If
+                    - HasReadOnlyAccessArns
+                    - !Join
+                      - ","
+                      - !Ref ReadOnlyAccessArns
+                    - !Ref AWS::NoValue
+          Resource: "*"
 
 Outputs:
-  ReadWriteAccessRole:
-    Value: !Ref ReadWriteAccessRole
+  ReadWriteAccessArns:
+    Value: !Join [ ",", !Ref ReadWriteAccessArns ]
     Condition: HasReadWriteAccessArns
     Export:
-      Name: !Sub "${AWS::Region}-${AWS::StackName}-ReadWriteAccessRole"
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-ReadWriteAccessArns"
 
-  ReadWriteAccessRoleArn:
-    Value: !GetAtt ReadWriteAccessRole.Arn
-    Condition: HasReadWriteAccessArns
-    Export:
-      Name: !Sub "${AWS::Region}-${AWS::StackName}-ReadWriteAccessRoleArn"
-
-  ReadOnlyAccessRole:
-    Value: !Ref ReadOnlyAccessRole
+  ReadOnlyAccessArns:
+    Value: !Join [ ",", !Ref ReadOnlyAccessArns ]
     Condition: HasReadOnlyAccessArns
     Export:
-      Name: !Sub "${AWS::Region}-${AWS::StackName}-ReadOnlyAccessRole"
-
-  ReadOnlyAccessRoleArn:
-    Value: !GetAtt ReadOnlyAccessRole.Arn
-    Condition: HasReadOnlyAccessArns
-    Export:
-      Name: !Sub "${AWS::Region}-${AWS::StackName}-ReadOnlyAccessRoleArn"
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-ReadOnlyAccessArns"
 
   TowerBucket:
     Value: !Ref TowerBucket
@@ -370,18 +280,12 @@ Outputs:
     Export:
       Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceUserArn"
 
-  TowerForgeServiceUserAccessKeySecret:
+  TowerProjectConfigurationSecret:
     Value: !Sub "${AWS::StackName}-Credentials"
     Export:
-      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceUserAccessKeySecretName"
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerProjectConfigurationSecretName"
 
-  TowerForgeServiceUserAccessKeySecretArn:
-    Value: !Ref TowerForgeServiceUserAccessKeySecret
+  TowerProjectConfigurationSecretArn:
+    Value: !Ref TowerProjectConfigurationSecret
     Export:
-      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceUserAccessKeySecretArn"
-
-  SharedAccessPolicy:
-    Value: !Ref SharedAccessPolicy
-    Condition: HasAnyAccessArns
-    Export:
-      Name: !Sub "${AWS::Region}-${AWS::StackName}-SharedAccessPolicy"
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerProjectConfigurationSecretArn"

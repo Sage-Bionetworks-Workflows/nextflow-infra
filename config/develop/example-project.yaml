@@ -3,12 +3,14 @@ stack_name: example-project
 
 parameters:
   ReadWriteAccessArns:
-    - arn:aws:sts::035458030717:assumed-role/AWSReservedSSO_Viewer_fd80909e6a51c6e7/bruno.grande@sagebase.org
+    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/bruno.grande@sagebase.org
   ReadOnlyAccessArns:
-    - arn:aws:sts::035458030717:assumed-role/AWSReservedSSO_Viewer_fd80909e6a51c6e7/tess.thyer@sagebase.org
-  AdminIds:
-    - {{stack_group_config.sso_admin_role.roleid}}
-    - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleId
+    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/tess.thyer@sagebase.org
+  AdminArns:
+    - {{stack_group_config.sso_admin_role.arn}}
+    - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
+  NonAdminArns:
+    - {{stack_group_config.sso_viewer_role.arn}}
   TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
   TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
   TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
