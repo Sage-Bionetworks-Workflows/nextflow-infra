@@ -7,13 +7,6 @@ Parameters:
     Type: String
     Description: Name of the created bucket.
 
-  AdminArns:
-    Type: CommaDelimitedList
-    Description: IAM ARNs that may administer and write to teh bucket
-    ConstraintDescription: >
-      List of ARNs (i.e. ['arn:aws:iam::011223344556:user/jsmith',
-      'arn:aws:iam::544332211006:user/rjones']
-
 Resources:
 
   Bucket:
@@ -33,14 +26,6 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Sid: FullAccess
-            Effect: Allow
-            Principal:
-              AWS: !Ref AdminArns
-            Action: 's3:*'
-            Resource:
-              - !Sub 'arn:aws:s3:::${Bucket}'
-              - !Sub 'arn:aws:s3:::${Bucket}/*'
           - Sid: 'AllowRead'
             Effect: 'Allow'
             Principal:
