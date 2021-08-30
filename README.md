@@ -2,6 +2,45 @@
 
 The AWS infrastructure for hosting a private instance of [Nextflow Tower](https://tower.nf/) and executing [Nextflow workflows](https://nextflow.io/) is defined in this repository and deployed using [CloudFormation](https://aws.amazon.com/cloudformation/) via [Sceptre](https://sceptre.cloudreach.com/).
 
+## Onboarding
+
+To complete these onboarding instructions, you will need a project name (_e.g._ `imcore`, `amp-ad`, `commonmind`). The stack name consists of the project name with the `-project` suffix (_e.g._ `imcore-project`, `amp-ad-project`, `commonmind-project`). Please update any instances of `<stack_name>` with the stack name (without the angle brackets).
+
+1. Install [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) and [Docker Desktop](https://www.docker.com/products/docker-desktop).
+2. Open a pull request on this repository in which you duplicate `config/prod/example-project.yaml` as `config/prod/<stack_name>.yaml` and update the contents as follows:
+   1. Set the `stack_name` field to `<stack_name>`.
+   2. Update the email at the end of the line under `ReadWriteAccessArns` to your own (using `@sagebase.org`).
+   3. Duplicate the line under `ReadWriteAccessArns` for anyone else who should have write-access to this project, updating the email suffix accordingly.
+   4. If anyone should only have read-access, uncomment the two lines for `ReadOnlyAccessArns` and update the email accordingly, duplicating as needed.
+   5. Update the values for `Department` and `Project` under `stack_tags` such that billing can be properly routed as well as `OwnerEmail` so we know who to contact if the need arises.
+3. Once the pull request is merged, open a terminal and perform the following steps:
+   1. Run the `export` commands for your AWS `TowerUser` credentials, which are available via the JumpCloud console.
+      ```
+      export AWS_ACCESS_KEY_ID="..."
+      export AWS_SECRET_ACCESS_KEY="..."
+      export AWS_SESSION_TOKEN="..."
+      ```
+      <!-- TODO: Insert GIF screencast -->
+   2. Create a new token in Nextflow Tower called `<stack_name>`, copy the token (which is only ever displayed once), and run the following command, updating `<token>` with the copied value:
+      ```
+      export NXF_TOWER_TOKEN="<token>"
+      ```
+      <!-- TODO: Insert GIF screencast -->
+   3. Run the following Docker command; don't forget to update `<stack_name>` accordingly:
+      ```
+      docker run -e STACK_NAME=<stack_name> -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e NXF_TOWER_TOKEN -v "$HOME/.aws:/root/.aws sagebionetworks/setup-tower-project"
+      ```
+   4. Run the following command to retrieve the bucket name:
+      ```
+      aws --profile <stack_name> s3 ls | grep towerbucket
+      ```
+4. The above Docker command performs the following tasks:
+   - Two AWS CLI profiles were added to `~/.aws/config`:
+     - `tower-user`: Read-only access to everything that's non-sensitive in the production AWS account for Nextflow Tower.
+     - `<stack_name>`: Write-access to the project-specific S3 bucket depending on whether you were listed under `ReadWriteAccessArns` or `ReadOnlyAccessArns`
+   - In Nextflow Tower, the credentials for the service user with access to AWS Batch and your project bucket were automatically configured under the name `<stack_name>`.
+   - In Nextflow Tower, a compute environment was pre-configured under the name `<stack_name> (default)` using the above credentials, the project bucket, the appropriate VPC, and otherwise default options. If you need to tweak the compute environment, we recommend that you clone the default one and make adjustments as necessary.
+
 ## AWS Accounts
 
 Two AWS accounts are managed by this repository, both of which were [bootstrapped](https://sagebionetworks.jira.com/wiki/spaces/IT/pages/2058878986/Bootstrapping+AWS+Project+Accounts) using [org-formation](https://github.com/org-formation/org-formation-cli). They are defined in this [organization.yaml](https://github.com/Sage-Bionetworks-IT/organizations-infra/blob/master/org-formation/organization.yaml) file. The two accounts are:
