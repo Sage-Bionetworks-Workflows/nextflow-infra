@@ -32,7 +32,7 @@ To complete these onboarding instructions, you will need a project name (_e.g._ 
       ```
    4. Run the following command to retrieve the bucket name:
       ```
-      aws --profile <stack_name> s3 ls | grep towerbucket
+      aws --profile <stack_name> s3 ls | grep <stack_name>
       ```
 4. The above Docker command performs the following tasks:
    - Two AWS CLI profiles were added to `~/.aws/config`:
