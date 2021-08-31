@@ -121,12 +121,16 @@ Resources:
   TowerBucket:
     Type: AWS::S3::Bucket
     Properties:
+      BucketName: !Sub "${AWS::StackName}-tower-bucket"
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - BucketKeyEnabled: true
             ServerSideEncryptionByDefault:
               SSEAlgorithm: aws:kms
-              KMSMasterKeyID: !GetAtt EncryptionKeyStack.Outputs.Key
+              KMSMasterKeyID: !GetAtt EncryptionKeyStack.Outputs.KeyArn
       LifecycleConfiguration:
         Rules:
         - Id: DataLifecycleRule
@@ -157,7 +161,26 @@ Resources:
               Effect: Allow
               Principal:
                 AWS: !Ref ReadWriteAccessArns
-              Action: "s3:*"
+              Action:
+                - "s3:PutObject*"
+              Condition:
+                StringEquals:
+                  s3:x-amz-acl: bucket-owner-full-control
+              Resource:
+                - !Sub "arn:aws:s3:::${TowerBucket}/*"
+            - !Ref AWS::NoValue
+          - !If
+            - HasReadWriteAccessArns
+            - Sid: GrantRemainingAccessToReadWriteAccessArns
+              Effect: Allow
+              Principal:
+                AWS: !Ref ReadWriteAccessArns
+              Action:
+                - "s3:GetObject*"
+                - "s3:DeleteObject*"
+                - "s3:*MultipartUpload*"
+                - "s3:ListBucket*"
+                - "s3:GetBucketLocation"
               Resource:
                 - !Sub "arn:aws:s3:::${TowerBucket}"
                 - !Sub "arn:aws:s3:::${TowerBucket}/*"
@@ -169,8 +192,10 @@ Resources:
               Principal:
                 AWS: !Ref ReadOnlyAccessArns
               Action:
-                - "s3:Get*"
-                - "s3:List*"
+                - "s3:ListBucket*"
+                - "s3:GetBucketLocation"
+                - "s3:GetObject"
+                - "s3:GetObjectAcl"
               Resource:
                 - !Sub "arn:aws:s3:::${TowerBucket}"
                 - !Sub "arn:aws:s3:::${TowerBucket}/*"
@@ -208,12 +233,34 @@ Resources:
     Properties:
       Name: !Sub "${AWS::StackName}-TowerProjectConfiguration"
       Description: !Sub "Configuration for ${AWS::StackName} Project in Tower"
-      SecretString: !Sub >-
-        {
-          "forge_access_key_id":      "${TowerForgeServiceUserAccessKey}",
-          "forge_secret_access_key":  "${TowerForgeServiceUserAccessKey.SecretAccessKey}",
-          "bucket_name":              "${TowerBucket}"
-        }
+      SecretString: !Sub
+        - >-
+          {
+            "forge_access_key_id":      "${ForgeAccessKeyId}",
+            "forge_secret_access_key":  "${ForgeSecretAccessKey}",
+            "bucket_name":              "${BucketName}",
+            "read_write_arns":          "${ReadWriteArns}",
+            "read_only_arns":           "${ReadOnlyArns}",
+            "vpc_id":                   "${VpcId}",
+            "subnet_ids":               "${SubnetIds}"
+          }
+        - ForgeAccessKeyId: !Ref TowerForgeServiceUserAccessKey
+          ForgeSecretAccessKey: !GetAtt TowerForgeServiceUserAccessKey.SecretAccessKey
+          BucketName: !Ref TowerBucket
+          ReadWriteArns: !Join [ ",", !Ref ReadWriteAccessArns ]
+          ReadOnlyArns: !Join [ ",", !Ref ReadOnlyAccessArns ]
+          VpcId: !ImportValue 
+            'Fn::Sub': '${AWS::Region}-nextflow-vpc-VPCId'
+          SubnetIds: !Join
+            - ","
+            - - !ImportValue 
+                'Fn::Sub': '${AWS::Region}-nextflow-vpc-PrivateSubnet'
+              - !ImportValue 
+                'Fn::Sub': '${AWS::Region}-nextflow-vpc-PrivateSubnet1'
+              - !ImportValue 
+                'Fn::Sub': '${AWS::Region}-nextflow-vpc-PrivateSubnet2'
+              - !ImportValue 
+                'Fn::Sub': '${AWS::Region}-nextflow-vpc-PrivateSubnet3'
       KmsKeyId: !GetAtt EncryptionKeyStack.Outputs.Key
   
   TowerProjectConfigurationSecretPolicy:
@@ -249,14 +296,14 @@ Resources:
 
 Outputs:
   ReadWriteAccessArns:
-    Value: !Join [ ",", !Ref ReadWriteAccessArns ]
     Condition: HasReadWriteAccessArns
+    Value: !Join [ ",", !Ref ReadWriteAccessArns ]
     Export:
       Name: !Sub "${AWS::Region}-${AWS::StackName}-ReadWriteAccessArns"
 
   ReadOnlyAccessArns:
-    Value: !Join [ ",", !Ref ReadOnlyAccessArns ]
     Condition: HasReadOnlyAccessArns
+    Value: !Join [ ",", !Ref ReadOnlyAccessArns ]
     Export:
       Name: !Sub "${AWS::Region}-${AWS::StackName}-ReadOnlyAccessArns"
 
@@ -281,9 +328,9 @@ Outputs:
       Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceUserArn"
 
   TowerProjectConfigurationSecret:
-    Value: !Sub "${AWS::StackName}-Credentials"
+    Value: !Sub "${AWS::StackName}-TowerProjectConfiguration"
     Export:
-      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerProjectConfigurationSecretName"
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerProjectConfigurationSecret"
 
   TowerProjectConfigurationSecretArn:
     Value: !Ref TowerProjectConfigurationSecret
