@@ -3,7 +3,7 @@ stack_name: nextflow-efs-file-system
 dependencies:
   - develop/nextflow-vpc.yaml
   - develop/nextflow-ecs-security-group.yaml
-  - develop/nextflow-tower-config-bucket.yaml
+  - develop/nextflow-tower-config-bucket.j2
   - develop/nextflow-ecs-cluster.yaml
 parameters:
   VpcId: !stack_output_external nextflow-vpc::VPCId
