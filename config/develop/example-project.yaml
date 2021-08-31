@@ -15,6 +15,7 @@ parameters:
     - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
   NonAdminArns:
     - {{stack_group_config.sso_viewer_role.arn}}
+    - {{stack_group_config.sso_developer_role.arn}}
   TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
   TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
   TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
