@@ -113,6 +113,81 @@ Resources:
             Action:
               - sts:AssumeRole
 
+  TowerForgeInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
+        - "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+                - ecs.amazonaws.com
+                - batch.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: "ForgeBatchJobPolicy"
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement:
+              - Sid: ForgeInstanceRoleBatchJob
+                Effect: Allow
+                Action:
+                  - batch:CancelJob
+                  - batch:DescribeComputeEnvironments
+                  - batch:DescribeJobDefinitions
+                  - batch:DescribeJobQueues
+                  - batch:DescribeJobs
+                  - batch:ListJobs
+                  - batch:RegisterJobDefinition
+                  - batch:SubmitJob
+                  - batch:TerminateJob
+                  - ec2:AttachVolume
+                  - ec2:CreateTags
+                  - ec2:CreateVolume
+                  - ec2:DeleteVolume
+                  - ec2:DescribeInstanceAttribute
+                  - ec2:DescribeInstances
+                  - ec2:DescribeInstanceStatus
+                  - ec2:DescribeInstanceTypes
+                  - ec2:DescribeVolumeAttribute
+                  - ec2:DescribeVolumes
+                  - ec2:DescribeVolumeStatus
+                  - ec2:ModifyInstanceAttribute
+                  - ecs:DescribeContainerInstances
+                  - ecs:DescribeTasks
+                  - logs:Describe*
+                  - logs:FilterLogEvents
+                  - logs:Get*
+                  - logs:List*
+                  - logs:StartQuery
+                  - logs:StopQuery
+                  - logs:TestMetricFilter
+                Resource: "*"
+
+  TowerForgePassRolePolicy:
+    Type: AWS::IAM::Policy
+    Properties: 
+      PolicyName: "TowerForgePassRolePolicy"
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - Effect: "Allow"
+            Action:
+              - "iam:GetRole"
+              - "iam:PassRole"
+            Resource: 
+              - !GetAtt TowerForgeInstanceRole.Arn
+      Roles: 
+        - !Ref TowerForgeServiceRole
+      Users: 
+        - !Ref TowerForgeServiceUser
+
   EncryptionKeyStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -130,6 +205,7 @@ Resources:
           - ","
           - - !Sub "arn:aws:iam::${AWS::AccountId}:root"
             - !GetAtt TowerForgeServiceRole.Arn
+            - !GetAtt TowerForgeInstanceRole.Arn
             - !Join
               - ","
               - !Ref AdminArns
@@ -186,13 +262,17 @@ Resources:
           - Sid: TowerForgeServiceRoleS3Access
             Effect: Allow
             Principal:
-              AWS: !GetAtt TowerForgeServiceRole.Arn
+              AWS: 
+                - !GetAtt TowerForgeServiceRole.Arn
+                - !GetAtt TowerForgeInstanceRole.Arn
             Action:
+              - "s3:GetBucketLocation"
               - "s3:ListBucket"
               - "s3:GetObject"
               - "s3:PutObject"
               - "s3:PutObjectTagging"
               - "s3:DeleteObject"
+              - "s3:*MultipartUpload*"
             Resource:
               - !Sub "arn:aws:s3:::${TowerBucket}"
               - !Sub "arn:aws:s3:::${TowerBucket}/*"
@@ -352,6 +432,16 @@ Outputs:
     Value: !GetAtt TowerForgeServiceRole.Arn
     Export:
       Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceRoleArn"
+
+  TowerForgeInstanceRole:
+    Value: !Ref TowerForgeInstanceRole
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeInstanceRole"
+
+  TowerForgeInstanceRoleArn:
+    Value: !GetAtt TowerForgeInstanceRole.Arn
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeInstanceRoleArn"
 
   TowerProjectConfigurationSecret:
     Value: !Sub "${AWS::StackName}-TowerProjectConfiguration"
