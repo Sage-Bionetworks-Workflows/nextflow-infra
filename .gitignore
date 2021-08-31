@@ -6,3 +6,6 @@
 
 # Ignore VS Code settings
 .vscode/settings.json
+
+# Virtual environment
+.venv/
