@@ -1,0 +1,145 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: EFS shared file system for ECS Tower Task containers
+
+Parameters:
+
+  VpcId:
+    Description: ID of VPC
+    Type: AWS::EC2::VPC::Id
+
+  SubnetId:
+    Description: The ID of the subnet to add the EFS mount target in.
+    Type: String
+
+  EcsSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Security group ID for ECS cluster to grant database access
+
+  NextflowTowerConfigBucketArn:
+    Type: String
+    Description: ARN of the S3 bucket where the tower config is stored
+
+Resources:
+
+  FileSystem:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      AvailabilityZoneName: us-east-1a
+      BackupPolicy:
+        Status: DISABLED
+      Encrypted: false
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ECS Security Group
+      VpcId: !Ref VpcId
+
+  SecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroup
+      SourceSecurityGroupId: !Ref EcsSecurityGroupId
+      IpProtocol: tcp
+      FromPort: 2049
+      ToPort: 2049
+
+  MountTarget:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref FileSystem
+      SecurityGroups:
+        - !Ref SecurityGroup
+      SubnetId: !Ref SubnetId
+
+  S3BucketReaderRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: DataSyncAssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+              - datasync.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: BucketAllowances
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:GetBucketLocation'
+                  - 's3:ListBucket'
+                  - 's3: ListBucketMultipartUploads'
+                Resource: !Ref NextflowTowerConfigBucketArn
+        - PolicyName: ObjectAllowances
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+            - Effect: Allow
+              Action:
+                - 's3:AbortMultipartUpload'
+                - 's3:DeleteObject'
+                - 's3:GetObject'
+                - 's3:ListMultipartUploadParts'
+                - 's3:GetObjectTagging'
+                - 's3:PutObjectTagging'
+                - 's3:PutObject'
+              Resource: !Sub "${NextflowTowerConfigBucketArn}/*"
+
+  S3Location:
+    Type: AWS::DataSync::LocationS3
+    Properties:
+      S3BucketArn: !Ref NextflowTowerConfigBucketArn
+      S3Config:
+        BucketAccessRoleArn: !GetAtt S3BucketReaderRole.Arn
+
+  EfsLocation:
+    DependsOn: MountTarget
+    Type: AWS::DataSync::LocationEFS
+    Properties:
+      Ec2Config:
+        SecurityGroupArns:
+          - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/${EcsSecurityGroupId}'
+        SubnetArn: !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${SubnetId}'
+      EfsFilesystemArn: !GetAtt FileSystem.Arn
+
+  DataSyncTaskLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: '/aws/datasync/task/tower/config'
+      RetentionInDays: 30
+
+  DataSyncTask:
+    Type: AWS::DataSync::Task
+    Properties:
+      DestinationLocationArn: !Ref EfsLocation
+      SourceLocationArn: !Ref S3Location
+      Schedule:
+        ScheduleExpression: 'rate(1 hour)'
+      CloudWatchLogGroupArn: !GetAtt DataSyncTaskLogGroup.Arn
+      Options:
+        LogLevel: TRANSFER
+        TransferMode: ALL
+        OverwriteMode: ALWAYS
+        PosixPermissions: PRESERVE
+        Gid: INT_VALUE
+        Uid: INT_VALUE
+
+  DataSyncCloudwatchPolicy:
+    Type: AWS::Logs::ResourcePolicy
+    Properties:
+      PolicyName: DataSyncCloudwatchPolicy
+      PolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"DataSyncLogsToCloudWatchLogs\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"datasync.amazonaws.com\"},\"Action\":[\"logs:PutLogEvents\",\"logs:CreateLogStream\"],\"Resource\":\"*\"}]}"
+
+
+Outputs:
+
+  FileSystemId:
+    Value: !Ref FileSystem
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-FileSystemId'

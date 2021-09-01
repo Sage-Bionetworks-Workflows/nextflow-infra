@@ -1,0 +1,13 @@
+template_path: nextflow-r53-alias-record.yaml
+stack_name: nextflow-r53-alias-record
+dependencies:
+  - develop/nextflow-r53-hostedzone.yaml
+  - develop/nextflow-ecs-service.yaml
+parameters:
+  HostedZoneId: !stack_output_external nextflow-r53-hostedzone::HostedZoneId
+  LoadBalancerDnsName: !stack_output_external nextflow-ecs-service::LoadBalancerDnsName
+  LoadBalancerCanonicalHostedZoneId: !stack_output_external nextflow-ecs-service::LoadBalancerCanonicalHostedZoneID
+stack_tags:
+  Department: IBC
+  Project: Infrastructure
+  OwnerEmail: nextflow-admins@sagebase.org

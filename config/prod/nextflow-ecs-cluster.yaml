@@ -2,12 +2,10 @@ template_path: nextflow-ecs-cluster.yaml
 stack_name: nextflow-ecs-cluster
 dependencies:
   - prod/nextflow-vpc.yaml
+  - prod/nextflow-ecs-security-group.yaml
 parameters:
-  VpcId: !stack_output_external nextflow-vpc::VPCId
-  SubnetIds:
-    - !stack_output_external nextflow-vpc::PublicSubnet
-  SecurityIngressFromPort: '80'
-  SecurityIngressToPort: '8080'
+  EcsSecurityGroupId: !stack_output_external nextflow-ecs-security-group::SecurityGroupId
+  SubnetId: !stack_output_external nextflow-vpc::PrivateSubnet
 stack_tags:
   Department: IBC
   Project: Infrastructure

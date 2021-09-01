@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: Security group shared by ECS cluster and Aurora DB cluster
+
+Parameters:
+
+  VpcId:
+    Description: ID of VPC
+    Type: AWS::EC2::VPC::Id
+
+  SecurityGroupPort:
+    Type: Number
+    Description: (Optional) The Security Group port to open on ECS instances
+    Default: 80
+
+  SecurityGroupCidrIp:
+    Type: String
+    Description: (Optional) Specifies the CIDR/IP range for Security Ports
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
+    Default: '0.0.0.0/0'
+
+Resources:
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ECS Security Group
+      VpcId: !Ref VpcId
+
+  SecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroup
+      IpProtocol: tcp
+      FromPort: !Ref SecurityGroupPort
+      ToPort: !Ref SecurityGroupPort
+      CidrIp: !Ref SecurityGroupCidrIp
+
+Outputs:
+
+  SecurityGroupId:
+    Value: !Ref SecurityGroup
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-SecurityGroupId'

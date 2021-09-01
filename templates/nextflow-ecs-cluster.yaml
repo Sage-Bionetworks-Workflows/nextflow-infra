@@ -21,15 +21,13 @@ Parameters:
     Description: Specifies the EC2 instance type for your container instances.
     Default: 'c4.2xlarge'
 
-  VpcId:
-    Description: ID of VPC
-    Type: AWS::EC2::VPC::Id
+  EcsSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Security group ID for ECS cluster to grant database access
 
-  SubnetIds:
-    Type: CommaDelimitedList
-    Description: >
-      Specifies the Comma separated list of existing VPC Subnet
-      Ids where ECS instances will run.
+  SubnetId:
+    Type: String
+    Description: The VPC subnet where ECS instances will run.
 
   AutoscalingGroupMaxSize:
     Type: Number
@@ -37,28 +35,6 @@ Parameters:
       Specifies the number of instances to launch and register to the cluster.
       Defaults to 1.
     Default: '1'
-
-  SecurityIngressFromPort:
-    Type: Number
-    Description: >
-      Optional - Specifies the Start of Security Group port to open on
-      ECS instances - defaults to port 0
-    Default: '0'
-
-  SecurityIngressToPort:
-    Type: Number
-    Description: >
-      Optional - Specifies the End of Security Group port to open on ECS
-      instances - defaults to port 65535
-    Default: '65535'
-
-  SecurityIngressCidrIp:
-    Type: String
-    Description: >
-      Optional - Specifies the CIDR/IP range for Security Ports - defaults
-      to 0.0.0.0/0
-    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
-    Default: '0.0.0.0/0'
 
   RootEbsVolumeSize:
     Type: Number
@@ -81,7 +57,6 @@ Parameters:
     Type: String
     Description: Optional - Specifies the device mapping for the root EBS volume.
     Default: '/dev/xvda'
-
 
 Resources:
 
@@ -116,16 +91,11 @@ Resources:
       Roles:
         - !Ref EcsRole
 
-  EcsSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
+  CloudwatchLogsGroup:
+    Type: AWS::Logs::LogGroup
     Properties:
-      GroupDescription: ECS Allowed Ports
-      VpcId: !Ref VpcId
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: !Ref SecurityIngressFromPort
-          ToPort: !Ref SecurityIngressToPort
-          CidrIp: !Ref SecurityIngressCidrIp
+      LogGroupName: !Join ['-', [ECSLogGroup, !Ref 'AWS::StackName']]
+      RetentionInDays: 14
 
   EcsLaunchConfiguration:
     Type: AWS::AutoScaling::LaunchConfiguration
@@ -135,7 +105,7 @@ Resources:
       AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref EcsInstanceProfile
       SecurityGroups:
-        - !Ref EcsSecurityGroup
+        - !Ref EcsSecurityGroupId
       BlockDeviceMappings:
         - DeviceName: !Ref RootDeviceName
           Ebs:
@@ -143,14 +113,30 @@ Resources:
             VolumeType: !Ref EbsVolumeType
       UserData:
         Fn::Base64: !Sub |
-          #!/bin/bash
-          echo ECS_CLUSTER=${EcsClusterName} >> /etc/ecs/ecs.config
-          echo ECS_BACKEND_HOST= >> /etc/ecs/ecs.config
+          MIME-Version: 1.0
+          Content-Type: multipart/mixed; boundary="==BOUNDARY=="
+
+          --==BOUNDARY==
+          Content-Type: text/cloud-config; charset="us-ascii"
+
+          #cloud-config
+          repo_update: true
+          repo_upgrade: security
+
+          write_files:
+          - path: /etc/ecs/ecs.config
+            content: |
+              ECS_CLUSTER=${EcsClusterName}
+              ECS_IMAGE_PULL_BEHAVIOR=prefer-cached
+            append: true
+
+          --==BOUNDARY==--
 
   EcsAutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      VPCZoneIdentifier: !Ref SubnetIds
+      VPCZoneIdentifier:
+        - !Ref SubnetId
       LaunchConfigurationName: !Ref EcsLaunchConfiguration
       MinSize: '0'
       MaxSize: !Ref AutoscalingGroupMaxSize
@@ -168,11 +154,6 @@ Outputs:
     Export:
       Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsRoleArn'
 
-  EcsSecurityGroupId:
-    Value: !Ref EcsSecurityGroup
-    Export:
-      Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsSecurityGroupId'
-
   EcsLaunchConfigurationName:
     Value: !Ref EcsLaunchConfiguration
     Export:
@@ -182,3 +163,8 @@ Outputs:
     Value: !Ref EcsAutoScalingGroup
     Export:
       Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsAutoScalingGroupName'
+
+  EcsAutoScalingGroupSubnetId:
+    Value: !Ref SubnetId
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsAutoScalingGroupSubnetId'

@@ -1,0 +1,354 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Stack for provisioning the AWS resources needed for
+  configuring compute environments in Nextflow Tower.
+
+Parameters:
+  S3ReadWriteAccessArns:
+    Type: List<String>
+    Default: ""
+    Description: >-
+      (Optional) List of IAM users and roles (strings) who
+      should have read- and write-access to the S3 bucket.
+      These ARNs will also have access to the configuration
+      secret. You can provide role ARNs or assumed-role ARNs.
+
+  S3ReadOnlyAccessArns:
+    Type: List<String>
+    Default: ""
+    Description: >-
+      (Optional) List of IAM users and roles (strings)
+      who should only have read-access to the S3 bucket.
+      These ARNs will also have access to the configuration
+      secret. You can provide role ARNs or assumed-role ARNs.
+
+  EnableDataLifeCycle:
+    Type: String
+    Description: Enabled to enable bucket lifecycle rule, default is Disabled
+    AllowedValues:
+      - Enabled
+      - Disabled
+    Default: Disabled
+
+  LifecycleDataTransition:
+    Type: Number
+    Description: >-
+      Number of days until S3 objects are moved to LifecycleDataStorageClass
+    Default: 30
+
+  LifecycleDataStorageClass:
+    Type: String
+    Description: S3 bucket objects will transition into this storage class
+    AllowedValues:
+      - DEEP_ARCHIVE
+      - INTELLIGENT_TIERING
+      - STANDARD_IA
+      - ONEZONE_IA
+      - GLACIER
+    Default: GLACIER
+
+  LifecycleDataExpiration:
+    Type: Number
+    Description: >-
+      Number of days (from creation) when objects are
+      deleted from S3 and the LifecycleDataStorageClass
+    Default: 365000
+
+  AccountAdminArns:
+    Type: List<String>
+    Description: >-
+      List of IAM user and role ARNs (strings) who should have access to
+      project-specific resources (e.g., private S3 bucket, KMS key, secrets).
+
+  TemplateRootUrl:
+    Type: String
+    Description: URL of S3 bucket where templates are deployed
+    ConstraintDescription: Must be a valid S3 HTTP URL
+
+  TowerForgePolicyArn:
+    Type: String
+    Description: ARN for Tower Forge IAM policy
+
+  TowerLaunchPolicyArn:
+    Type: String
+    Description: ARN for Tower Launch IAM policy
+
+Conditions:
+  HasS3ReadWriteAccessArns:
+    !Not [!Equals [!Join [",", !Ref S3ReadWriteAccessArns], ""]]
+  HasS3ReadOnlyAccessArns:
+    !Not [!Equals [!Join [",", !Ref S3ReadOnlyAccessArns], ""]]
+  HasAnyS3AccessArns:
+    !Or [!Condition HasS3ReadWriteAccessArns, !Condition HasS3ReadOnlyAccessArns]
+
+Resources:
+  TowerForgeServiceUser:
+    Type: AWS::IAM::User
+
+  TowerForgeServiceUserAccessKey:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref TowerForgeServiceUser
+
+  TowerForgeServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+        - !Ref TowerForgePolicyArn
+        - !Ref TowerLaunchPolicyArn
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              AWS: !GetAtt TowerForgeServiceUser.Arn
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              AWS: !Ref AccountAdminArns
+
+  EncryptionKeyStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub ${TemplateRootUrl}/aws-infra/v0.3.1/KMS/kms-key.yaml
+      TimeoutInMinutes: 5
+      Parameters:
+        AliasName: !Sub "alias/${AWS::StackName}-EncryptionKey"
+        AdminPrincipalArns: !Join
+          - ","
+          - - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            - !Join
+              - ","
+              - !Ref AccountAdminArns
+        UserPrincipalArns: !Join
+          - ","
+          - - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            # TODO: Replace following line once we have a method for
+            #       granting Tower jobs with access to the KMS key
+            - "*"
+            - !GetAtt TowerForgeServiceRole.Arn
+            - !Join
+              - ","
+              - !Ref AccountAdminArns
+            - !If
+              - HasS3ReadWriteAccessArns
+              - !Join
+                - ","
+                - !Ref S3ReadWriteAccessArns
+              - !Ref AWS::NoValue
+            - !If
+              - HasS3ReadOnlyAccessArns
+              - !Join
+                - ","
+                - !Ref S3ReadOnlyAccessArns
+              - !Ref AWS::NoValue
+
+  TowerBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${AWS::StackName}-tower-bucket"
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - BucketKeyEnabled: true
+            ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+              KMSMasterKeyID: !GetAtt EncryptionKeyStack.Outputs.KeyArn
+      LifecycleConfiguration:
+        Rules:
+        - Id: DataLifecycleRule
+          Status: !Ref EnableDataLifeCycle
+          ExpirationInDays: !Ref LifecycleDataExpiration
+          Transitions:
+            - TransitionInDays: !Ref LifecycleDataTransition
+              StorageClass: !Ref LifecycleDataStorageClass
+
+  TowerBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref TowerBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: TowerForgeServiceRoleS3Access
+            Effect: Allow
+            Principal:
+              AWS:
+                - !GetAtt TowerForgeServiceRole.Arn
+            Action:
+              - "s3:GetBucketLocation"
+              - "s3:ListBucket"
+              - "s3:GetObject"
+              - "s3:PutObject"
+              - "s3:PutObjectTagging"
+              - "s3:DeleteObject"
+              - "s3:*MultipartUpload*"
+            Resource:
+              - !Sub "arn:aws:s3:::${TowerBucket}"
+              - !Sub "arn:aws:s3:::${TowerBucket}/*"
+          - !If
+            - HasS3ReadWriteAccessArns
+            - Sid: GrantWriteAccessToS3ReadWriteAccessArns
+              Effect: Allow
+              Principal:
+                AWS: !Ref S3ReadWriteAccessArns
+              Action:
+                - "s3:PutObject*"
+              Condition:
+                StringEquals:
+                  s3:x-amz-acl: bucket-owner-full-control
+              Resource:
+                - !Sub "arn:aws:s3:::${TowerBucket}/*"
+            - !Ref AWS::NoValue
+          - !If
+            - HasS3ReadWriteAccessArns
+            - Sid: GrantRemainingAccessToS3ReadWriteAccessArns
+              Effect: Allow
+              Principal:
+                AWS: !Ref S3ReadWriteAccessArns
+              Action:
+                - "s3:GetObject*"
+                - "s3:DeleteObject*"
+                - "s3:*MultipartUpload*"
+                - "s3:ListBucket*"
+                - "s3:GetBucketLocation"
+              Resource:
+                - !Sub "arn:aws:s3:::${TowerBucket}"
+                - !Sub "arn:aws:s3:::${TowerBucket}/*"
+            - !Ref AWS::NoValue
+          - !If
+            - HasS3ReadOnlyAccessArns
+            - Sid: GrantReadAccessToS3ReadOnlyAccessArns
+              Effect: Allow
+              Principal:
+                AWS: !Ref S3ReadOnlyAccessArns
+              Action:
+                - "s3:ListBucket*"
+                - "s3:GetBucketLocation"
+                - "s3:GetObject"
+                - "s3:GetObjectAcl"
+              Resource:
+                - !Sub "arn:aws:s3:::${TowerBucket}"
+                - !Sub "arn:aws:s3:::${TowerBucket}/*"
+            - !Ref AWS::NoValue
+
+  TowerProjectConfigurationSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub "${AWS::StackName}-TowerProjectConfiguration"
+      Description: !Sub "Configuration for ${AWS::StackName} Project in Tower"
+      SecretString: !Sub
+        - >-
+          {
+            "forge_access_key_id":      "${ForgeAccessKeyId}",
+            "forge_secret_access_key":  "${ForgeSecretAccessKey}",
+            "forge_role_arn":           "${ForgeRoleArn}",
+            "bucket_name":              "${BucketName}",
+            "read_write_arns":          "${ReadWriteArns}",
+            "read_only_arns":           "${ReadOnlyArns}",
+            "vpc_id":                   "${VpcId}",
+            "subnet_ids":               "${SubnetIds}"
+          }
+        - ForgeAccessKeyId: !Ref TowerForgeServiceUserAccessKey
+          ForgeSecretAccessKey: !GetAtt TowerForgeServiceUserAccessKey.SecretAccessKey
+          ForgeRoleArn: !GetAtt TowerForgeServiceRole.Arn
+          BucketName: !Ref TowerBucket
+          ReadWriteArns: !Join [ ",", !Ref S3ReadWriteAccessArns ]
+          ReadOnlyArns: !Join [ ",", !Ref S3ReadOnlyAccessArns ]
+          VpcId: !ImportValue
+            'Fn::Sub': '${AWS::Region}-nextflow-vpc-VPCId'
+          SubnetIds: !Join
+            - ","
+            - - !ImportValue
+                'Fn::Sub': '${AWS::Region}-nextflow-vpc-PrivateSubnet'
+              - !ImportValue
+                'Fn::Sub': '${AWS::Region}-nextflow-vpc-PrivateSubnet1'
+              - !ImportValue
+                'Fn::Sub': '${AWS::Region}-nextflow-vpc-PrivateSubnet2'
+              - !ImportValue
+                'Fn::Sub': '${AWS::Region}-nextflow-vpc-PrivateSubnet3'
+      KmsKeyId: !GetAtt EncryptionKeyStack.Outputs.Key
+
+  TowerProjectConfigurationSecretPolicy:
+    Type: AWS::SecretsManager::ResourcePolicy
+    Condition: HasAnyS3AccessArns
+    Properties:
+      BlockPublicPolicy: True
+      SecretId: !Ref TowerProjectConfigurationSecret
+      ResourcePolicy:
+        Version: "2012-10-17"
+        Statement:
+          - !If
+            - HasS3ReadWriteAccessArns
+            - Sid: GrantReadAccessToS3ReadWriteAccessArns
+              Effect: Allow
+              Action: "secretsmanager:GetSecretValue"
+              Principal:
+                AWS: !Ref S3ReadWriteAccessArns
+              Resource: !Ref TowerProjectConfigurationSecret
+            - !Ref AWS::NoValue
+          - !If
+            - HasS3ReadOnlyAccessArns
+            - Sid: GrantReadAccessToS3ReadOnlyAccessArns
+              Effect: Allow
+              Action: "secretsmanager:GetSecretValue"
+              Principal:
+                AWS: !Ref S3ReadOnlyAccessArns
+              Resource: !Ref TowerProjectConfigurationSecret
+            - !Ref AWS::NoValue
+
+Outputs:
+  S3ReadWriteAccessArns:
+    Condition: HasS3ReadWriteAccessArns
+    Value: !Join [ ",", !Ref S3ReadWriteAccessArns ]
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-S3ReadWriteAccessArns"
+
+  S3ReadOnlyAccessArns:
+    Condition: HasS3ReadOnlyAccessArns
+    Value: !Join [ ",", !Ref S3ReadOnlyAccessArns ]
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-S3ReadOnlyAccessArns"
+
+  TowerBucket:
+    Value: !Ref TowerBucket
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerBucket"
+
+  TowerBucketArn:
+    Value: !GetAtt TowerBucket.Arn
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerBucketArn"
+
+  TowerForgeServiceUser:
+    Value: !Ref TowerForgeServiceUser
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceUser"
+
+  TowerForgeServiceUserArn:
+    Value: !GetAtt TowerForgeServiceUser.Arn
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceUserArn"
+
+  TowerForgeServiceRole:
+    Value: !Ref TowerForgeServiceRole
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceRole"
+
+  TowerForgeServiceRoleArn:
+    Value: !GetAtt TowerForgeServiceRole.Arn
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceRoleArn"
+
+  TowerProjectConfigurationSecret:
+    Value: !Sub "${AWS::StackName}-TowerProjectConfiguration"
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerProjectConfigurationSecret"
+
+  TowerProjectConfigurationSecretArn:
+    Value: !Ref TowerProjectConfigurationSecret
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerProjectConfigurationSecretArn"
