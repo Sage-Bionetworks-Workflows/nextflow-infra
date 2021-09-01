@@ -14,25 +14,33 @@ To complete these onboarding instructions, you will need a project name (_e.g._ 
    4. If anyone should only have read-access, uncomment the two lines for `ReadOnlyAccessArns` and update the email accordingly, duplicating as needed.
    5. Update the values for `Department` and `Project` under `stack_tags` such that billing can be properly routed as well as `OwnerEmail` so we know who to contact if the need arises.
 3. Once the pull request is merged, open a terminal and perform the following steps:
-   1. Run the `export` commands for your AWS `TowerUser` credentials, which are available via the JumpCloud console.
+   1. [Copy](https://d-906769aa66.awsapps.com/start#/) the temporary credentials for your Developer `sandbox` role, available under:
+      ```
+      AWS Accounts > org-sagebase-sandbox > Developer > Command line or programmatic access > Option 1
+      ```
+      Run the copied `export` commands, which should look like this:
       ```
       export AWS_ACCESS_KEY_ID="..."
       export AWS_SECRET_ACCESS_KEY="..."
       export AWS_SESSION_TOKEN="..."
       ```
       <!-- TODO: Insert GIF screencast -->
-   2. Create a new token in Nextflow Tower called `<stack_name>`, copy the token (which is only ever displayed once), and run the following command, updating `<token>` with the copied value:
+   2. [Create](https://tower.nf/tokens) a new token in Nextflow Tower called `<stack_name>`, copy the token (which is only ever displayed once), and run the following command, updating `<token>` with the copied value:
+      <!-- TODO: Update link with our production instance of Tower -->
       ```
       export NXF_TOWER_TOKEN="<token>"
       ```
       <!-- TODO: Insert GIF screencast -->
-   3. Run the following Docker command; don't forget to update `<stack_name>` accordingly:
+   3. [Create](https://www.synapse.org/#!PersonalAccessTokens:) a new personal access token in Synapse called `<stack_name>`, copy the token (which is only ever displayed once), and run the following command, updating `<token>` with the copied value:
       ```
-      docker run -e STACK_NAME=<stack_name> -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e NXF_TOWER_TOKEN -v "$HOME/.aws:/root/.aws sagebionetworks/setup-tower-project"
+      export SYNAPSE_TOKEN="<token>"
       ```
-   4. Run the following command to retrieve the bucket name:
+      <!-- TODO: Insert GIF screencast -->
+   4. Run the following Docker command; don't forget to update `<stack_name>` accordingly:
       ```
-      aws --profile <stack_name> s3 ls | grep <stack_name>
+      STACK_NAME="<stack_name>"
+      mkdir -p "~/.tower-projects/"
+      docker run -e STACK_NAME -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e NXF_TOWER_TOKEN -e SYNAPSE_TOKEN -v "$HOME/.aws:/root/.aws" sagebionetworks/setup-tower-project > "~/.tower-projects/$STACK_NAME.json"
       ```
 4. The above Docker command performs the following tasks:
    - Two AWS CLI profiles were added to `~/.aws/config`:
