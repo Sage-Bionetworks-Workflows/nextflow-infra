@@ -126,8 +126,6 @@ Resources:
         UserPrincipalArns: !Join
           - ","
           - - !Sub "arn:aws:iam::${AWS::AccountId}:root"
-            # TODO: Replace the following line with specific Tower role
-            - "*"
             - !GetAtt TowerForgeServiceRole.Arn
             - !Join
               - ","
@@ -152,12 +150,13 @@ Resources:
       OwnershipControls:
         Rules:
           - ObjectOwnership: BucketOwnerPreferred
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - BucketKeyEnabled: true
-            ServerSideEncryptionByDefault:
-              SSEAlgorithm: aws:kms
-              KMSMasterKeyID: !GetAtt EncryptionKeyStack.Outputs.KeyArn
+      # TODO: Re-enable encryption once Tower jobs have access to KMS key
+      # BucketEncryption:
+      #   ServerSideEncryptionConfiguration:
+      #     - BucketKeyEnabled: true
+      #       ServerSideEncryptionByDefault:
+      #         SSEAlgorithm: aws:kms
+      #         KMSMasterKeyID: !GetAtt EncryptionKeyStack.Outputs.KeyArn
       LifecycleConfiguration:
         Rules:
         - Id: DataLifecycleRule
