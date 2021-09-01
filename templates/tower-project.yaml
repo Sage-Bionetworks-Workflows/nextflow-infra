@@ -291,7 +291,7 @@ Resources:
               Resource: !Ref TowerProjectConfigurationSecret
             - !Ref AWS::NoValue
           - !If
-            - HasS3ReadWriteAccessArns
+            - HasS3ReadOnlyAccessArns
             - Sid: GrantReadAccessToS3ReadOnlyAccessArns
               Effect: Allow
               Action: "secretsmanager:GetSecretValue"
