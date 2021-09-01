@@ -28,7 +28,7 @@ Parameters:
     AllowedValues:
       - Enabled
       - Disabled
-    Default: Disabled
+    Default: Enabled
 
   LifecycleDataTransition:
     Type: Number
@@ -45,14 +45,14 @@ Parameters:
       - STANDARD_IA
       - ONEZONE_IA
       - GLACIER
-    Default: GLACIER
+    Default: INTELLIGENT_TIERING
 
   LifecycleDataExpiration:
     Type: Number
     Description: >-
       Number of days (from creation) when objects are
       deleted from S3 and the LifecycleDataStorageClass
-    Default: 365000
+    Default: 183
 
   AccountAdminArns:
     Type: List<String>

@@ -2,6 +2,61 @@
 
 The AWS infrastructure for hosting a private instance of [Nextflow Tower](https://tower.nf/) and executing [Nextflow workflows](https://nextflow.io/) is defined in this repository and deployed using [CloudFormation](https://aws.amazon.com/cloudformation/) via [Sceptre](https://sceptre.cloudreach.com/).
 
+## Onboarding
+
+To complete these onboarding instructions, you will need a project name (_e.g._ `imcore`, `amp-ad`, `commonmind`), and a stack name, _i.e._ the project name with the suffix `-project` (_e.g._ `imcore-project`, `amp-ad-project`, `commonmind-project`).
+
+**N.B.** Anytime that `<stack_name>` apears with the angle brackets, replace this placeholder with the actual stack name without the angle brackets.
+
+1. Install [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) and [Docker Desktop](https://www.docker.com/products/docker-desktop).
+
+2. Open a pull request on this repository in which you duplicate `config/prod/example-project.yaml` as `config/prod/<stack_name>.yaml` and follow the numbered steps listed in the file. Note that some steps are required whereas others are optional.
+
+3. Once the pull request is approved and merged, open a terminal and perform the following steps:
+
+   1. [Copy](https://d-906769aa66.awsapps.com/start#/) the temporary credentials for your Developer `sandbox` role, available under:
+      ```
+      AWS Accounts > org-sagebase-sandbox > Developer > Command line or programmatic access > Option 1
+      ```
+      Run the copied `export` commands in the terminal, which should look like this:
+      ```
+      export AWS_ACCESS_KEY_ID="..."
+      export AWS_SECRET_ACCESS_KEY="..."
+      export AWS_SESSION_TOKEN="..."
+      ```
+
+      <!-- TODO: Update link with our production instance of Tower -->
+   2. [Create](https://tower-dev.sagebionetworks.org/tokens) a new token in Nextflow Tower called `<stack_name>`, copy the token (which is only displayed once), and run the following command, updating `<token>` with the copied value:
+      ```
+      export NXF_TOWER_TOKEN="<token>"
+      ```
+
+   3. [Create](https://www.synapse.org/#!PersonalAccessTokens:) a new personal access token in Synapse called `<stack_name>` with all scopes enabled, copy the token (which is only displayed once), and run the following command, updating `<token>` with the copied value:
+      ```
+      export SYNAPSE_TOKEN="<token>"
+      ```
+
+   4. Run the following Docker command to configure your project in Nextflow Tower, updating `<stack_name>` with the stack name:
+      ```
+      docker run -e STACK_NAME="<stack_name>" -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e NXF_TOWER_TOKEN -e SYNAPSE_TOKEN -v "$HOME/.aws:/root/.aws" sagebionetworks/setup-tower-project > project-config.json
+      ```
+
+4. The above Docker command performs the following tasks:
+
+   - In your AWS CLI configuration (`~/.aws/config`), it configures two profiles:
+     - `sandbox` for using the `Developer` role from the `sandbox` AWS account
+     - `tower` for using the `TowerViewer` role from the `nextflow-prod` AWS account
+
+     You can login using these profiles with the following commands
+     ```
+      aws --profile sandbox sso login
+      aws --profile tower sso login
+     ```
+
+   - In Nextflow Tower, the credentials for the Forge service user were created under the name `<stack_name>`.
+
+   - In Nextflow Tower, a compute environment was created using the above credentials under the name `<stack_name> (default)`. If you need to tweak the compute environment, we recommend that you clone the default one and make adjustments as necessary.
+
 ## AWS Accounts
 
 Two AWS accounts are managed by this repository, both of which were [bootstrapped](https://sagebionetworks.jira.com/wiki/spaces/IT/pages/2058878986/Bootstrapping+AWS+Project+Accounts) using [org-formation](https://github.com/org-formation/org-formation-cli). They are defined in this [organization.yaml](https://github.com/Sage-Bionetworks-IT/organizations-infra/blob/master/org-formation/organization.yaml) file. The two accounts are:
