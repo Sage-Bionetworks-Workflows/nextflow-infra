@@ -4,7 +4,7 @@ Description: >-
   configuring compute environments in Nextflow Tower.
 
 Parameters:
-  ReadWriteAccessArns:
+  S3ReadWriteAccessArns:
     Type: List<String>
     Default: ""
     Description: >-
@@ -12,7 +12,7 @@ Parameters:
       should have read- and write-access to the S3 bucket.
       You can provide role ARNs or assumed-role ARNs.
 
-  ReadOnlyAccessArns:
+  S3ReadOnlyAccessArns:
     Type: List<String>
     Default: ""
     Description: >-
@@ -52,13 +52,13 @@ Parameters:
       deleted from S3 and the LifecycleDataStorageClass
     Default: 365000
 
-  AdminArns:
+  AccountAdminArns:
     Type: List<String>
     Description: >-
       List of IAM user and role ARNs (strings) who should have access to
       project-specific resources (e.g., private S3 bucket, KMS key, secrets).
 
-  NonAdminArns:
+  AccountNonAdminArns:
     Type: List<String>
     Description: >-
       List of IAM user and role ARNs (strings) who shouldn't have access to
@@ -78,12 +78,12 @@ Parameters:
     Description: ARN for Tower Launch IAM policy
 
 Conditions:
-  HasReadWriteAccessArns:
-    !Not [!Equals [!Join [",", !Ref ReadWriteAccessArns], ""]]
-  HasReadOnlyAccessArns:
-    !Not [!Equals [!Join [",", !Ref ReadOnlyAccessArns], ""]]
-  HasAnyAccessArns:
-    !Or [!Condition HasReadWriteAccessArns, !Condition HasReadOnlyAccessArns]
+  HasS3ReadWriteAccessArns:
+    !Not [!Equals [!Join [",", !Ref S3ReadWriteAccessArns], ""]]
+  HasS3ReadOnlyAccessArns:
+    !Not [!Equals [!Join [",", !Ref S3ReadOnlyAccessArns], ""]]
+  HasAnyS3AccessArns:
+    !Or [!Condition HasS3ReadWriteAccessArns, !Condition HasS3ReadOnlyAccessArns]
 
 Resources:
   TowerForgeServiceUser:
@@ -200,7 +200,7 @@ Resources:
           - - !Sub "arn:aws:iam::${AWS::AccountId}:root"
             - !Join
               - ","
-              - !Ref AdminArns
+              - !Ref AccountAdminArns
         UserPrincipalArns: !Join
           - ","
           - - !Sub "arn:aws:iam::${AWS::AccountId}:root"
@@ -208,18 +208,18 @@ Resources:
             - !GetAtt TowerForgeInstanceRole.Arn
             - !Join
               - ","
-              - !Ref AdminArns
+              - !Ref AccountAdminArns
             - !If
-              - HasReadWriteAccessArns
+              - HasS3ReadWriteAccessArns
               - !Join
                 - ","
-                - !Ref ReadWriteAccessArns
+                - !Ref S3ReadWriteAccessArns
               - !Ref AWS::NoValue
             - !If
-              - HasReadOnlyAccessArns
+              - HasS3ReadOnlyAccessArns
               - !Join
                 - ","
-                - !Ref ReadOnlyAccessArns
+                - !Ref S3ReadOnlyAccessArns
               - !Ref AWS::NoValue
 
   TowerBucket:
@@ -254,7 +254,7 @@ Resources:
           - Sid: DenyAccessToNonAdmins
             Effect: Deny
             Principal:
-              AWS: !Ref NonAdminArns
+              AWS: !Ref AccountNonAdminArns
             Action: "s3:*"
             Resource:
               - !Sub "arn:aws:s3:::${TowerBucket}"
@@ -277,11 +277,11 @@ Resources:
               - !Sub "arn:aws:s3:::${TowerBucket}"
               - !Sub "arn:aws:s3:::${TowerBucket}/*"
           - !If
-            - HasReadWriteAccessArns
-            - Sid: GrantWriteAccessToReadWriteAccessArns
+            - HasS3ReadWriteAccessArns
+            - Sid: GrantWriteAccessToS3ReadWriteAccessArns
               Effect: Allow
               Principal:
-                AWS: !Ref ReadWriteAccessArns
+                AWS: !Ref S3ReadWriteAccessArns
               Action:
                 - "s3:PutObject*"
               Condition:
@@ -291,11 +291,11 @@ Resources:
                 - !Sub "arn:aws:s3:::${TowerBucket}/*"
             - !Ref AWS::NoValue
           - !If
-            - HasReadWriteAccessArns
-            - Sid: GrantRemainingAccessToReadWriteAccessArns
+            - HasS3ReadWriteAccessArns
+            - Sid: GrantRemainingAccessToS3ReadWriteAccessArns
               Effect: Allow
               Principal:
-                AWS: !Ref ReadWriteAccessArns
+                AWS: !Ref S3ReadWriteAccessArns
               Action:
                 - "s3:GetObject*"
                 - "s3:DeleteObject*"
@@ -307,11 +307,11 @@ Resources:
                 - !Sub "arn:aws:s3:::${TowerBucket}/*"
             - !Ref AWS::NoValue
           - !If
-            - HasReadOnlyAccessArns
-            - Sid: GrantReadAccessToReadOnlyAccessArns
+            - HasS3ReadOnlyAccessArns
+            - Sid: GrantReadAccessToS3ReadOnlyAccessArns
               Effect: Allow
               Principal:
-                AWS: !Ref ReadOnlyAccessArns
+                AWS: !Ref S3ReadOnlyAccessArns
               Action:
                 - "s3:ListBucket*"
                 - "s3:GetBucketLocation"
@@ -343,8 +343,8 @@ Resources:
           ForgeSecretAccessKey: !GetAtt TowerForgeServiceUserAccessKey.SecretAccessKey
           ForgeRoleArn: !GetAtt TowerForgeServiceRole.Arn
           BucketName: !Ref TowerBucket
-          ReadWriteArns: !Join [ ",", !Ref ReadWriteAccessArns ]
-          ReadOnlyArns: !Join [ ",", !Ref ReadOnlyAccessArns ]
+          ReadWriteArns: !Join [ ",", !Ref S3ReadWriteAccessArns ]
+          ReadOnlyArns: !Join [ ",", !Ref S3ReadOnlyAccessArns ]
           VpcId: !ImportValue
             'Fn::Sub': '${AWS::Region}-nextflow-vpc-VPCId'
           SubnetIds: !Join
@@ -361,14 +361,14 @@ Resources:
 
   TowerProjectConfigurationSecretPolicy:
     Type: AWS::SecretsManager::ResourcePolicy
-    Condition: HasAnyAccessArns
+    Condition: HasAnyS3AccessArns
     Properties:
       BlockPublicPolicy: True
       SecretId: !Ref TowerProjectConfigurationSecret
       ResourcePolicy:
         Version: "2012-10-17"
         Statement:
-        - Sid: GrantReadAccessToReadWriteAccessArns
+        - Sid: GrantReadAccessToS3ReadWriteAccessArns
           Effect: Allow
           Action: "secretsmanager:GetSecretValue"
           Principal:
@@ -377,31 +377,31 @@ Resources:
               - !Join
                 - ","
                 - - !If
-                    - HasReadWriteAccessArns
+                    - HasS3ReadWriteAccessArns
                     - !Join
                       - ","
-                      - !Ref ReadWriteAccessArns
+                      - !Ref S3ReadWriteAccessArns
                     - !Ref AWS::NoValue
                   - !If
-                    - HasReadOnlyAccessArns
+                    - HasS3ReadOnlyAccessArns
                     - !Join
                       - ","
-                      - !Ref ReadOnlyAccessArns
+                      - !Ref S3ReadOnlyAccessArns
                     - !Ref AWS::NoValue
           Resource: !Ref TowerProjectConfigurationSecret
 
 Outputs:
-  ReadWriteAccessArns:
-    Condition: HasReadWriteAccessArns
-    Value: !Join [ ",", !Ref ReadWriteAccessArns ]
+  S3ReadWriteAccessArns:
+    Condition: HasS3ReadWriteAccessArns
+    Value: !Join [ ",", !Ref S3ReadWriteAccessArns ]
     Export:
-      Name: !Sub "${AWS::Region}-${AWS::StackName}-ReadWriteAccessArns"
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-S3ReadWriteAccessArns"
 
-  ReadOnlyAccessArns:
-    Condition: HasReadOnlyAccessArns
-    Value: !Join [ ",", !Ref ReadOnlyAccessArns ]
+  S3ReadOnlyAccessArns:
+    Condition: HasS3ReadOnlyAccessArns
+    Value: !Join [ ",", !Ref S3ReadOnlyAccessArns ]
     Export:
-      Name: !Sub "${AWS::Region}-${AWS::StackName}-ReadOnlyAccessArns"
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-S3ReadOnlyAccessArns"
 
   TowerBucket:
     Value: !Ref TowerBucket
