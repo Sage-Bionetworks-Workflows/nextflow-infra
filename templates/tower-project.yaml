@@ -10,7 +10,8 @@ Parameters:
     Description: >-
       (Optional) List of IAM users and roles (strings) who
       should have read- and write-access to the S3 bucket.
-      You can provide role ARNs or assumed-role ARNs.
+      These ARNs will also have access to the configuration
+      secret. You can provide role ARNs or assumed-role ARNs.
 
   S3ReadOnlyAccessArns:
     Type: List<String>
@@ -18,7 +19,8 @@ Parameters:
     Description: >-
       (Optional) List of IAM users and roles (strings)
       who should only have read-access to the S3 bucket.
-      You can provide role ARNs or assumed-role ARNs.
+      These ARNs will also have access to the configuration
+      secret. You can provide role ARNs or assumed-role ARNs.
 
   EnableDataLifeCycle:
     Type: String
@@ -56,12 +58,6 @@ Parameters:
     Type: List<String>
     Description: >-
       List of IAM user and role ARNs (strings) who should have access to
-      project-specific resources (e.g., private S3 bucket, KMS key, secrets).
-
-  AccountNonAdminArns:
-    Type: List<String>
-    Description: >-
-      List of IAM user and role ARNs (strings) who shouldn't have access to
       project-specific resources (e.g., private S3 bucket, KMS key, secrets).
 
   TemplateRootUrl:
@@ -104,11 +100,13 @@ Resources:
         Version: "2012-10-17"
         Statement:
           - Effect: Allow
+            Action: sts:AssumeRole
             Principal:
-              AWS:
-                - !GetAtt TowerForgeServiceUser.Arn
-            Action:
-              - sts:AssumeRole
+              AWS: !GetAtt TowerForgeServiceUser.Arn
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              AWS: !Ref AccountAdminArns
 
   EncryptionKeyStack:
     Type: AWS::CloudFormation::Stack
@@ -126,7 +124,8 @@ Resources:
         UserPrincipalArns: !Join
           - ","
           - - !Sub "arn:aws:iam::${AWS::AccountId}:root"
-            # TODO: Replace the following line with specific Tower role
+            # TODO: Replace following line once we have a method for
+            #       granting Tower jobs with access to the KMS key
             - "*"
             - !GetAtt TowerForgeServiceRole.Arn
             - !Join
@@ -174,14 +173,6 @@ Resources:
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
-          - Sid: DenyAccessToNonAdmins
-            Effect: Deny
-            Principal:
-              AWS: !Ref AccountNonAdminArns
-            Action: "s3:*"
-            Resource:
-              - !Sub "arn:aws:s3:::${TowerBucket}"
-              - !Sub "arn:aws:s3:::${TowerBucket}/*"
           - Sid: TowerForgeServiceRoleS3Access
             Effect: Allow
             Principal:
@@ -290,27 +281,24 @@ Resources:
       ResourcePolicy:
         Version: "2012-10-17"
         Statement:
-        - Sid: GrantReadAccessToS3ReadWriteAccessArns
-          Effect: Allow
-          Action: "secretsmanager:GetSecretValue"
-          Principal:
-            AWS: !Split
-              - ","
-              - !Join
-                - ","
-                - - !If
-                    - HasS3ReadWriteAccessArns
-                    - !Join
-                      - ","
-                      - !Ref S3ReadWriteAccessArns
-                    - !Ref AWS::NoValue
-                  - !If
-                    - HasS3ReadOnlyAccessArns
-                    - !Join
-                      - ","
-                      - !Ref S3ReadOnlyAccessArns
-                    - !Ref AWS::NoValue
-          Resource: !Ref TowerProjectConfigurationSecret
+          - !If
+            - HasS3ReadWriteAccessArns
+            - Sid: GrantReadAccessToS3ReadWriteAccessArns
+              Effect: Allow
+              Action: "secretsmanager:GetSecretValue"
+              Principal:
+                AWS: !Ref S3ReadWriteAccessArns
+              Resource: !Ref TowerProjectConfigurationSecret
+            - !Ref AWS::NoValue
+          - !If
+            - HasS3ReadOnlyAccessArns
+            - Sid: GrantReadAccessToS3ReadOnlyAccessArns
+              Effect: Allow
+              Action: "secretsmanager:GetSecretValue"
+              Principal:
+                AWS: !Ref S3ReadOnlyAccessArns
+              Resource: !Ref TowerProjectConfigurationSecret
+            - !Ref AWS::NoValue
 
 Outputs:
   S3ReadWriteAccessArns:

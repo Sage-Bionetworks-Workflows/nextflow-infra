@@ -102,15 +102,28 @@ Parameters:
     Type: Number
     Description: (Optional) Port to open on host for backend container
     Default: 8080
+  EfsFileSystemId:
+    Type: String
+    Description: The ID of the EFS file system to mount as a volume
+  EfsVolumeName:
+    Type: String
+    Description: The name of the EFS file system mounted as a volume
+    Default: 'efs_volume'
+  EfsVolumeMountPath:
+    Type: String
+    Description: Path where the EFS volume container tower configuration is mounted
+  TowerConfigFileName:
+    Type: String
+    Description: Name of the tower config YAML file
 Resources:
   TowerTask:
     Type: AWS::ECS::TaskDefinition
     Properties:
       NetworkMode: bridge
       Volumes:
-        - Name: tower_yaml
-          Host:
-            SourcePath: '/opt/nextflow/tower.yml'
+        - Name: !Ref EfsVolumeName
+          EFSVolumeConfiguration:
+            FilesystemId: !Ref EfsFileSystemId
       ContainerDefinitions:
         - Name: !Ref RedisContainerName
           Image: !Ref RedisContainerImage
@@ -173,6 +186,12 @@ Resources:
               Value: !Ref TowerGithubClientId
             - Name: TOWER_GITHUB_SECRET
               Value: !Ref TowerGithubSecret
+            - Name: TOWER_CONFIG_FILE
+              Value: !Sub '${EfsVolumeMountPath}/${TowerConfigFileName}'
+          MountPoints:
+            - ContainerPath: !Ref EfsVolumeMountPath
+              ReadOnly: true
+              SourceVolume: !Ref EfsVolumeName
         - Name: !Ref FrontendContainerName
           Image: !Ref FrontendContainerImage
           Memory: 2000
@@ -241,15 +260,17 @@ Resources:
               Value: !Ref TowerGithubClientId
             - Name: TOWER_GITHUB_SECRET
               Value: !Ref TowerGithubSecret
+            - Name: TOWER_CONFIG_FILE
+              Value: !Sub '${EfsVolumeMountPath}/${TowerConfigFileName}'
           EntryPoint:
             - /bin/sh
           Command:
             - -c
             - /tower.sh
           MountPoints:
-            - ContainerPath: '/tower.yml'
+            - ContainerPath: !Ref EfsVolumeMountPath
               ReadOnly: true
-              SourceVolume: tower_yaml
+              SourceVolume: !Ref EfsVolumeName
 
 Outputs:
 
