@@ -1,18 +1,11 @@
-template_path: nextflow-ecs-cluster.j2
+template_path: nextflow-ecs-cluster.yaml
 stack_name: nextflow-ecs-cluster
 dependencies:
   - prod/nextflow-vpc.yaml
   - prod/nextflow-ecs-security-group.yaml
 parameters:
   EcsSecurityGroupId: !stack_output_external nextflow-ecs-security-group::SecurityGroupId
-  SubnetIds:
-    - !stack_output_external nextflow-vpc::PrivateSubnet
-sceptre_user_data:
-  TowerConfigFileContents: |
-    tower:
-      auth:
-        github:
-          allow-list: []
+  SubnetId: !stack_output_external nextflow-vpc::PrivateSubnet
 stack_tags:
   Department: IBC
   Project: Infrastructure

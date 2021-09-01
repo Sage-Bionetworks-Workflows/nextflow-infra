@@ -25,11 +25,9 @@ Parameters:
     Type: AWS::EC2::SecurityGroup::Id
     Description: Security group ID for ECS cluster to grant database access
 
-  SubnetIds:
-    Type: CommaDelimitedList
-    Description: >
-      Specifies the Comma separated list of existing VPC Subnet
-      Ids where ECS instances will run.
+  SubnetId:
+    Type: String
+    Description: The VPC subnet where ECS instances will run.
 
   AutoscalingGroupMaxSize:
     Type: Number
@@ -126,20 +124,19 @@ Resources:
           repo_upgrade: security
 
           write_files:
-          - path: /opt/nextflow/tower.yml
-            content: |
-              {{ sceptre_user_data.TowerConfigFileContents|indent(14) }}
-            permissions: '0755'
           - path: /etc/ecs/ecs.config
             content: |
               ECS_CLUSTER=${EcsClusterName}
               ECS_IMAGE_PULL_BEHAVIOR=prefer-cached
             append: true
 
+          --==BOUNDARY==--
+
   EcsAutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      VPCZoneIdentifier: !Ref SubnetIds
+      VPCZoneIdentifier:
+        - !Ref SubnetId
       LaunchConfigurationName: !Ref EcsLaunchConfiguration
       MinSize: '0'
       MaxSize: !Ref AutoscalingGroupMaxSize
@@ -166,3 +163,8 @@ Outputs:
     Value: !Ref EcsAutoScalingGroup
     Export:
       Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsAutoScalingGroupName'
+
+  EcsAutoScalingGroupSubnetId:
+    Value: !Ref SubnetId
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsAutoScalingGroupSubnetId'
