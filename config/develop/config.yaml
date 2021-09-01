@@ -1,0 +1,6 @@
+sso_admin_role:
+  arn: arn:aws:iam::035458030717:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_Administrator_580e9f32ac55c4e7
+sso_developer_role:
+  arn: arn:aws:iam::035458030717:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_Developer-IAM-Contrained_bb921a00b238ea3c
+sso_viewer_role:
+  arn: arn:aws:iam::035458030717:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_Viewer_fd80909e6a51c6e7

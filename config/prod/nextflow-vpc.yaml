@@ -5,5 +5,4 @@ parameters:
   VpcSubnetPrefix: "172.22"
 hooks:
   before_launch:
-    # Need someone to create a new tag on aws-infra so tthat I can use a tag rather than an SHA
-    - !cmd "wget {{stack_group_config.aws_infra_templates_root_url}}/f169dffb7649f83e6bea647be9b64078112401cc/templates/VPC/vpc-20-private.yaml -O templates/remote/vpc-20-private.yaml"
+    - !cmd "wget {{stack_group_config.aws_infra_templates_root_url}}/v0.3.0/templates/VPC/vpc-20-private.yaml -O templates/remote/vpc-20-private.yaml"
