@@ -132,7 +132,7 @@ Resources:
               - sts:AssumeRole
       Policies:
         - PolicyName: "ForgeBatchJobPolicy"
-          PolicyDocument: 
+          PolicyDocument:
             Version: "2012-10-17"
             Statement:
               - Sid: ForgeInstanceRoleBatchJob
@@ -172,20 +172,20 @@ Resources:
 
   TowerForgePassRolePolicy:
     Type: AWS::IAM::Policy
-    Properties: 
+    Properties:
       PolicyName: "TowerForgePassRolePolicy"
-      PolicyDocument: 
+      PolicyDocument:
         Version: "2012-10-17"
-        Statement: 
+        Statement:
           - Effect: "Allow"
             Action:
               - "iam:GetRole"
               - "iam:PassRole"
-            Resource: 
+            Resource:
               - !GetAtt TowerForgeInstanceRole.Arn
-      Roles: 
+      Roles:
         - !Ref TowerForgeServiceRole
-      Users: 
+      Users:
         - !Ref TowerForgeServiceUser
 
   EncryptionKeyStack:
@@ -262,7 +262,7 @@ Resources:
           - Sid: TowerForgeServiceRoleS3Access
             Effect: Allow
             Principal:
-              AWS: 
+              AWS:
                 - !GetAtt TowerForgeServiceRole.Arn
                 - !GetAtt TowerForgeInstanceRole.Arn
             Action:
