@@ -43,7 +43,7 @@ To complete these onboarding instructions, you will need a project name (_e.g._ 
 
 4. The above Docker command performs the following tasks:
 
-   - In your AWS CLI configuration (`~/.aws/config`), it configures two profiles:
+   - In your AWS CLI configuration (`~/.aws/config`), it configures two profiles if they don't already exist:
      - `sandbox` for using the `Developer` role from the `sandbox` AWS account
      - `tower` for using the `TowerViewer` role from the `nextflow-prod` AWS account
 
