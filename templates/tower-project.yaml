@@ -126,6 +126,8 @@ Resources:
         UserPrincipalArns: !Join
           - ","
           - - !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            # TODO: Replace the following line with specific Tower role
+            - "*"
             - !GetAtt TowerForgeServiceRole.Arn
             - !Join
               - ","
