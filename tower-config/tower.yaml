@@ -1,0 +1,6 @@
+tower:
+  auth:
+    github:
+      allow-list:
+        - tess.thyer@sagebionetworks.org
+        - bruno.grande@sagebase.org
