@@ -120,9 +120,7 @@ Resources:
             Action: sts:AssumeRole
             Principal:
               Service:
-                - batch.amazonaws.com
-                - ecs.amazonaws.com
-                - ec2.amazonaws.com
+                - ecs-tasks.amazonaws.com
 
   TowerForgeBatchWorkJobRole:
     Type: AWS::IAM::Role
@@ -136,9 +134,7 @@ Resources:
             Action: sts:AssumeRole
             Principal:
               Service:
-                - batch.amazonaws.com
-                - ecs.amazonaws.com
-                - ec2.amazonaws.com
+                - ecs-tasks.amazonaws.com
 
   TowerForgeBatchHeadJobPolicy:
     Type: AWS::IAM::Policy
