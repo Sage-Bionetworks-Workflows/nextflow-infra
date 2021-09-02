@@ -8,9 +8,11 @@ To complete these onboarding instructions, you will need a project name (_e.g._ 
 
 **N.B.** Anytime that `<stack_name>` apears with the angle brackets, replace this placeholder with the actual stack name without the angle brackets.
 
-1. Install [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) and [Docker Desktop](https://www.docker.com/products/docker-desktop).
+1. Install [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) and [Docker](https://docs.docker.com/engine/install/).
 
 2. Open a pull request on this repository in which you duplicate `config/prod/example-project.yaml` as `config/prod/<stack_name>.yaml` and follow the numbered steps listed in the file. Note that some steps are required whereas others are optional.
+
+   **N.B.** If you are unfamiliar with Git/GitHub and don't know how to open a pull request, message us in the [#workflow_users](https://sagebionetworks.slack.com/archives/C8SJHFCKT) Slack channel or email us at nextflow-admins[at]sagebase[dot]org.
 
 3. Once the pull request is approved and merged, open a terminal and perform the following steps:
 
@@ -41,21 +43,23 @@ To complete these onboarding instructions, you will need a project name (_e.g._ 
       docker run -e STACK_NAME="<stack_name>" -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e NXF_TOWER_TOKEN -e SYNAPSE_TOKEN -v "$HOME/.aws:/root/.aws" sagebionetworks/setup-tower-project > project-config.json
       ```
 
-4. The above Docker command performs the following tasks:
+      The above Docker command performs the following tasks:
 
-   - In your AWS CLI configuration (`~/.aws/config`), it configures two profiles if they don't already exist:
-     - `sandbox` for using the `Developer` role from the `sandbox` AWS account
-     - `tower` for using the `TowerViewer` role from the `nextflow-prod` AWS account
+      - In your AWS CLI configuration (`~/.aws/config`), it configures two profiles if they don't already exist:
+        - `sandbox` for using the `Developer` role from the `sandbox` AWS account
+        - `tower` for using the `TowerViewer` role from the `nextflow-prod` AWS account
 
-     You can login using these profiles with the following commands
-     ```
-      aws --profile sandbox sso login
-      aws --profile tower sso login
-     ```
+        You can login using these profiles with the following commands
+        ```
+           aws --profile sandbox sso login
+           aws --profile tower sso login
+        ```
 
-   - In Nextflow Tower, the credentials for the Forge service user were created under the name `<stack_name>`.
+      - In Nextflow Tower, the credentials for the Forge service user were created under the name `<stack_name>`.
 
-   - In Nextflow Tower, a compute environment was created using the above credentials under the name `<stack_name> (default)`. If you need to tweak the compute environment, we recommend that you clone the default one and make adjustments as necessary.
+      - In Nextflow Tower, a compute environment was created using the above credentials under the name `<stack_name> (default)`. If you need to tweak the compute environment, we recommend that you clone the default one and make adjustments as necessary.
+
+4.
 
 ## AWS Accounts
 
@@ -64,7 +68,7 @@ Two AWS accounts are managed by this repository, both of which were [bootstrappe
 - `workflows-nextflow-prod` (or `nextflow-prod`) for production use
 - `workflows-nextflow-dev` (or `nextflow-dev`) for testing purposes
 
-In general, we use the `nextflow-dev` account for testing templates before deploying them into the `nextflow-prod` account. New [template configurations](#configuration) don't necessarily need to go through `nextflow-dev` first.
+In general, we use the `nextflow-dev` account for testing templates before deploying them into the `nextflow-prod` account. New [template configurations](#configuration) don't necessarily need to go through `nextflow-dev` first. For example, new instances of the `tower-project.yaml` template don't need to be deployed in `nextflow-dev` first.
 
 ### Role-Based Access
 
