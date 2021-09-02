@@ -108,6 +108,73 @@ Resources:
             Principal:
               AWS: !Ref AccountAdminArns
 
+  TowerForgeBatchHeadJobRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service:
+                - batch.amazonaws.com
+                - ecs.amazonaws.com
+                - ec2.amazonaws.com
+
+  TowerForgeBatchWorkJobRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service:
+                - batch.amazonaws.com
+                - ecs.amazonaws.com
+                - ec2.amazonaws.com
+
+  TowerForgeBatchHeadJobPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: TowerForgeBucketAccessPolicy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: NextflowConfig
+            Effect: Allow
+            Action:
+              - batch:DescribeJobQueues
+              - batch:CancelJob
+              - batch:SubmitJob
+              - batch:ListJobs
+              - batch:DescribeComputeEnvironments
+              - batch:TerminateJob
+              - batch:DescribeJobs
+              - batch:RegisterJobDefinition
+              - batch:DescribeJobDefinitions
+              - ecs:DescribeContainerInstances
+              - ecs:DescribeTasks
+              - ec2:DescribeInstances
+              - ec2:DescribeInstanceAttribute
+              - ec2:DescribeInstanceTypes
+              - ec2:DescribeInstanceStatus
+            Resource: "*"
+          - Sid: IAMConfig
+            Effect: Allow
+            Action:
+              - iam:GetRole
+              - iam:PassRole
+            Resource: !GetAtt TowerForgeBatchWorkJobRole.Arn
+      Roles:
+        - !Ref TowerForgeBatchHeadJobRole
+
   EncryptionKeyStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -124,9 +191,8 @@ Resources:
         UserPrincipalArns: !Join
           - ","
           - - !Sub "arn:aws:iam::${AWS::AccountId}:root"
-            # TODO: Replace following line once we have a method for
-            #       granting Tower jobs with access to the KMS key
-            - "*"
+            - !GetAtt TowerForgeBatchHeadJobRole.Arn
+            - !GetAtt TowerForgeBatchWorkJobRole.Arn
             - !GetAtt TowerForgeServiceRole.Arn
             - !Join
               - ","
@@ -173,11 +239,13 @@ Resources:
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
-          - Sid: TowerForgeServiceRoleS3Access
+          - Sid: TowerForgeRoleS3Access
             Effect: Allow
             Principal:
               AWS:
                 - !GetAtt TowerForgeServiceRole.Arn
+                - !GetAtt TowerForgeBatchHeadJobRole.Arn
+                - !GetAtt TowerForgeBatchWorkJobRole.Arn
             Action:
               - "s3:GetBucketLocation"
               - "s3:ListBucket"
@@ -235,6 +303,45 @@ Resources:
                 - !Sub "arn:aws:s3:::${TowerBucket}/*"
             - !Ref AWS::NoValue
 
+  # TowerForgeKmsKeyPolicy:
+  #   Type: AWS::IAM::Policy
+  #   Properties:
+  #     PolicyName: TowerForgeKmsKeyPolicy
+  #     PolicyDocument:
+  #       Version: '2012-10-17'
+  #       Statement:
+  #       - Sid: KeyPolicy
+  #         Effect: Allow
+  #         Action:
+  #         - kms:Decrypt
+  #         - kms:GenerateDataKey
+  #         Resource: !GetAtt EncryptionKeyStack.Outputs.KeyArn
+  #     Roles:
+  #       - TowerForgeBatchHeadJobRole
+  #       - TowerForgeBatchWorkJobRole
+
+  # TowerForgeBucketAccessPolicy:
+  #   Type: AWS::IAM::Policy
+  #   Properties:
+  #     PolicyName: TowerForgeBucketAccessPolicy
+  #     PolicyDocument:
+  #       Version: '2012-10-17'
+  #       Statement:
+  #         - Sid: ListObjectsInBucket
+  #           Effect: Allow
+  #           Action:
+  #             - s3:ListBucket
+  #           Resource:
+  #             - !Sub "arn:aws:s3:::${TowerBucket}"
+  #         - Sid: AllObjectActions
+  #           Effect: Allow
+  #           Action: s3:*Object
+  #           Resource:
+  #             - !Sub "arn:aws:s3:::${TowerBucket}/*"
+  #     Roles:
+  #       - TowerForgeBatchHeadJobRole
+  #       - TowerForgeBatchWorkJobRole
+
   TowerProjectConfigurationSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
@@ -245,7 +352,9 @@ Resources:
           {
             "forge_access_key_id":      "${ForgeAccessKeyId}",
             "forge_secret_access_key":  "${ForgeSecretAccessKey}",
-            "forge_role_arn":           "${ForgeRoleArn}",
+            "forge_service_role_arn":   "${ForgeServiceRoleArn}",
+            "forge_head_role_arn":      "${ForgeHeadRoleArn}",
+            "forge_work_role_arn":      "${ForgeWorkRoleArn}",
             "bucket_name":              "${BucketName}",
             "read_write_arns":          "${ReadWriteArns}",
             "read_only_arns":           "${ReadOnlyArns}",
@@ -254,7 +363,9 @@ Resources:
           }
         - ForgeAccessKeyId: !Ref TowerForgeServiceUserAccessKey
           ForgeSecretAccessKey: !GetAtt TowerForgeServiceUserAccessKey.SecretAccessKey
-          ForgeRoleArn: !GetAtt TowerForgeServiceRole.Arn
+          ForgeServiceRoleArn: !GetAtt TowerForgeServiceRole.Arn
+          ForgeHeadRoleArn: !GetAtt TowerForgeBatchHeadJobRole.Arn
+          ForgeWorkRoleArn: !GetAtt TowerForgeBatchWorkJobRole.Arn
           BucketName: !Ref TowerBucket
           ReadWriteArns: !Join [ ",", !Ref S3ReadWriteAccessArns ]
           ReadOnlyArns: !Join [ ",", !Ref S3ReadOnlyAccessArns ]
