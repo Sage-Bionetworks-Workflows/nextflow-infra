@@ -299,45 +299,6 @@ Resources:
                 - !Sub "arn:aws:s3:::${TowerBucket}/*"
             - !Ref AWS::NoValue
 
-  # TowerForgeKmsKeyPolicy:
-  #   Type: AWS::IAM::Policy
-  #   Properties:
-  #     PolicyName: TowerForgeKmsKeyPolicy
-  #     PolicyDocument:
-  #       Version: '2012-10-17'
-  #       Statement:
-  #       - Sid: KeyPolicy
-  #         Effect: Allow
-  #         Action:
-  #         - kms:Decrypt
-  #         - kms:GenerateDataKey
-  #         Resource: !GetAtt EncryptionKeyStack.Outputs.KeyArn
-  #     Roles:
-  #       - TowerForgeBatchHeadJobRole
-  #       - TowerForgeBatchWorkJobRole
-
-  # TowerForgeBucketAccessPolicy:
-  #   Type: AWS::IAM::Policy
-  #   Properties:
-  #     PolicyName: TowerForgeBucketAccessPolicy
-  #     PolicyDocument:
-  #       Version: '2012-10-17'
-  #       Statement:
-  #         - Sid: ListObjectsInBucket
-  #           Effect: Allow
-  #           Action:
-  #             - s3:ListBucket
-  #           Resource:
-  #             - !Sub "arn:aws:s3:::${TowerBucket}"
-  #         - Sid: AllObjectActions
-  #           Effect: Allow
-  #           Action: s3:*Object
-  #           Resource:
-  #             - !Sub "arn:aws:s3:::${TowerBucket}/*"
-  #     Roles:
-  #       - TowerForgeBatchHeadJobRole
-  #       - TowerForgeBatchWorkJobRole
-
   TowerProjectConfigurationSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
