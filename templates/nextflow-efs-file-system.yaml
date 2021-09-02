@@ -27,7 +27,7 @@ Resources:
       AvailabilityZoneName: us-east-1a
       BackupPolicy:
         Status: DISABLED
-      Encrypted: false
+      Encrypted: true
 
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
