@@ -9,7 +9,7 @@ parameters:
   VpcId: !stack_output_external nextflow-vpc::VPCId
   SubnetId: !stack_output_external nextflow-ecs-cluster::EcsAutoScalingGroupSubnetId
   EcsSecurityGroupId: !stack_output_external nextflow-ecs-security-group::SecurityGroupId
-  NextflowTowerConfigBucketArn: !stack_output_external nextflow-tower-config-bucket::BucketArn
+  NextflowTowerConfigBucketArn: !stack_output_external nextflow-tower-config-dev::BucketArn
 stack_tags:
   Department: IBC
   Project: Infrastructure
