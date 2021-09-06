@@ -162,6 +162,8 @@ Resources:
       TerminationPolicies:
         - OldestLaunchConfiguration
         - OldestInstance
+      MetricsCollection:
+        - Granularity: 1Minute
 
 Outputs:
 
