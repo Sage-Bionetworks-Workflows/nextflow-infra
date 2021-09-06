@@ -2,5 +2,13 @@ tower:
   auth:
     github:
       allow-list:
-        - tess.thyer@sagebionetworks.org
+        - adam.taylor@sagebase.org
+        - andrewelamb@gmail.com
         - bruno.grande@sagebase.org
+        - daisyhan@bu.edu
+        - jason.hwee@gmail.com
+        - kelsey.montgomery@sagebase.org
+        - robert.j.allaway@gmail.com
+        - tess.thyer@sagebionetworks.org
+        - thomas.yu@sagebase.org
+        - william.poehlman@sagebase.org
