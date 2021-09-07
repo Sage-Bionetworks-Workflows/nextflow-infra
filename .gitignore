@@ -9,3 +9,6 @@
 
 # Virtual environment
 .venv/
+
+# Hidden OS files
+.DS_Store
