@@ -44,13 +44,13 @@ Parameters:
     Type: String
     Description: MySQL DB password
     NoEcho: 'true'
-  TowerGithubClientId:
+  TowerGoogleClientId:
     Type: String
-    Description: The client id provided by GitHub for the OAuth app
+    Description: The client id provided by Google for the OAuth app
     NoEcho: 'true'
-  TowerGithubSecret:
+  TowerGoogleSecret:
     Type: String
-    Description: The client secret provided by GitHub for the OAuth app
+    Description: The client secret provided by Google for the OAuth app
     NoEcho: 'true'
   RedisContainerName:
     Type: String
@@ -173,7 +173,7 @@ Resources:
             - Name: TOWER_SERVER_URL
               Value: !Ref 'TowerServerUrl'
             - Name: MICRONAUT_ENVIRONMENTS
-              Value: prod,redis,cron,awsbatch-platform,auth-github
+              Value: prod,redis,cron,awsbatch-platform,auth-google
             - Name: TOWER_JWT_SECRET
               Value: !Ref 'TowerJwtSecret'
             - Name: TOWER_CRYPTO_SECRETKEY
@@ -182,10 +182,10 @@ Resources:
               Value: !Ref 'TowerLicense'
             - Name: FLYWAY_LOCATIONS
               Value: classpath:db-schema/mysql
-            - Name: TOWER_GITHUB_CLIENT
-              Value: !Ref TowerGithubClientId
-            - Name: TOWER_GITHUB_SECRET
-              Value: !Ref TowerGithubSecret
+            - Name: TOWER_GOOGLE_CLIENT
+              Value: !Ref TowerGoogleClientId
+            - Name: TOWER_GOOGLE_SECRET
+              Value: !Ref TowerGoogleSecret
             - Name: TOWER_CONFIG_FILE
               Value: !Sub '${EfsVolumeMountPath}/${TowerConfigFileName}'
           MountPoints:
@@ -247,7 +247,7 @@ Resources:
             - Name: TOWER_SERVER_URL
               Value: !Ref 'TowerServerUrl'
             - Name: MICRONAUT_ENVIRONMENTS
-              Value: prod,redis,ha,awsbatch-platform,auth-github
+              Value: prod,redis,ha,awsbatch-platform,auth-google
             - Name: TOWER_JWT_SECRET
               Value: !Ref 'TowerJwtSecret'
             - Name: TOWER_CRYPTO_SECRETKEY
@@ -256,10 +256,10 @@ Resources:
               Value: !Ref 'TowerLicense'
             - Name: FLYWAY_LOCATIONS
               Value: classpath:db-schema/mysql
-            - Name: TOWER_GITHUB_CLIENT
-              Value: !Ref TowerGithubClientId
-            - Name: TOWER_GITHUB_SECRET
-              Value: !Ref TowerGithubSecret
+            - Name: TOWER_GOOGLE_CLIENT
+              Value: !Ref TowerGoogleClientId
+            - Name: TOWER_GOOGLE_SECRET
+              Value: !Ref TowerGoogleSecret
             - Name: TOWER_CONFIG_FILE
               Value: !Sub '${EfsVolumeMountPath}/${TowerConfigFileName}'
           EntryPoint:
