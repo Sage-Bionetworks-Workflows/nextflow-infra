@@ -3,3 +3,4 @@ tower:
     google:
       allow-list:
         - "*@sagebase.org"
+        - "*@sagebionetworks.org"
