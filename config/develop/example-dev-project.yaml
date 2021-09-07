@@ -1,4 +1,4 @@
-stack_name: example-project
+stack_name: example-dev-project
 
 stack_tags:
   Department: IBC
