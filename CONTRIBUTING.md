@@ -94,7 +94,7 @@ The [CI/CD workflow](#cicd) uses secrets stored at the level of the [Sage-Bionet
 The templates and configurations also leverage secrets stored in AWS Secrets Manager. These are retrieved using a [Sceptre resolver](https://github.com/iAnomaly/sceptre-resolver-aws-secrets-manager). Most of these secrets are created during deployment ([example](https://github.com/Sage-Bionetworks-Workflows/aws-workflows-nextflow-infra/blob/db37741e53fa5276b33b24d1af247d8d29bc0e56/templates/nextflow-tower-secret.yaml#L14-L34)), but the following were added manually:
 
 - `nextflow/license`: The paid license key for Nextflow Tower
-- `nextflow/github_oauth_app`: The GitHub OAuth client credentials
+- `nextflow/google_oauth_app`: The Google OAuth client credentials
 
 ## Additional Notes
 
