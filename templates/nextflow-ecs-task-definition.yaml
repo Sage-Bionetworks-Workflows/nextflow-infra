@@ -115,6 +115,10 @@ Parameters:
   TowerConfigFileName:
     Type: String
     Description: Name of the tower config YAML file
+  AwslogsStreamPrefix:
+    Type: String
+    Description: Prefix used for CloudWatch log streams
+    Default: 'tower'
 Resources:
   TowerTaskLogGroup:
     Type: AWS::Logs::LogGroup
@@ -145,7 +149,7 @@ Resources:
             Options:
               awslogs-region: !Sub '${AWS::Region}'
               awslogs-group: !Ref TowerTaskLogGroup
-              awslogs-stream-prefix: 'tower'
+              awslogs-stream-prefix: !Ref AwslogsStreamPrefix
         - Name: !Ref CronContainerName
           Image: !Ref CronContainerImage
           Memory: 2000
@@ -209,7 +213,7 @@ Resources:
             Options:
               awslogs-region: !Sub '${AWS::Region}'
               awslogs-group: !Ref TowerTaskLogGroup
-              awslogs-stream-prefix: 'tower'
+              awslogs-stream-prefix: !Ref AwslogsStreamPrefix
         - Name: !Ref FrontendContainerName
           Image: !Ref FrontendContainerImage
           Memory: 2000
@@ -228,7 +232,7 @@ Resources:
             Options:
               awslogs-region: !Sub '${AWS::Region}'
               awslogs-group: !Ref TowerTaskLogGroup
-              awslogs-stream-prefix: 'tower'
+              awslogs-stream-prefix: !Ref AwslogsStreamPrefix
         - Name: !Ref BackendContainerName
           Hostname: !Ref BackendContainerName
           Memory: 2000
@@ -300,7 +304,7 @@ Resources:
             Options:
               awslogs-region: !Sub '${AWS::Region}'
               awslogs-group: !Ref TowerTaskLogGroup
-              awslogs-stream-prefix: 'tower'
+              awslogs-stream-prefix: !Ref AwslogsStreamPrefix
 
 Outputs:
 
