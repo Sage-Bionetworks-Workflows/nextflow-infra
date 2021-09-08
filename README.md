@@ -18,11 +18,11 @@ Read through the [contribution guidelines](CONTRIBUTING.md) for more information
 
 1. Determine what is known as the stack name by concatenating the project name with the suffix `-project` (_e.g._ `imcore-project`, `amp-ad-project`, `commonmind-project`).
 
-   **Important:** Anytime that `<stack_name>` appears below with the angle brackets, replace the placeholder with the actual stack name, omitting any angle brackets.
+   **N.B.:** Anytime that `<stack_name>` appears below with the angle brackets, replace the placeholder with the actual stack name, omitting any angle brackets.
 
 2. Install [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) and [Docker](https://docs.docker.com/engine/install/) on your local computer or on a server available to you.
 
-3. [Create](https://sagebionetworks.jira.com/jira/software/c/projects/IT/issues/) an IT JIRA ticket requesting membership to the following JumpCloud groups for anyone who needs read-only or read/write access to this project:
+3. [Create](https://sagebionetworks.jira.com/jira/software/c/projects/IT/issues/) an IT JIRA ticket requesting membership to the following JumpCloud groups for anyone who needs read/write or read-only access to the S3 bucket:
 
    - `aws-sandbox-developers`
    - `aws-workflow-nextflow-tower-viewer`
@@ -31,12 +31,11 @@ Read through the [contribution guidelines](CONTRIBUTING.md) for more information
 
    ![AWS SSO Screenshot](assets/img/aws_sso.png)
 
-4. Open a pull request on this repository with the following changes:
+4. Open a pull request on this repository in which you duplicate [`config/prod/example-project.yaml`](config/prod/example-project.yaml) as `<stack_name>.yaml` in the `prod/` subdirectory and then follow the numbered steps listed in the file. Note that some steps are required whereas others are optional.
 
-   - Duplicate [`config/prod/example-project.yaml`](config/prod/example-project.yaml) as `<stack_name>.yaml` in the `prod/` subdirectory and then follow the numbered steps listed in the file. Note that some steps are required whereas others are optional.
-   - Add any missing emails to the [`tower-config/tower.yaml`](tower-config/tower.yaml) file
+   **N.B.** In this case, read/write vs read-only access refers to the level of access granted to individuals for the encrypted S3 bucket that will be provisioned once the PR is merged.
 
-   **N.B.** If you are unfamiliar with Git/GitHub or don't know how to open a pull request, message us in the [`#workflow_users`](https://sagebionetworks.slack.com/archives/C8SJHFCKT) Slack channel or email us at `nextflow-admins[at]sagebase[dot]org`.
+   **Getting Help:** If you are unfamiliar with Git/GitHub or don't know how to open a pull request, message us in the [`#workflow_users`](https://sagebionetworks.slack.com/archives/C8SJHFCKT) Slack channel or email us at `nextflow-admins[at]sagebase[dot]org`.
 
 5. Once the pull request is approved and merged, [confirm](https://github.com/Sage-Bionetworks-Workflows/aws-workflows-nextflow-infra/actions?query=event%3Apush+branch%3Amain) that your PR was deployed successfully and if so, open a terminal to perform the following steps:
 
