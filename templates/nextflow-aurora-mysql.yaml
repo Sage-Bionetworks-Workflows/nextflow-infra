@@ -84,14 +84,10 @@ Resources:
         AdminPrincipalArns: !Join
           - ','
           - - !Sub 'arn:aws:iam::${AWS::AccountId}:root'
-            - !ImportValue
-              'Fn::Sub': '${AWS::Region}-workflows-nextflow-ci-service-account-ServiceRoleArn'
             - !Join [",", !Ref AccountAdminArns]
         UserPrincipalArns: !Join
           - ','
-          - - !ImportValue
-              'Fn::Sub': '${AWS::Region}-workflows-nextflow-ci-service-account-ServiceRoleArn'
-            - !Join [",", !Ref AccountAdminArns]
+          - - !Join [",", !Ref AccountAdminArns]
             - !GetAtt BootstrapLambdaRole.Arn
 
   AuroraMasterSecret:
