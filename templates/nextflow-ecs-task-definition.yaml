@@ -116,6 +116,12 @@ Parameters:
     Type: String
     Description: Name of the tower config YAML file
 Resources:
+  TowerTaskLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: '/aws/ecs/task/nf-tower'
+      RetentionInDays: 30
+
   TowerTask:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -134,6 +140,12 @@ Resources:
               HostPort: 6379
           Command:
             - --appendonly yes
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Sub '${AWS::Region}'
+              awslogs-group: !Ref TowerTaskLogGroup
+              awslogs-stream-prefix: 'tower'
         - Name: !Ref CronContainerName
           Image: !Ref CronContainerImage
           Memory: 2000
@@ -192,6 +204,12 @@ Resources:
             - ContainerPath: !Ref EfsVolumeMountPath
               ReadOnly: true
               SourceVolume: !Ref EfsVolumeName
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Sub '${AWS::Region}'
+              awslogs-group: !Ref TowerTaskLogGroup
+              awslogs-stream-prefix: 'tower'
         - Name: !Ref FrontendContainerName
           Image: !Ref FrontendContainerImage
           Memory: 2000
@@ -205,6 +223,12 @@ Resources:
           DependsOn:
             - ContainerName: !Ref BackendContainerName
               Condition: START
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Sub '${AWS::Region}'
+              awslogs-group: !Ref TowerTaskLogGroup
+              awslogs-stream-prefix: 'tower'
         - Name: !Ref BackendContainerName
           Hostname: !Ref BackendContainerName
           Memory: 2000
@@ -271,6 +295,12 @@ Resources:
             - ContainerPath: !Ref EfsVolumeMountPath
               ReadOnly: true
               SourceVolume: !Ref EfsVolumeName
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Sub '${AWS::Region}'
+              awslogs-group: !Ref TowerTaskLogGroup
+              awslogs-stream-prefix: 'tower'
 
 Outputs:
 
