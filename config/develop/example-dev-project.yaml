@@ -23,6 +23,5 @@ parameters:
 template_path: tower-project.yaml
 
 dependencies:
-  - develop/nextflow-vpc.yaml
   - common/nextflow-forge-iam-policy.yaml
   - common/nextflow-launch-iam-policy.yaml

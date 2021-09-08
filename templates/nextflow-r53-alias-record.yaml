@@ -32,3 +32,9 @@ Resources:
       AliasTarget:
         DNSName: !Ref LoadBalancerDnsName
         HostedZoneId: !Ref LoadBalancerCanonicalHostedZoneId
+
+Outputs:
+  ConnectDNSRecord:
+    Value: !Ref ConnectDNSRecord
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-ConnectDNSRecord"
