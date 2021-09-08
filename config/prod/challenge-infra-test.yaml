@@ -1,7 +1,7 @@
 # (REQUIRED) Step 0: Duplicate this file and rename using the updated stack name (see Step 1)
 
 # (REQUIRED) Step 1: Update the stack name below by replacing "example" with your project name
-stack_name: challenge-project
+stack_name: challenge-infra-test-project
 
 stack_tags:
   # (REQUIRED) Step 2: Update all three values below
@@ -17,6 +17,7 @@ parameters:
 
     # (Optional) Step 4: Uncomment and update the following line(s) to grant additional users with read/write access
     - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/thomas.schaffter@sagebase.org
+    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/verena.chung@sagebase.org
 
   # (Optional) Step 5: Uncomment and update the following line(s) to grant additional users with read-only access
   # S3ReadOnlyAccessArns:
