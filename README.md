@@ -16,6 +16,8 @@ Read through the [contribution guidelines](CONTRIBUTING.md) for more information
 
 ## Tower User Onboarding
 
+Before you can use Nextflow Tower, you need to first deploy a Tower project, which consists an encrypted S3 bucket and the IAM resources (_i.e._ users, roles, and policies) that Tower requires to access the encrypted bucket and execute the workflow on [AWS Batch](https://help.tower.nf/compute-envs/aws-batch/). Once these resources exist, they need to be configured in Nextflow Tower, which is a process that has been automated with the Docker command below.
+
 1. Determine what is known as the stack name by concatenating the project name with the suffix `-project` (_e.g._ `imcore-project`, `amp-ad-project`, `commonmind-project`).
 
    **N.B.:** Anytime that `<stack_name>` appears below with the angle brackets, replace the placeholder with the actual stack name, omitting any angle brackets.
@@ -33,7 +35,7 @@ Read through the [contribution guidelines](CONTRIBUTING.md) for more information
 
 4. Open a pull request on this repository in which you duplicate [`config/prod/example-project.yaml`](config/prod/example-project.yaml) as `<stack_name>.yaml` in the `prod/` subdirectory and then follow the numbered steps listed in the file. Note that some steps are required whereas others are optional.
 
-   **N.B.** In this case, read/write vs read-only access refers to the level of access granted to individuals for the encrypted S3 bucket that will be provisioned once the PR is merged.
+   **N.B.** In this case, read/write vs read-only access refers to the level of access granted to individuals for the encrypted S3 bucket that will be provisioned once the PR is merged. **Given that access is granted to the entire bucket, you might want to create more specific Tower projects that provide more granular access control.**
 
    **Getting Help:** If you are unfamiliar with Git/GitHub or don't know how to open a pull request, message us in the [`#workflow_users`](https://sagebionetworks.slack.com/archives/C8SJHFCKT) Slack channel or email us at `nextflow-admins[at]sagebase[dot]org`.
 
