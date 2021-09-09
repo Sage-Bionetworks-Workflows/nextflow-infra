@@ -1,0 +1,38 @@
+{% set stack_name = "example-dev-project" %}
+{% set read_write_users = ["bruno.grande@sagebase.org"] %}
+{% set read_only_users = ["tess.thyer@sagebase.org", "thomas.yu@sagebase.org"] %}
+
+template_path: tower-project.yaml
+stack_name: {{ stack_name }}
+dependencies:
+  - common/nextflow-forge-iam-policy.yaml
+  - common/nextflow-launch-iam-policy.yaml
+
+parameters:
+  {% if read_write_users %}
+  S3ReadWriteAccessArns:
+  {% for user in read_write_users %}
+    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/{{ user }}
+  {% endfor %}
+  {% endif %}
+  {% if read_only_users %}
+  S3ReadOnlyAccessArns:
+  {% for user in read_only_users %}
+    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/{{ user }}
+  {% endfor %}
+  {% endif %}
+  AccountAdminArns:
+    - {{stack_group_config.sso_admin_role.arn}}
+    - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
+  TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
+  TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
+  TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
+
+stack_tags:
+  Department: IBC
+  Project: Infrastructure
+  OwnerEmail: nextflow-admins@sagebase.org
+
+hooks:
+  after_launch:
+    - !cmd bin/configure-tower-project.py -s {{ stack_name }} -w {{ read_write_users | join(" ") }} -r {{ read_only_users | join(" ") }}

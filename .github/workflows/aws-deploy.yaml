@@ -60,9 +60,13 @@ jobs:
 
       - name: Deploy common configuration to develop account
         run: pipenv run sceptre launch common --yes
+        env:
+          NXF_TOWER_TOKEN: ${{ secrets.TOWER_DEV_TOKEN }}
 
       - name: Deploy develop configuration
         run: pipenv run sceptre launch develop --yes
+        env:
+          NXF_TOWER_TOKEN: ${{ secrets.TOWER_DEV_TOKEN }}
 
       - name: Assume AWS role in prod account
         uses: aws-actions/configure-aws-credentials@v1
@@ -75,6 +79,10 @@ jobs:
 
       - name: Deploy common configuration to prod account
         run: pipenv run sceptre launch common --yes
+        env:
+          NXF_TOWER_TOKEN: ${{ secrets.TOWER_PROD_TOKEN }}
 
       - name: Deploy prod configuration
         run: pipenv run sceptre launch prod --yes
+        env:
+          NXF_TOWER_TOKEN: ${{ secrets.TOWER_PROD_TOKEN }}
