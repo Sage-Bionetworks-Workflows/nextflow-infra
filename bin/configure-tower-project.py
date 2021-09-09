@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 
 import argparse
-from typing import NewType, Sequence, Tuple
+from itertools import chain
 import json
 import os
+import re
+from typing import Iterator, NewType, Sequence, Tuple
 
 import boto3
-from requests import request, Response
+import requests  # type: ignore
 
 
 REGION = "us-east-1"
@@ -16,25 +18,54 @@ Email = NewType("Email", str)
 
 class TowerConfigurator:
     def __init__(
-        self, stack_name: str, maintainers: Sequence[Email], viewers: Sequence[Email]
+        self,
+        stack_name: str,
+        owners: Sequence[Email],
+        admins: Sequence[Email],
+        maintainers: Sequence[Email],
+        launchers: Sequence[Email],
+        viewers: Sequence[Email],
     ):
         """Generate TowerConfigurator instance
 
+        The descriptions below for the user types were copied
+        from the Nextflow Tower interface.
+
         Args:
             stack_name (str): CloudFormation stack name
+            owners (Sequence[Email]):
+                The users have full permissions on any resources within
+                the organization associated with the workspace
+            admins (Sequence[Email]):
+                The users have full permission on the resources associated
+                with the workspace. Therefore they can create/modify/delete
+                Pipelines, Compute environments, Actions, Credentials. They
+                can add/remove users to the workspace, but cannot create a
+                new workspace or modify another workspace
             maintainers (Sequence[Email]):
-                List of users capable of launching workflows
+                The users can launch pipeline and modify pipeline executions
+                (e.g. can change the pipeline launch compute env, parameters,
+                pre/post-run scripts, nextflow config) and create new pipeline
+                configuration in the Launchpad. The users cannot modify Compute
+                env settings and Credentials
+            launchers (Sequence[Email]):
+                The users can launch pipeline executions and modify the
+                pipeline input/output parameters. They cannot modify the
+                launch configuration and other resources
             viewers (Sequence[Email]):
-                List of users capable of monitoring workflow execution
+                The users can access to the team resources in read-only mode
 
         Raises:
             KeyError: The 'NXF_TOWER_TOKEN' environment variable isn't defined
         """
         # Store CLI arguments and constants
-        self.stack_name = stack_name
-        self.maintainers = maintainers
-        self.viewers = viewers
         self.region = REGION
+        self.stack_name = stack_name
+        self.owners = owners
+        self.admins = admins
+        self.maintainers = maintainers
+        self.launchers = launchers
+        self.viewers = viewers
         # Use AWS_PROFILE or default profile
         self.session = boto3.session.Session()
         # Infer Tower API base URL from Route53 CFN stack
@@ -54,10 +85,10 @@ class TowerConfigurator:
         project_stack = self.get_cfn_stack_outputs(self.stack_name)
         vpc_stack = self.get_cfn_stack_outputs("nextflow-vpc")
         # Prepare the Sage organization and project workspace
-        org_id, workspace_id = self.create_tower_workspace()
-        self.add_workspace_participants(org_id, workspace_id)
+        org_id, ws_id = self.create_tower_workspace()
+        self.add_workspace_participants(org_id, ws_id)
         # Create the credentials and compute environment in the workspace
-        self.create_tower_compute_env(project_stack, vpc_stack, workspace_id)
+        self.create_tower_compute_env(project_stack, vpc_stack, ws_id)
 
     def get_cfn_stack_outputs(self, stack_name: str) -> dict:
         """Retrieve output values for a CloudFormation stack
@@ -99,7 +130,7 @@ class TowerConfigurator:
         secret_value = json.loads(response["SecretString"])
         return secret_value
 
-    def send_tower_request(self, method: str, endpoint: str, **kwargs) -> Response:
+    def send_tower_request(self, method: str, endpoint: str, **kwargs) -> dict:
         """Make an authenticated HTTP request to the Nextflow Tower API
 
         Args:
@@ -112,8 +143,12 @@ class TowerConfigurator:
         assert method in {"GET", "PUT", "POST", "DELETE"}
         url = self.tower_api_base_url + endpoint
         kwargs["headers"] = {"Authorization": f"Bearer {self.tower_token}"}
-        response = request(method, url, **kwargs)
-        return response
+        response = requests.request(method, url, **kwargs)
+        try:
+            result = response.json()
+        except json.decoder.JSONDecodeError:
+            result = dict()
+        return result
 
     def create_tower_organization(self) -> int:
         """Create (or get existing) Tower organization for 'Sage Bionetworks'
@@ -122,7 +157,8 @@ class TowerConfigurator:
             int: Organization ID for 'Sage Bionetworks'
         """
         # Check if 'Sage Bionetworks' is already among the existing orgs
-        response = self.send_tower_request("GET", "/orgs").json()
+        endpoint = "/orgs"
+        response = self.send_tower_request("GET", endpoint)
         for org in response["organizations"]:
             if org["name"] == "Sage-Bionetworks":
                 return org["orgId"]
@@ -138,7 +174,7 @@ class TowerConfigurator:
             },
             "logoId": None,
         }
-        response = self.send_tower_request("POST", "/orgs", json=data).json()
+        response = self.send_tower_request("POST", endpoint, json=data)
         return response["organization"]["orgId"]
 
     def create_tower_workspace(self) -> Tuple[int, int]:
@@ -151,7 +187,8 @@ class TowerConfigurator:
         # Get or create 'Sage Bionetworks' organization
         org_id = self.create_tower_organization()
         # Check if the project workspace already exists
-        response = self.send_tower_request("GET", f"/orgs/{org_id}/workspaces").json()
+        endpoint = f"/orgs/{org_id}/workspaces"
+        response = self.send_tower_request("GET", endpoint)
         for workspace in response["workspaces"]:
             if workspace["name"] == self.stack_name:
                 return org_id, workspace["id"]
@@ -164,25 +201,23 @@ class TowerConfigurator:
                 "visibility": "PRIVATE",
             }
         }
-        response = self.send_tower_request(
-            "POST", f"/orgs/{org_id}/workspaces", json=data
-        ).json()
+        response = self.send_tower_request("POST", endpoint, json=data)
         return org_id, response["workspace"]["id"]
 
-    def create_tower_credentials(self, project_stack: dict, workspace_id: int) -> int:
+    def create_tower_credentials(self, project_stack: dict, ws_id: int) -> int:
         """Create entry for Forge credentials under the given workspace
 
         Args:
-            project_stack (dict):
-                Outputs from the Tower project CloudFormation stack
-            workspace_id (int): Identifier for the project workspace
+            project_stack (dict): Outputs from the Tower project CFN stack
+            ws_id (int): Identifier for the project workspace
 
         Returns:
             int: Identifier for the Forge credentials entry
         """
         # Check if Forge credentials have already been created for this project
-        params = {"workspaceId": workspace_id}
-        response = self.send_tower_request("GET", "/credentials", params=params).json()
+        endpoint = "/credentials"
+        params = {"workspaceId": ws_id}
+        response = self.send_tower_request("GET", endpoint, params=params)
         for cred in response["credentials"]:
             if cred["name"] == self.stack_name:
                 assert cred["provider"] == "aws"
@@ -203,19 +238,30 @@ class TowerConfigurator:
                 "description": f"Credentials for {self.stack_name}",
             }
         }
-        response = self.send_tower_request(
-            "POST", "/credentials", params=params, json=data
-        ).json()
+        response = self.send_tower_request("POST", endpoint, params=params, json=data)
         return response["credentialsId"]
 
-    def create_tower_compute_env(self, project_stack, vpc_stack, workspace_id):
-        # Check if compute environment already exist for this stack
-        params = {"workspaceId": workspace_id}
-        response = self.send_tower_request("GET", "/compute-envs", params=params)
-        comp_envs = response.json()["computeEnvs"]
-        for comp_env in comp_envs:
+    def create_tower_compute_env(
+        self, project_stack: dict, vpc_stack: dict, ws_id: int
+    ) -> str:
+        """Create default compute environment under the given workspace
+
+        Args:
+            project_stack (dict): Outputs from the Tower project CFN stack
+            vpc_stack (dict): Outputs from the Tower VPC CFN stack
+            ws_id (int): Identifier for the project workspace
+
+        Returns:
+            str: Identifier for the compute environment
+        """
+        # Check if compute environment has already been created for this project
+        endpoint = "/compute-envs"
+        comp_env_name = f"{self.stack_name} (default)"
+        params = {"workspaceId": ws_id}
+        response = self.send_tower_request("GET", endpoint, params=params)
+        for comp_env in response["computeEnvs"]:
             if (
-                comp_env["name"] == f"{self.stack_name} (default)"
+                comp_env["name"] == comp_env_name
                 and comp_env["platform"] == "aws-batch"
                 and (
                     comp_env["status"] == "AVAILABLE"
@@ -223,38 +269,33 @@ class TowerConfigurator:
                 )
             ):
                 return comp_env["id"]
-        # If not, create the credentials
-        creds_id = self.create_tower_credentials(project_stack, workspace_id)
-        bucket_name = project_stack["TowerBucket"]
-        forge_head_role_arn = project_stack["TowerForgeBatchHeadJobRoleArn"]
-        forge_work_role_arn = project_stack["TowerForgeBatchWorkJobRoleArn"]
-        vpc_id = vpc_stack["VPCId"]
-        subnet_ids = [
-            vpc_stack["PrivateSubnet"],
-            vpc_stack["PrivateSubnet1"],
-            vpc_stack["PrivateSubnet2"],
-            vpc_stack["PrivateSubnet3"],
-        ]
+        # Otherwise, create a new compute environment for the project
+        credentials_id = self.create_tower_credentials(project_stack, ws_id)
         data = {
             "computeEnv": {
-                "name": f"{self.stack_name} (default)",
+                "name": comp_env_name,
                 "platform": "aws-batch",
-                "credentialsId": creds_id,
+                "credentialsId": credentials_id,
                 "config": {
                     "configMode": "Batch Forge",
                     "region": self.region,
-                    "workDir": f"s3://{bucket_name}/work",
+                    "workDir": f"s3://{project_stack['TowerBucket']}/work",
                     "credentials": None,
-                    "computeJobRole": forge_work_role_arn,
-                    "headJobRole": forge_head_role_arn,
+                    "computeJobRole": project_stack["TowerForgeBatchWorkJobRoleArn"],
+                    "headJobRole": project_stack["TowerForgeBatchHeadJobRoleArn"],
                     "headJobCpus": None,
                     "headJobMemoryMb": None,
                     "preRunScript": None,
                     "postRunScript": None,
                     "cliPath": None,
                     "forge": {
-                        "vpcId": vpc_id,
-                        "subnets": subnet_ids,
+                        "vpcId": vpc_stack["VPCId"],
+                        "subnets": [
+                            vpc_stack["PrivateSubnet"],
+                            vpc_stack["PrivateSubnet1"],
+                            vpc_stack["PrivateSubnet2"],
+                            vpc_stack["PrivateSubnet3"],
+                        ],
                         "fsxMode": "None",
                         "efsMode": "None",
                         "type": "SPOT",
@@ -277,97 +318,138 @@ class TowerConfigurator:
                 },
             }
         }
-        response = self.send_tower_request(
-            "POST", "/compute-envs", params=params, json=data
-        )
-        response_data = response.json()
-        comp_env_id = response_data["computeEnvId"]
-        return comp_env_id
+        response = self.send_tower_request("POST", endpoint, params=params, json=data)
+        return response["computeEnvId"]
 
-    def add_organization_member(self, org_id, user):
-        # Attempt to create new user
-        org_add_data = {"user": user}
+    def add_organization_member(self, org_id: str, user: Email) -> int:
+        """Add user to the organization (if need be) and return member ID
+
+        Args:
+            org_id (str): Identifier for the 'Sage Bionetworks' organization
+            user (Email): Email address for the user
+
+        Returns:
+            int: Member ID for the user in the given organization
+        """
+        # Attempt to add the user as a member of the given organization
+        endpoint = f"/orgs/{org_id}/members"
+        data = {"user": user}
         response = self.send_tower_request(
             "PUT",
-            f"/orgs/{org_id}/members/add",
-            json=org_add_data,
+            f"{endpoint}/add",
+            json=data,
         )
-        if "message" in response.json():
-            message = response.json()["message"]
-            assert "already a member" in message
-            user_name = message.split("'")[1]
-            response = self.send_tower_request("GET", f"/orgs/{org_id}/members")
-            members = response.json()["members"]
+        # If the user is already a member, you get the following message:
+        #   "User '<username>' is already a member"
+        # This hacky approach is necessary because you need to retrieve the
+        # member ID using the username (you can't with the email alone)
+        if "message" in response and "already a member" in response["message"]:
+            username = response["message"].split("'")[1]
+            response = self.send_tower_request("GET", endpoint)
+            members = response["members"]
             for member in members:
-                if member["userName"] == user_name:
+                if member["userName"] == username:
                     member_id = member["memberId"]
-                    return member_id
+                    break
+        # Otherwise, just return their new member ID for the organization
         else:
-            member_id = response.json()["member"]["memberId"]
-            return member_id
+            member_id = response["member"]["memberId"]
+        return member_id
 
-    def add_workspace_participant(self, org_id, workspace_id, member_id):
+    def add_workspace_participant(self, org_id: str, ws_id: str, member_id: int) -> int:
+        """Add user to the workspace (if need be) and return participant ID
+
+        Args:
+            org_id (str): Identifier for the 'Sage Bionetworks' organization
+            ws_id (str): Identifier for the project workspace
+            member_id (int): Member ID for the user in the given organization
+
+        Returns:
+            int: Participant ID for the user in the given workspace
+        """
+        # Attempt to add the user as a participant of the given workspace
+        endpoint = f"/orgs/{org_id}/workspaces/{ws_id}/participants"
         data = {
             "memberId": member_id,
             "teamId": None,
             "userNameOrEmail": None,
         }
-        response = self.send_tower_request(
-            "PUT",
-            f"/orgs/{org_id}/workspaces/{workspace_id}/participants/add",
-            json=data,
-        )
-        if "message" in response.json():
-            message = response.json()["message"]
-            assert message == "Already a participant"
-            response = self.send_tower_request(
-                "GET", f"/orgs/{org_id}/workspaces/{workspace_id}/participants"
-            )
-            participants = response.json()["participants"]
-            for participant in participants:
+        response = self.send_tower_request("PUT", f"{endpoint}/add", json=data)
+        # If the user is already a member, you get the following message:
+        #   "Already a participant"
+        # In this case, look up the participant ID using the member ID
+        if "message" in response and response["message"] == "Already a participant":
+            response = self.send_tower_request("GET", endpoint)
+            for participant in response["participants"]:
                 if participant["memberId"] == member_id:
                     participant_id = participant["participantId"]
-                    return participant_id
+                    break
+        # Otherwise, just return their new participant ID for the workspace
         else:
-            participant_id = response.json()["participant"]["participantId"]
-            return participant_id
+            participant_id = response["participant"]["participantId"]
+        return participant_id
 
-    def update_workspace_role(self, org_id, workspace_id, part_id, role):
+    def set_workspace_role(
+        self, org_id: str, ws_id: str, part_id: int, role: str
+    ) -> None:
+        """Update the participant role in the given workspace
+
+        Args:
+            org_id (str): Identifier for the 'Sage Bionetworks' organization
+            ws_id (str): Identifier for the project workspace
+            part_id (int): Participant ID for the user in the given workspace
+            role (str): 'owner', 'admin', 'maintain', 'launch', or 'view'
+        """
+        endpoint = f"/orgs/{org_id}/workspaces/{ws_id}/participants/{part_id}/role"
         data = {"role": role}
-        self.send_tower_request(
-            "PUT",
-            f"/orgs/{org_id}/workspaces/{workspace_id}/participants/{part_id}/role",
-            json=data,
+        self.send_tower_request("PUT", endpoint, json=data)
+
+    def get_all_users(self) -> Iterator:
+        iterator = chain(
+            self.owners, self.admins, self.maintainers, self.launchers, self.viewers
         )
+        return iterator
 
-    def add_workspace_participants(self, org_id, workspace_id):
-        for user in self.maintainers + self.viewers:
-            member_id = self.add_organization_member(org_id, user)
-            part_id = self.add_workspace_participant(org_id, workspace_id, member_id)
-            role = "maintain" if user in self.maintainers else "view"
-            self.update_workspace_role(org_id, workspace_id, part_id, role)
+    def add_workspace_participants(self, org_id: str, ws_id: str) -> None:
+        """Add maintainers and viewers to the organization and workspace
+
+        Args:
+            org_id (str): Identifier for the 'Sage Bionetworks' organization
+            ws_id (str): Identifier for the project workspace
+        """
+        for email in self.get_all_users():
+            member_id = self.add_organization_member(org_id, email)
+            part_id = self.add_workspace_participant(org_id, ws_id, member_id)
+            role = "maintain" if email in self.maintainers else "view"
+            self.set_workspace_role(org_id, ws_id, part_id, role)
 
 
-def parse_args():
+def parse_args() -> dict:
+    """Parse and validate command-line arguments
+
+    Returns:
+        dict: Validated command-line arguments
+    """
+    # Parse command-line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("--stack_name", "-s", required=True)
-    parser.add_argument(
-        "--maintainers",
-        "-m",
-        nargs="*",
-        help="List of users (emails) capable of running workflows",
-    )
-    parser.add_argument(
-        "--viewers",
-        "-v",
-        nargs="*",
-        help="List of users (emails) capable of seeing workflow run states",
-    )
+    parser.add_argument("--owners", "-m", nargs="*", help="List of emails")
+    parser.add_argument("--admins", "-m", nargs="*", help="List of emails")
+    parser.add_argument("--maintainers", "-m", nargs="*", help="List of emails")
+    parser.add_argument("--launchers", "-m", nargs="*", help="List of emails")
+    parser.add_argument("--viewers", "-v", nargs="*", help="List of emails")
     args = parser.parse_args()
-    return args
+    # Validate command-line arguments
+    email_regex = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")
+    users = args.owners + args.admins + args.maintainers + args.launchers + args.viewers
+    for user in users:
+        match = email_regex.fullmatch(user)
+        if match is None:
+            raise ValueError(f"'{user}' is not an email")
+    return vars(args)
 
 
 if __name__ == "__main__":
     args = parse_args()
-    tower = TowerConfigurator(args.stack_name, args.maintainers, args.viewers)
+    tower = TowerConfigurator(**args)
     tower.configure()
