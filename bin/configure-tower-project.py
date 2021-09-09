@@ -433,10 +433,10 @@ def parse_args() -> dict:
     # Parse command-line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("--stack_name", "-s", required=True)
-    parser.add_argument("--owners", "-m", nargs="*", help="List of emails")
-    parser.add_argument("--admins", "-m", nargs="*", help="List of emails")
+    parser.add_argument("--owners", "-o", nargs="*", help="List of emails")
+    parser.add_argument("--admins", "-a", nargs="*", help="List of emails")
     parser.add_argument("--maintainers", "-m", nargs="*", help="List of emails")
-    parser.add_argument("--launchers", "-m", nargs="*", help="List of emails")
+    parser.add_argument("--launchers", "-l", nargs="*", help="List of emails")
     parser.add_argument("--viewers", "-v", nargs="*", help="List of emails")
     args = parser.parse_args()
     # Validate command-line arguments
