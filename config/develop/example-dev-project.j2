@@ -37,4 +37,4 @@ stack_tags:
 
 hooks:
   after_launch:
-    - !cmd bin/configure-tower-project.py -s {{ stack_name }} -w {{ read_write_users | join(" ") }} -r {{ read_only_users | join(" ") }}
+    - !cmd bin/configure-tower-project.py -s {{ stack_name }} -m {{ read_write_users | join(" ") }} -v {{ read_only_users | join(" ") }}

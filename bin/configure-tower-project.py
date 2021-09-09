@@ -1,80 +1,132 @@
 #!/usr/bin/env python3
 
 import argparse
+from typing import NewType, Sequence, Tuple
 import json
 import os
 
 import boto3
-import requests
+from requests import request, Response
 
 
 REGION = "us-east-1"
 
+Email = NewType("Email", str)
+
 
 class TowerConfigurator:
-    def __init__(self, stack_name, rw_users, ro_users):
+    def __init__(
+        self, stack_name: str, maintainers: Sequence[Email], viewers: Sequence[Email]
+    ):
+        """Generate TowerConfigurator instance
+
+        Args:
+            stack_name (str): CloudFormation stack name
+            maintainers (Sequence[Email]):
+                List of users capable of launching workflows
+            viewers (Sequence[Email]):
+                List of users capable of monitoring workflow execution
+
+        Raises:
+            KeyError: The 'NXF_TOWER_TOKEN' environment variable isn't defined
+        """
+        # Store CLI arguments and constants
         self.stack_name = stack_name
-        self.rw_users = rw_users
-        self.ro_users = ro_users
-        self.nextflow_tower_token = os.environ["NXF_TOWER_TOKEN"]
+        self.maintainers = maintainers
+        self.viewers = viewers
         self.region = REGION
-        self.session = boto3.session.Session()  # Using default profile
-        self.tower_endpoint = self.get_tower_endpoint()
+        # Use AWS_PROFILE or default profile
+        self.session = boto3.session.Session()
+        # Infer Tower API base URL from Route53 CFN stack
+        self.tower_api_base_url = self.get_tower_api_base_url()
+        # Retrieve Nextflow token from environment
+        try:
+            self.tower_token = os.environ["NXF_TOWER_TOKEN"]
+        except KeyError as e:
+            raise KeyError(
+                "The 'NXF_TOWER_TOKEN' environment variable must "
+                "be defined with a Nextflow Tower API token."
+            ) from e
 
     def configure(self):
-        project_stack = self.retrieve_cfn_stack(self.stack_name)
-        vpc_stack = self.retrieve_cfn_stack("nextflow-vpc")
-        sage_org_id, workspace_id = self.create_tower_workspace()
+        """Configure the project in Nextflow Tower"""
+        # Retrieve information from CloudFormation
+        project_stack = self.get_cfn_stack_outputs(self.stack_name)
+        vpc_stack = self.get_cfn_stack_outputs("nextflow-vpc")
+        # Prepare the Sage organization and project workspace
+        org_id, workspace_id = self.create_tower_workspace()
+        self.add_workspace_participants(org_id, workspace_id)
+        # Create the credentials and compute environment in the workspace
         self.create_tower_compute_env(project_stack, vpc_stack, workspace_id)
-        self.add_workspace_participants(sage_org_id, workspace_id)
 
-    def retrieve_cfn_stack(self, stack_name):
+    def get_cfn_stack_outputs(self, stack_name: str) -> dict:
+        """Retrieve output values for a CloudFormation stack
+
+        Args:
+            stack_name (str): CloudFormation stack name
+
+        Returns:
+            dict: A mapping between output names and their values
+        """
         cfn = self.session.client("cloudformation")
         response = cfn.describe_stacks(StackName=stack_name)
-        stack = response["Stacks"][0]
-        stack["ParametersDict"] = {
-            p["ParameterKey"]: p["ParameterValue"] for p in stack["Parameters"]
-        }
-        stack["OutputsDict"] = {
-            p["OutputKey"]: p["OutputValue"] for p in stack["Outputs"]
-        }
-        return stack
+        outputs_raw = response["Stacks"][0]["Outputs"]
+        outputs = {p["OutputKey"]: p["OutputValue"] for p in outputs_raw}
+        return outputs
 
-    def get_tower_endpoint(self):
-        r53_stack = self.retrieve_cfn_stack("nextflow-r53-alias-record")
-        hostname = r53_stack["OutputsDict"]["ConnectDNSRecord"]
+    def get_tower_api_base_url(self) -> str:
+        """Infer Nextflow Tower API endpoint from CloudFormation
+
+        Returns:
+            str: A full URL for the Tower API endpoint
+        """
+        stack = self.get_cfn_stack_outputs("nextflow-r53-alias-record")
+        hostname = stack["ConnectDNSRecord"]
         endpoint = f"https://{hostname}/api"
         return endpoint
 
-    def retrieve_secret(self, secret_arn):
+    def get_secret_value(self, secret_arn: str) -> dict:
+        """Retrieve value for a secret stored in Secrets Manager
+
+        Args:
+            secret_arn (str): ARN for Secrets Manager secret
+
+        Returns:
+            dict: Decrypted secret value
+        """
         secretsmanager = self.session.client("secretsmanager")
         response = secretsmanager.get_secret_value(SecretId=secret_arn)
         secret_value = json.loads(response["SecretString"])
         return secret_value
 
-    def make_tower_request(self, type, endpoint, params=None, data=None):
-        token = self.nextflow_tower_token
-        headers = {
-            "Accept": "application/json, application/json",
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-        }
-        request_fn = getattr(requests, type)
-        full_url = self.tower_endpoint + endpoint
-        if data is not None:
-            response = request_fn(full_url, params=params, json=data, headers=headers)
-        else:
-            response = request_fn(full_url, params=params, headers=headers)
+    def send_tower_request(self, method: str, endpoint: str, **kwargs) -> Response:
+        """Make an authenticated HTTP request to the Nextflow Tower API
+
+        Args:
+            method (str): An HTTP method (GET, PUT, POST, or DELETE)
+            endpoint (str): The API endpoint with the path parameters filled in
+
+        Returns:
+            Response: The raw Response object to allow for special handling
+        """
+        assert method in {"GET", "PUT", "POST", "DELETE"}
+        url = self.tower_api_base_url + endpoint
+        kwargs["headers"] = {"Authorization": f"Bearer {self.tower_token}"}
+        response = request(method, url, **kwargs)
         return response
 
-    def create_tower_organization(self):
-        # Return Sage organization if it already exists
-        response = self.make_tower_request("get", "/orgs")
-        orgs = response.json()["organizations"]
-        for org in orgs:
+    def create_tower_organization(self) -> int:
+        """Create (or get existing) Tower organization for 'Sage Bionetworks'
+
+        Returns:
+            int: Organization ID for 'Sage Bionetworks'
+        """
+        # Check if 'Sage Bionetworks' is already among the existing orgs
+        response = self.send_tower_request("GET", "/orgs").json()
+        for org in response["organizations"]:
             if org["name"] == "Sage-Bionetworks":
                 return org["orgId"]
-        # Otherwise, create it
+        # Otherwise, create a new organization called 'Sage Bionetworks'
         data = {
             "organization": {
                 "name": "Sage-Bionetworks",
@@ -86,19 +138,24 @@ class TowerConfigurator:
             },
             "logoId": None,
         }
-        response = self.make_tower_request("post", "/orgs", data=data)
-        sage_org_id = response.json()["organization"]["orgId"]
-        return sage_org_id
+        response = self.send_tower_request("POST", "/orgs", json=data).json()
+        return response["organization"]["orgId"]
 
-    def create_tower_workspace(self):
-        # Return project workspace if it already exists
-        sage_org_id = self.create_tower_organization()
-        response = self.make_tower_request("get", f"/orgs/{sage_org_id}/workspaces")
-        workspaces = response.json()["workspaces"]
-        for workspace in workspaces:
+    def create_tower_workspace(self) -> Tuple[int, int]:
+        """Create a Tower workspace under the 'Sage Bionetworks' organization
+
+        Returns:
+            Tuple[int, int]: A pair of integer IDs correspond to the
+            'Sage Bionetworks' organization and the project workspace
+        """
+        # Get or create 'Sage Bionetworks' organization
+        org_id = self.create_tower_organization()
+        # Check if the project workspace already exists
+        response = self.send_tower_request("GET", f"/orgs/{org_id}/workspaces").json()
+        for workspace in response["workspaces"]:
             if workspace["name"] == self.stack_name:
-                return sage_org_id, workspace["id"]
-        # Otherwise, create it
+                return org_id, workspace["id"]
+        # Otherwise, create a new project workspace under the organization
         data = {
             "workspace": {
                 "name": self.stack_name,
@@ -107,28 +164,33 @@ class TowerConfigurator:
                 "visibility": "PRIVATE",
             }
         }
-        response = self.make_tower_request(
-            "post", f"/orgs/{sage_org_id}/workspaces", data=data
-        )
-        workspace_id = response.json()["workspace"]["id"]
-        return sage_org_id, workspace_id
+        response = self.send_tower_request(
+            "POST", f"/orgs/{org_id}/workspaces", json=data
+        ).json()
+        return org_id, response["workspace"]["id"]
 
-    def create_tower_credentials(self, project_stack, workspace_id=None):
-        # Check if credentials already exist for this stack
-        url_params = {"workspaceId": workspace_id}
-        response = self.make_tower_request("get", "/credentials", url_params)
-        creds = response.json()["credentials"]
-        for cred in creds:
+    def create_tower_credentials(self, project_stack: dict, workspace_id: int) -> int:
+        """Create entry for Forge credentials under the given workspace
+
+        Args:
+            project_stack (dict):
+                Outputs from the Tower project CloudFormation stack
+            workspace_id (int): Identifier for the project workspace
+
+        Returns:
+            int: Identifier for the Forge credentials entry
+        """
+        # Check if Forge credentials have already been created for this project
+        params = {"workspaceId": workspace_id}
+        response = self.send_tower_request("GET", "/credentials", params=params).json()
+        for cred in response["credentials"]:
             if cred["name"] == self.stack_name:
                 assert cred["provider"] == "aws"
                 assert cred["deleted"] is None
                 return cred["id"]
-        # If not, create them
-        secret_arn = project_stack["OutputsDict"][
-            "TowerForgeServiceUserAccessKeySecretArn"
-        ]
-        credentials = self.retrieve_secret(secret_arn)
-        role_arn = project_stack["OutputsDict"]["TowerForgeServiceRoleArn"]
+        # Otherwise, create a new credentials entry for the project
+        secret_arn = project_stack["TowerForgeServiceUserAccessKeySecretArn"]
+        credentials = self.get_secret_value(secret_arn)
         data = {
             "credentials": {
                 "name": self.stack_name,
@@ -136,20 +198,20 @@ class TowerConfigurator:
                 "keys": {
                     "accessKey": credentials["aws_access_key_id"],
                     "secretKey": credentials["aws_secret_access_key"],
-                    "assumeRoleArn": role_arn,
+                    "assumeRoleArn": project_stack["TowerForgeServiceRoleArn"],
                 },
                 "description": f"Credentials for {self.stack_name}",
             }
         }
-        response = self.make_tower_request("post", "/credentials", url_params, data)
-        response_data = response.json()
-        creds_id = response_data["credentialsId"]
-        return creds_id
+        response = self.send_tower_request(
+            "POST", "/credentials", params=params, json=data
+        ).json()
+        return response["credentialsId"]
 
-    def create_tower_compute_env(self, project_stack, vpc_stack, workspace_id=None):
+    def create_tower_compute_env(self, project_stack, vpc_stack, workspace_id):
         # Check if compute environment already exist for this stack
-        url_params = {"workspaceId": workspace_id}
-        response = self.make_tower_request("get", "/compute-envs", url_params)
+        params = {"workspaceId": workspace_id}
+        response = self.send_tower_request("GET", "/compute-envs", params=params)
         comp_envs = response.json()["computeEnvs"]
         for comp_env in comp_envs:
             if (
@@ -163,19 +225,15 @@ class TowerConfigurator:
                 return comp_env["id"]
         # If not, create the credentials
         creds_id = self.create_tower_credentials(project_stack, workspace_id)
-        bucket_name = project_stack["OutputsDict"]["TowerBucket"]
-        forge_head_role_arn = project_stack["OutputsDict"][
-            "TowerForgeBatchHeadJobRoleArn"
-        ]
-        forge_work_role_arn = project_stack["OutputsDict"][
-            "TowerForgeBatchWorkJobRoleArn"
-        ]
-        vpc_id = vpc_stack["OutputsDict"]["VPCId"]
+        bucket_name = project_stack["TowerBucket"]
+        forge_head_role_arn = project_stack["TowerForgeBatchHeadJobRoleArn"]
+        forge_work_role_arn = project_stack["TowerForgeBatchWorkJobRoleArn"]
+        vpc_id = vpc_stack["VPCId"]
         subnet_ids = [
-            vpc_stack["OutputsDict"]["PrivateSubnet"],
-            vpc_stack["OutputsDict"]["PrivateSubnet1"],
-            vpc_stack["OutputsDict"]["PrivateSubnet2"],
-            vpc_stack["OutputsDict"]["PrivateSubnet3"],
+            vpc_stack["PrivateSubnet"],
+            vpc_stack["PrivateSubnet1"],
+            vpc_stack["PrivateSubnet2"],
+            vpc_stack["PrivateSubnet3"],
         ]
         data = {
             "computeEnv": {
@@ -219,7 +277,9 @@ class TowerConfigurator:
                 },
             }
         }
-        response = self.make_tower_request("post", "/compute-envs", url_params, data)
+        response = self.send_tower_request(
+            "POST", "/compute-envs", params=params, json=data
+        )
         response_data = response.json()
         comp_env_id = response_data["computeEnvId"]
         return comp_env_id
@@ -227,16 +287,16 @@ class TowerConfigurator:
     def add_organization_member(self, org_id, user):
         # Attempt to create new user
         org_add_data = {"user": user}
-        response = self.make_tower_request(
-            "put",
+        response = self.send_tower_request(
+            "PUT",
             f"/orgs/{org_id}/members/add",
-            data=org_add_data,
+            json=org_add_data,
         )
         if "message" in response.json():
             message = response.json()["message"]
             assert "already a member" in message
             user_name = message.split("'")[1]
-            response = self.make_tower_request("get", f"/orgs/{org_id}/members")
+            response = self.send_tower_request("GET", f"/orgs/{org_id}/members")
             members = response.json()["members"]
             for member in members:
                 if member["userName"] == user_name:
@@ -252,16 +312,16 @@ class TowerConfigurator:
             "teamId": None,
             "userNameOrEmail": None,
         }
-        response = self.make_tower_request(
-            "put",
+        response = self.send_tower_request(
+            "PUT",
             f"/orgs/{org_id}/workspaces/{workspace_id}/participants/add",
-            data=data,
+            json=data,
         )
         if "message" in response.json():
             message = response.json()["message"]
             assert message == "Already a participant"
-            response = self.make_tower_request(
-                "get", f"/orgs/{org_id}/workspaces/{workspace_id}/participants"
+            response = self.send_tower_request(
+                "GET", f"/orgs/{org_id}/workspaces/{workspace_id}/participants"
             )
             participants = response.json()["participants"]
             for participant in participants:
@@ -274,30 +334,40 @@ class TowerConfigurator:
 
     def update_workspace_role(self, org_id, workspace_id, part_id, role):
         data = {"role": role}
-        self.make_tower_request(
-            "put",
+        self.send_tower_request(
+            "PUT",
             f"/orgs/{org_id}/workspaces/{workspace_id}/participants/{part_id}/role",
-            data=data,
+            json=data,
         )
 
     def add_workspace_participants(self, org_id, workspace_id):
-        for user in self.rw_users + self.ro_users:
+        for user in self.maintainers + self.viewers:
             member_id = self.add_organization_member(org_id, user)
             part_id = self.add_workspace_participant(org_id, workspace_id, member_id)
-            role = "maintain" if user in self.rw_users else "view"
+            role = "maintain" if user in self.maintainers else "view"
             self.update_workspace_role(org_id, workspace_id, part_id, role)
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--stack_name", "-s", required=True)
-    parser.add_argument("--rw_users", "-w", nargs="*", help="Read/write users")
-    parser.add_argument("--ro_users", "-r", nargs="*", help="Read-only users")
+    parser.add_argument(
+        "--maintainers",
+        "-m",
+        nargs="*",
+        help="List of users (emails) capable of running workflows",
+    )
+    parser.add_argument(
+        "--viewers",
+        "-v",
+        nargs="*",
+        help="List of users (emails) capable of seeing workflow run states",
+    )
     args = parser.parse_args()
     return args
 
 
 if __name__ == "__main__":
     args = parse_args()
-    tower = TowerConfigurator(args.stack_name, args.rw_users, args.ro_users)
+    tower = TowerConfigurator(args.stack_name, args.maintainers, args.viewers)
     tower.configure()
