@@ -34,7 +34,7 @@ Resources:
         HostedZoneId: !Ref LoadBalancerCanonicalHostedZoneId
 
 Outputs:
-  ConnectDNSRecord:
+  Route53RecordSet:
     Value: !Ref ConnectDNSRecord
     Export:
-      Name: !Sub "${AWS::Region}-${AWS::StackName}-ConnectDNSRecord"
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-Route53RecordSet"

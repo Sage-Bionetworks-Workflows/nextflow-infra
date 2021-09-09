@@ -115,7 +115,7 @@ class TowerConfigurator:
             str: A full URL for the Tower API endpoint
         """
         stack = self.get_cfn_stack_outputs("nextflow-r53-alias-record")
-        hostname = stack["ConnectDNSRecord"]
+        hostname = stack["Route53RecordSet"]
         endpoint = f"https://{hostname}/api"
         return endpoint
 
