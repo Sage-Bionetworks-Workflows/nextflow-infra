@@ -20,6 +20,7 @@ class TowerConfigurator:
     def __init__(
         self,
         stack_name: str,
+        org_name: str,
         owners: Sequence[Email],
         admins: Sequence[Email],
         maintainers: Sequence[Email],
@@ -33,6 +34,7 @@ class TowerConfigurator:
 
         Args:
             stack_name (str): CloudFormation stack name
+            org_name (str): Name of organization in Tower
             owners (Sequence[Email]):
                 The users have full permissions on any resources within
                 the organization associated with the workspace
@@ -61,6 +63,7 @@ class TowerConfigurator:
         # Store CLI arguments and constants
         self.region = REGION
         self.stack_name = stack_name
+        self.org_name = org_name
         self.owners = owners
         self.admins = admins
         self.maintainers = maintainers
@@ -84,7 +87,7 @@ class TowerConfigurator:
         # Retrieve information from CloudFormation
         project_stack = self.get_cfn_stack_outputs(self.stack_name)
         vpc_stack = self.get_cfn_stack_outputs("nextflow-vpc")
-        # Prepare the Sage organization and project workspace
+        # Prepare the organization and project workspace
         org_id, ws_id = self.create_tower_workspace()
         self.add_workspace_participants(org_id, ws_id)
         # Create the credentials and compute environment in the workspace
@@ -151,22 +154,22 @@ class TowerConfigurator:
         return result
 
     def create_tower_organization(self) -> int:
-        """Create (or get existing) Tower organization for 'Sage Bionetworks'
+        """Create (or get existing) Tower organization
 
         Returns:
-            int: Organization ID for 'Sage Bionetworks'
+            int: Organization ID
         """
-        # Check if 'Sage Bionetworks' is already among the existing orgs
+        # Check if given org name is already among the existing orgs
         endpoint = "/orgs"
         response = self.send_tower_request("GET", endpoint)
         for org in response["organizations"]:
-            if org["name"] == "Sage-Bionetworks":
+            if org["fullName"] == self.org_name:
                 return org["orgId"]
-        # Otherwise, create a new organization called 'Sage Bionetworks'
+        # Otherwise, create a new organization
         data = {
             "organization": {
-                "name": "Sage-Bionetworks",
-                "fullName": "Sage Bionetworks",
+                "name": re.sub(r"[^A-Za-z0-9_-]", "-", self.org_name),
+                "fullName": self.org_name,
                 "description": None,
                 "location": None,
                 "website": None,
@@ -178,13 +181,13 @@ class TowerConfigurator:
         return response["organization"]["orgId"]
 
     def create_tower_workspace(self) -> Tuple[int, int]:
-        """Create a Tower workspace under the 'Sage Bionetworks' organization
+        """Create a Tower workspace under an organization
 
         Returns:
-            Tuple[int, int]: A pair of integer IDs correspond to the
-            'Sage Bionetworks' organization and the project workspace
+            Tuple[int, int]: A pair of integer IDs correspond
+            to the organization and the project workspace
         """
-        # Get or create 'Sage Bionetworks' organization
+        # Get or create organization
         org_id = self.create_tower_organization()
         # Check if the project workspace already exists
         endpoint = f"/orgs/{org_id}/workspaces"
@@ -325,7 +328,7 @@ class TowerConfigurator:
         """Add user to the organization (if need be) and return member ID
 
         Args:
-            org_id (str): Identifier for the 'Sage Bionetworks' organization
+            org_id (str): Identifier for the organization
             user (Email): Email address for the user
 
         Returns:
@@ -360,7 +363,7 @@ class TowerConfigurator:
         """Add user to the workspace (if need be) and return participant ID
 
         Args:
-            org_id (str): Identifier for the 'Sage Bionetworks' organization
+            org_id (str): Identifier for the organization
             ws_id (str): Identifier for the project workspace
             member_id (int): Member ID for the user in the given organization
 
@@ -395,7 +398,7 @@ class TowerConfigurator:
         """Update the participant role in the given workspace
 
         Args:
-            org_id (str): Identifier for the 'Sage Bionetworks' organization
+            org_id (str): Identifier for the organization
             ws_id (str): Identifier for the project workspace
             part_id (int): Participant ID for the user in the given workspace
             role (str): 'owner', 'admin', 'maintain', 'launch', or 'view'
@@ -414,7 +417,7 @@ class TowerConfigurator:
         """Add maintainers and viewers to the organization and workspace
 
         Args:
-            org_id (str): Identifier for the 'Sage Bionetworks' organization
+            org_id (str): Identifier for the organization
             ws_id (str): Identifier for the project workspace
         """
         for email in self.get_all_users():
@@ -433,6 +436,7 @@ def parse_args() -> dict:
     # Parse command-line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("--stack_name", "-s", required=True)
+    parser.add_argument("--org_name", "-n", required=True)
     parser.add_argument("--owners", "-o", nargs="*", help="List of emails")
     parser.add_argument("--admins", "-a", nargs="*", help="List of emails")
     parser.add_argument("--maintainers", "-m", nargs="*", help="List of emails")
