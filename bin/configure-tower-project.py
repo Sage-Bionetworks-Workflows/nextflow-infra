@@ -1,33 +1,31 @@
 #!/usr/bin/env python3
 
 import argparse
-from itertools import chain
 import json
 import os
 import re
-from typing import Iterator, NewType, Sequence, Tuple
+from typing import NewType, List, Sequence, Dict
 
 import boto3
 import requests  # type: ignore
+import yaml  # type: ignore
 
 
 REGION = "us-east-1"
+
+ROLE_MAPPING = {
+    "owners": "owner",
+    "admins": "admin",
+    "maintainers": "maintain",
+    "launchers": "launch",
+    "viewers": "view",
+}
 
 Email = NewType("Email", str)
 
 
 class TowerConfigurator:
-    def __init__(
-        self,
-        stack_name: str,
-        org_name: str,
-        vpc_stack_name: str,
-        owners: Sequence[Email],
-        admins: Sequence[Email],
-        maintainers: Sequence[Email],
-        launchers: Sequence[Email],
-        viewers: Sequence[Email],
-    ):
+    def __init__(self, projects: Dict[str, dict], org_name: str, vpc_stack_name: str):
         """Generate TowerConfigurator instance
 
         The descriptions below for the user types were copied
@@ -37,41 +35,15 @@ class TowerConfigurator:
             stack_name (str): CloudFormation stack name
             org_name (str): Name of organization in Tower
             vpc_stack_name (str): Name of the VPC CFN stack
-            owners (Sequence[Email]):
-                The users have full permissions on any resources within
-                the organization associated with the workspace
-            admins (Sequence[Email]):
-                The users have full permission on the resources associated
-                with the workspace. Therefore they can create/modify/delete
-                Pipelines, Compute environments, Actions, Credentials. They
-                can add/remove users to the workspace, but cannot create a
-                new workspace or modify another workspace
-            maintainers (Sequence[Email]):
-                The users can launch pipeline and modify pipeline executions
-                (e.g. can change the pipeline launch compute env, parameters,
-                pre/post-run scripts, nextflow config) and create new pipeline
-                configuration in the Launchpad. The users cannot modify Compute
-                env settings and Credentials
-            launchers (Sequence[Email]):
-                The users can launch pipeline executions and modify the
-                pipeline input/output parameters. They cannot modify the
-                launch configuration and other resources
-            viewers (Sequence[Email]):
-                The users can access to the team resources in read-only mode
 
         Raises:
             KeyError: The 'NXF_TOWER_TOKEN' environment variable isn't defined
         """
         # Store CLI arguments and constants
         self.region = REGION
-        self.stack_name = stack_name
+        self.projects = projects
         self.org_name = org_name
         self.vpc_stack_name = vpc_stack_name
-        self.owners = owners
-        self.admins = admins
-        self.maintainers = maintainers
-        self.launchers = launchers
-        self.viewers = viewers
         # Use AWS_PROFILE or default profile
         self.session = boto3.session.Session()
         # Infer Tower API base URL from Route53 CFN stack
@@ -87,14 +59,19 @@ class TowerConfigurator:
 
     def configure(self):
         """Configure the project in Nextflow Tower"""
-        # Retrieve information from CloudFormation
-        project_stack = self.get_cfn_stack_outputs(self.stack_name)
+        # Create and populate Tower organization
+        org_id = self.create_tower_organization()
+        self.populate_tower_organization(org_id)
+        # Iterate over the projects
         vpc_stack = self.get_cfn_stack_outputs(self.vpc_stack_name)
-        # Prepare the organization and project workspace
-        org_id, ws_id = self.create_tower_workspace()
-        self.add_workspace_participants(org_id, ws_id)
-        # Create the credentials and compute environment in the workspace
-        self.create_tower_compute_env(project_stack, vpc_stack, ws_id)
+        for stack_name in self.projects.keys():
+            # Retrieve information from CloudFormation
+            project_stack = self.get_cfn_stack_outputs(stack_name)
+            # Prepare the organization and project workspace
+            ws_id = self.create_tower_workspace(org_id, stack_name)
+            self.populate_tower_workspace(org_id, ws_id, stack_name)
+            # Create the credentials and compute environment in the workspace
+            self.create_tower_compute_env(project_stack, vpc_stack, ws_id)
 
     def get_cfn_stack_outputs(self, stack_name: str) -> dict:
         """Retrieve output values for a CloudFormation stack
@@ -109,6 +86,7 @@ class TowerConfigurator:
         response = cfn.describe_stacks(StackName=stack_name)
         outputs_raw = response["Stacks"][0]["Outputs"]
         outputs = {p["OutputKey"]: p["OutputValue"] for p in outputs_raw}
+        outputs["stack_name"] = stack_name
         return outputs
 
     def get_tower_api_base_url(self) -> str:
@@ -156,6 +134,62 @@ class TowerConfigurator:
             result = dict()
         return result
 
+    def add_organization_member(self, org_id: str, user: Email) -> int:
+        """Add user to the organization (if need be) and return member ID
+
+        Args:
+            org_id (str): Identifier for the Tower organization
+            user (Email): Email address for the user
+
+        Returns:
+            int: Member ID for the user in the given organization
+        """
+        # Attempt to add the user as a member of the given organization
+        endpoint = f"/orgs/{org_id}/members"
+        data = {"user": user}
+        response = self.send_tower_request(
+            "PUT",
+            f"{endpoint}/add",
+            json=data,
+        )
+        # If the user is already a member, you get the following message:
+        #   "User '<username>' is already a member"
+        # This hacky approach is necessary because you need to retrieve the
+        # member ID using the username (you can't with the email alone)
+        if "message" in response and "already a member" in response["message"]:
+            username = response["message"].split("'")[1]
+            response = self.send_tower_request("GET", endpoint)
+            members = response["members"]
+            for member in members:
+                if member["userName"] == username:
+                    member_id = member["memberId"]
+                    break
+        # Otherwise, just return their new member ID for the organization
+        else:
+            member_id = response["member"]["memberId"]
+        return member_id
+
+    def populate_tower_organization(self, org_id: str) -> Dict[str, dict]:
+        """Add all emails from across all projects to the organization
+
+        Args:
+            org_id (str): Identifier for the Tower organization
+
+        Returns:
+            Dict[str, dict]: Same as self.project, but with member IDs
+        """
+        member_ids: Dict[str, Dict[str, List[int]]] = dict()
+        for stack_name, users in self.projects.items():
+            member_ids[stack_name] = dict()
+            for user_group, user_list in users.items():
+                user_id_list = list()
+                for user in user_list:
+                    member_id = self.add_organization_member(org_id, user)
+                    user_id_list.append(member_id)
+                member_ids[stack_name][user_group] = user_id_list
+        self.member_ids = member_ids
+        return member_ids
+
     def create_tower_organization(self) -> int:
         """Create (or get existing) Tower organization
 
@@ -183,39 +217,41 @@ class TowerConfigurator:
         response = self.send_tower_request("POST", endpoint, json=data)
         return response["organization"]["orgId"]
 
-    def create_tower_workspace(self) -> Tuple[int, int]:
+    def create_tower_workspace(self, org_id: int, stack_name: str) -> int:
         """Create a Tower workspace under an organization
+
+        Args:
+            org_id (int): Identifier for the Tower organization
+            stack_name (str): CloudFormation stack name
 
         Returns:
             Tuple[int, int]: A pair of integer IDs correspond
             to the organization and the project workspace
         """
-        # Get or create organization
-        org_id = self.create_tower_organization()
         # Check if the project workspace already exists
         endpoint = f"/orgs/{org_id}/workspaces"
         response = self.send_tower_request("GET", endpoint)
         for workspace in response["workspaces"]:
-            if workspace["name"] == self.stack_name:
-                return org_id, workspace["id"]
+            if workspace["name"] == stack_name:
+                return workspace["id"]
         # Otherwise, create a new project workspace under the organization
         data = {
             "workspace": {
-                "name": self.stack_name,
-                "fullName": self.stack_name,
+                "name": stack_name,
+                "fullName": stack_name,
                 "description": None,
                 "visibility": "PRIVATE",
             }
         }
         response = self.send_tower_request("POST", endpoint, json=data)
-        return org_id, response["workspace"]["id"]
+        return response["workspace"]["id"]
 
     def create_tower_credentials(self, project_stack: dict, ws_id: int) -> int:
         """Create entry for Forge credentials under the given workspace
 
         Args:
             project_stack (dict): Outputs from the Tower project CFN stack
-            ws_id (int): Identifier for the project workspace
+            ws_id (int): Identifier for the project workspace in Tower
 
         Returns:
             int: Identifier for the Forge credentials entry
@@ -223,9 +259,10 @@ class TowerConfigurator:
         # Check if Forge credentials have already been created for this project
         endpoint = "/credentials"
         params = {"workspaceId": ws_id}
+        stack_name = project_stack["stack_name"]
         response = self.send_tower_request("GET", endpoint, params=params)
         for cred in response["credentials"]:
-            if cred["name"] == self.stack_name:
+            if cred["name"] == stack_name:
                 assert cred["provider"] == "aws"
                 assert cred["deleted"] is None
                 return cred["id"]
@@ -234,14 +271,14 @@ class TowerConfigurator:
         credentials = self.get_secret_value(secret_arn)
         data = {
             "credentials": {
-                "name": self.stack_name,
+                "name": stack_name,
                 "provider": "aws",
                 "keys": {
                     "accessKey": credentials["aws_access_key_id"],
                     "secretKey": credentials["aws_secret_access_key"],
                     "assumeRoleArn": project_stack["TowerForgeServiceRoleArn"],
                 },
-                "description": f"Credentials for {self.stack_name}",
+                "description": f"Credentials for {stack_name}",
             }
         }
         response = self.send_tower_request("POST", endpoint, params=params, json=data)
@@ -255,14 +292,15 @@ class TowerConfigurator:
         Args:
             project_stack (dict): Outputs from the Tower project CFN stack
             vpc_stack (dict): Outputs from the Tower VPC CFN stack
-            ws_id (int): Identifier for the project workspace
+            ws_id (int): Identifier for the project workspace in Tower
 
         Returns:
             str: Identifier for the compute environment
         """
         # Check if compute environment has already been created for this project
         endpoint = "/compute-envs"
-        comp_env_name = f"{self.stack_name} (default)"
+        stack_name = project_stack["stack_name"]
+        comp_env_name = f"{stack_name} (default)"
         params = {"workspaceId": ws_id}
         response = self.send_tower_request("GET", endpoint, params=params)
         for comp_env in response["computeEnvs"]:
@@ -327,47 +365,12 @@ class TowerConfigurator:
         response = self.send_tower_request("POST", endpoint, params=params, json=data)
         return response["computeEnvId"]
 
-    def add_organization_member(self, org_id: str, user: Email) -> int:
-        """Add user to the organization (if need be) and return member ID
-
-        Args:
-            org_id (str): Identifier for the organization
-            user (Email): Email address for the user
-
-        Returns:
-            int: Member ID for the user in the given organization
-        """
-        # Attempt to add the user as a member of the given organization
-        endpoint = f"/orgs/{org_id}/members"
-        data = {"user": user}
-        response = self.send_tower_request(
-            "PUT",
-            f"{endpoint}/add",
-            json=data,
-        )
-        # If the user is already a member, you get the following message:
-        #   "User '<username>' is already a member"
-        # This hacky approach is necessary because you need to retrieve the
-        # member ID using the username (you can't with the email alone)
-        if "message" in response and "already a member" in response["message"]:
-            username = response["message"].split("'")[1]
-            response = self.send_tower_request("GET", endpoint)
-            members = response["members"]
-            for member in members:
-                if member["userName"] == username:
-                    member_id = member["memberId"]
-                    break
-        # Otherwise, just return their new member ID for the organization
-        else:
-            member_id = response["member"]["memberId"]
-        return member_id
-
     def add_workspace_participant(self, org_id: str, ws_id: str, member_id: int) -> int:
         """Add user to the workspace (if need be) and return participant ID
 
         Args:
-            org_id (str): Identifier for the organization
-            ws_id (str): Identifier for the project workspace
+            org_id (str): Identifier for the Tower organization
+            ws_id (str): Identifier for the project workspace in Tower
             member_id (int): Member ID for the user in the given organization
 
         Returns:
@@ -401,8 +404,8 @@ class TowerConfigurator:
         """Update the participant role in the given workspace
 
         Args:
-            org_id (str): Identifier for the organization
-            ws_id (str): Identifier for the project workspace
+            org_id (str): Identifier for the Tower organization
+            ws_id (str): Identifier for the project workspace in Tower
             part_id (int): Participant ID for the user in the given workspace
             role (str): 'owner', 'admin', 'maintain', 'launch', or 'view'
         """
@@ -410,54 +413,104 @@ class TowerConfigurator:
         data = {"role": role}
         self.send_tower_request("PUT", endpoint, json=data)
 
-    def get_all_users(self) -> Iterator:
-        iterator = chain(
-            self.owners, self.admins, self.maintainers, self.launchers, self.viewers
-        )
-        return iterator
-
-    def add_workspace_participants(self, org_id: str, ws_id: str) -> None:
+    def populate_tower_workspace(
+        self, org_id: str, ws_id: str, stack_name: str
+    ) -> None:
         """Add maintainers and viewers to the organization and workspace
 
         Args:
-            org_id (str): Identifier for the organization
-            ws_id (str): Identifier for the project workspace
+            org_id (str): Identifier for the Tower organization
+            ws_id (str): Identifier for the project workspace in Tower
+            stack_name (str): CloudFormation stack name
         """
-        for email in self.get_all_users():
-            member_id = self.add_organization_member(org_id, email)
-            part_id = self.add_workspace_participant(org_id, ws_id, member_id)
-            role = "maintain" if email in self.maintainers else "view"
-            self.set_workspace_role(org_id, ws_id, part_id, role)
+        users = self.member_ids[stack_name]
+        for user_group, user_list in users.items():
+            role = ROLE_MAPPING[user_group]
+            for member_id in user_list:
+                part_id = self.add_workspace_participant(org_id, ws_id, member_id)
+                self.set_workspace_role(org_id, ws_id, part_id, role)
 
 
-def parse_args() -> dict:
+def parse_args() -> argparse.Namespace:
     """Parse and validate command-line arguments
 
     Returns:
-        dict: Validated command-line arguments
+        argparse.Namespace: Validated command-line arguments
     """
     # Parse command-line arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("--stack_name", "-s", required=True)
-    parser.add_argument("--org_name", "-n", required=True)
-    parser.add_argument("--vpc_stack_name", "-c", required=True)
-    parser.add_argument("--owners", "-o", nargs="*", default=[])
-    parser.add_argument("--admins", "-a", nargs="*", default=[])
-    parser.add_argument("--maintainers", "-m", nargs="*", default=[])
-    parser.add_argument("--launchers", "-l", nargs="*", default=[])
-    parser.add_argument("--viewers", "-v", nargs="*", default=[])
+    parser.add_argument("stack_group_dir")
+    parser.add_argument("--org_name", "-n", default="Sage Bionetworks")
+    parser.add_argument("--vpc_stack_name", "-v", default="nextflow-vpc")
     args = parser.parse_args()
-    # Validate command-line arguments
-    email_regex = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")
-    users = args.owners + args.admins + args.maintainers + args.launchers + args.viewers
-    for user in users:
-        match = email_regex.fullmatch(user)
-        if match is None:
-            raise ValueError(f"'{user}' is not an email")
-    return vars(args)
+    return args
+
+
+def load_project_configs(stack_group_dir: str) -> List[dict]:
+    """Load all project configuration files from given directory
+
+    Args:
+        stack_group_dir (str): Directory containing project configs
+
+    Returns:
+        List[dict]: List of parsed YAML files for Tower projects
+    """
+    # Ignore all Sceptre resolvers
+    yaml.add_multi_constructor("!", lambda loader, suffix, node: None)
+    # Obtain a list of config files from the given directory
+    config_paths = list()
+    for dirpath, _, filenames in os.walk(stack_group_dir):
+        for filename in filenames:
+            filepath = os.path.join(dirpath, filename)
+            if filename.endswith("-project.yaml"):
+                config_paths.append(filepath)
+    # Load the tower-project.yaml config files into a list
+    configs = list()
+    for config_path in config_paths:
+        with open(config_path) as config_file:
+            config = yaml.load(config_file, Loader=yaml.Loader)
+        if config["template_path"] == "tower-project.yaml":
+            configs.append(config)
+    return configs
+
+
+def extract_emails_from_arns(arns: Sequence[str]) -> List[str]:
+    """Extract role session names (emails) from assumed-role ARNs
+
+    Args:
+        arns (Sequence[str]): List of assumed-role ARNs
+
+    Returns:
+        List[str]: List of email from the role session names
+    """
+    role_arn_regex = re.compile(
+        r"arn:aws:sts::(?P<account_id>[0-9]+):assumed-role/(?P<role_name>[^/]+)"
+        r"/(?P<session_name>[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,})"
+    )
+    emails = list()
+    for arn in arns:
+        match = role_arn_regex.fullmatch(arn)
+        if match:
+            email = match.group("session_name")
+            emails.append(email)
+    return emails
+
+
+def summarize_configs(configs: Sequence[dict]) -> Dict[str, dict]:
+    summary = dict()
+    for config in configs:
+        stack_name = config["stack_name"]
+        maintainer_arns = config["parameters"].get("S3ReadWriteAccessArns", [])
+        viewer_arns = config["parameters"].get("S3ReadOnlyAccessArns", [])
+        maintainers = extract_emails_from_arns(maintainer_arns)
+        viewers = extract_emails_from_arns(viewer_arns)
+        summary[stack_name] = {"maintainers": maintainers, "viewers": viewers}
+    return summary
 
 
 if __name__ == "__main__":
     args = parse_args()
-    tower = TowerConfigurator(**args)
+    configs = load_project_configs(args.stack_group_dir)
+    projects = summarize_configs(configs)
+    tower = TowerConfigurator(projects, args.org_name, args.vpc_stack_name)
     tower.configure()

@@ -17,6 +17,8 @@ python_version = "3.8"
 boto3 = "*"
 requests = "*"
 types-requests = "*"
+pyyaml = "*"
+types-pyyaml = "*"
 
 [pipenv]
 allow_prereleases = true
