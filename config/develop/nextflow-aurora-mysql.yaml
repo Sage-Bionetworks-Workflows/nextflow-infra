@@ -10,6 +10,9 @@ parameters:
     - !stack_output_external nextflow-vpc::PrivateSubnet2
   EcsSecurityGroupId: !stack_output_external nextflow-ecs-security-group::SecurityGroupId
   TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
+  AccountAdminArns:
+    - {{stack_group_config.sso_admin_role.arn}}
+    - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
 stack_tags:
   Department: IBC
   Project: Infrastructure
