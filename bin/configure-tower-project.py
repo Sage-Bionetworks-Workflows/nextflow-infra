@@ -21,6 +21,7 @@ class TowerConfigurator:
         self,
         stack_name: str,
         org_name: str,
+        vpc_stack_name: str,
         owners: Sequence[Email],
         admins: Sequence[Email],
         maintainers: Sequence[Email],
@@ -35,6 +36,7 @@ class TowerConfigurator:
         Args:
             stack_name (str): CloudFormation stack name
             org_name (str): Name of organization in Tower
+            vpc_stack_name (str): Name of the VPC CFN stack
             owners (Sequence[Email]):
                 The users have full permissions on any resources within
                 the organization associated with the workspace
@@ -64,6 +66,7 @@ class TowerConfigurator:
         self.region = REGION
         self.stack_name = stack_name
         self.org_name = org_name
+        self.vpc_stack_name = vpc_stack_name
         self.owners = owners
         self.admins = admins
         self.maintainers = maintainers
@@ -86,7 +89,7 @@ class TowerConfigurator:
         """Configure the project in Nextflow Tower"""
         # Retrieve information from CloudFormation
         project_stack = self.get_cfn_stack_outputs(self.stack_name)
-        vpc_stack = self.get_cfn_stack_outputs("nextflow-vpc")
+        vpc_stack = self.get_cfn_stack_outputs(self.vpc_stack_name)
         # Prepare the organization and project workspace
         org_id, ws_id = self.create_tower_workspace()
         self.add_workspace_participants(org_id, ws_id)
@@ -437,11 +440,12 @@ def parse_args() -> dict:
     parser = argparse.ArgumentParser()
     parser.add_argument("--stack_name", "-s", required=True)
     parser.add_argument("--org_name", "-n", required=True)
-    parser.add_argument("--owners", "-o", nargs="*", help="List of emails")
-    parser.add_argument("--admins", "-a", nargs="*", help="List of emails")
-    parser.add_argument("--maintainers", "-m", nargs="*", help="List of emails")
-    parser.add_argument("--launchers", "-l", nargs="*", help="List of emails")
-    parser.add_argument("--viewers", "-v", nargs="*", help="List of emails")
+    parser.add_argument("--vpc_stack_name", "-c", required=True)
+    parser.add_argument("--owners", "-o", nargs="*", default=[])
+    parser.add_argument("--admins", "-a", nargs="*", default=[])
+    parser.add_argument("--maintainers", "-m", nargs="*", default=[])
+    parser.add_argument("--launchers", "-l", nargs="*", default=[])
+    parser.add_argument("--viewers", "-v", nargs="*", default=[])
     args = parser.parse_args()
     # Validate command-line arguments
     email_regex = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")

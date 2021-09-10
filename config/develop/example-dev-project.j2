@@ -7,7 +7,7 @@
 template_path: tower-project.yaml
 stack_name: {{ stack_name }}
 dependencies:
-  - develop/nextflow-ecs-service.yaml
+  - develop/nextflow-r53-alias-record.yaml
   - common/nextflow-forge-iam-policy.yaml
   - common/nextflow-launch-iam-policy.yaml
 
@@ -38,4 +38,4 @@ stack_tags:
 
 hooks:
   after_launch:
-    - !cmd bin/configure-tower-project.py -s {{ stack_name }} -n "Sage Bionetworks" -m {{ read_write_users | join(" ") }} -v {{ read_only_users | join(" ") }}
+    - !cmd bin/configure-tower-project.py -s {{ stack_name }} -n "Sage Bionetworks" -c "nextflow-vpc" -m {{ read_write_users | join(" ") }} -v {{ read_only_users | join(" ") }}
