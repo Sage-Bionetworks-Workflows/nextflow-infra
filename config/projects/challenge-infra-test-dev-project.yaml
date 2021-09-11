@@ -1,7 +1,7 @@
 # (REQUIRED) Step 0: Duplicate this file and rename using the updated stack name (see Step 1)
 
 # (REQUIRED) Step 1: Update the stack name below by replacing "example" with your project name
-stack_name: challenge-infra-test-project
+stack_name: challenge-infra-test-dev-project
 
 stack_tags:
   # (REQUIRED) Step 2: Update all three values below
@@ -35,7 +35,7 @@ parameters:
   # DO NOT EDIT ANYTHING BELOW THIS LINE ------------------------------------------------------------------------
 
   AccountAdminArns:
-    - {{stack_group_config.sso_admin_role.arn}}
+    - '{{stack_group_config.sso_admin_role.arn}}'
     - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
   TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
   TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
@@ -44,6 +44,6 @@ parameters:
 template_path: tower-project.yaml
 
 dependencies:
-  - prod/nextflow-vpc.yaml
+  - develop/nextflow-vpc.yaml
   - common/nextflow-forge-iam-policy.yaml
   - common/nextflow-launch-iam-policy.yaml
