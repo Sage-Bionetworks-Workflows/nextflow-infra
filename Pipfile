@@ -11,6 +11,7 @@ sceptre-resolver-aws-secrets-manager = {file = "https://github.com/iAnomaly/scep
 sceptre-ssm-resolver = "1.2.1"
 pytest = "*"
 pytest-mock = "*"
+pytest-cov = "*"
 
 [requires]
 python_version = "3.8"
