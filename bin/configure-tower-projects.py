@@ -197,7 +197,7 @@ class Projects:
 class AwsClient:
     def __init__(self) -> None:
         self.region = REGION
-        self.session = boto3.session.Session()
+        self.session = boto3.session.Session(region_name=REGION)
 
     def get_cfn_stack_outputs(self, stack_name: str) -> dict:
         """Retrieve output values for a CloudFormation stack
