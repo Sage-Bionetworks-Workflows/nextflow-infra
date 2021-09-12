@@ -3,6 +3,8 @@
 from copy import deepcopy
 import os
 
+import boto3
+from botocore.stub import Stubber
 import pytest
 
 import configure_tower
@@ -171,16 +173,65 @@ class TestProjects:
 
 
 class TestAwsClient:
-    pass
+    @pytest.fixture
+    def aws_client(self):
+        return configure_tower.AwsClient()
+
+    def test__init__(self, aws_client):
+        assert aws_client.region == configure_tower.REGION
+        assert isinstance(aws_client.session, boto3.session.Session)
+        assert aws_client.session.region_name == configure_tower.REGION
+
+    def test_get_cfn_stack_outputs(self, aws_client, mocker):
+        stack_name = "foo"
+        cfn = aws_client.session.client("cloudformation")
+        response = {
+            "Stacks": [
+                {
+                    "StackName": stack_name,
+                    "Outputs": [
+                        {
+                            "OutputKey": "k1",
+                            "OutputValue": "v1",
+                        },
+                        {
+                            "OutputKey": "k2",
+                            "OutputValue": "v2",
+                        },
+                    ],
+                    "CreationTime": "2000-01-01",
+                    "StackStatus": "CREATE_COMPLETE",
+                }
+            ],
+        }
+        expected_params = {"StackName": stack_name}
+        expected_output = {"stack_name": stack_name, "k1": "v1", "k2": "v2"}
+        with Stubber(cfn) as stubber:
+            stubber.add_response("describe_stacks", response, expected_params)
+            mocker.patch.object(aws_client.session, "client", return_value=cfn)
+            stack = aws_client.get_cfn_stack_outputs(stack_name)
+            assert stack == expected_output
+
+    def test_get_secret_value(self, aws_client, mocker):
+        secret_arn = "arn:aws:secretsmanager:us-east-1:012345:secret:abc123"
+        sm = aws_client.session.client("secretsmanager")
+        response = {"SecretString": '{"k1": "v1", "k2": "v2"}'}
+        expected_params = {"SecretId": secret_arn}
+        expected_output = {"k1": "v1", "k2": "v2"}
+        with Stubber(sm) as stubber:
+            stubber.add_response("get_secret_value", response, expected_params)
+            mocker.patch.object(aws_client.session, "client", return_value=sm)
+            stack = aws_client.get_secret_value(secret_arn)
+            assert stack == expected_output
 
 
 class TestTowerClient:
     pass
 
 
-class TestTowerOrganization:
+class TestTowerWorkspace:
     pass
 
 
-class TestTowerWorkspace:
+class TestTowerOrganization:
     pass
