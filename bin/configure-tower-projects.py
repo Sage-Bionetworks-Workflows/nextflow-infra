@@ -45,6 +45,8 @@ class Users:
     ):
         """Utility class for storing lists of users and their roles
 
+        All users are stored as emails.
+
         Args:
             owners (Sequence[str]):
                 The users have full permissions on any resources within
