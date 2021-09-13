@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 from __future__ import annotations
+import argparse
 import json
 import os
 import re
-import sys
 from typing import List, Tuple, Sequence, Dict, Iterator
 
 import boto3
@@ -27,11 +27,22 @@ VPC_STACK_OUTPUT_SIDS = [
 
 
 def main() -> None:
-    projects_dir = sys.argv[1]
-    projects = Projects(projects_dir)
-    tower = TowerClient()
-    org = TowerOrganization(tower, projects)
-    org.create_workspaces()
+    args = parse_args()
+    projects = Projects(args.projects_dir)
+    if args.dry_run:
+        print(
+            "The following Tower project configurations were "
+            "discovered and confirmed to be valid:\n  -",
+            "\n  - ".join(projects.config_paths),
+        )
+    else:
+        tower = TowerClient()
+        org = TowerOrganization(tower, projects)
+        org.create_workspaces()
+
+
+class InvalidTowerProject(Exception):
+    pass
 
 
 class Users:
@@ -117,11 +128,40 @@ class Projects:
                 Each element is a YAML filepath as a str
         """
         # Obtain a list of config files from the given directory
+        self.config_paths = list()
         for dirpath, _, filenames in os.walk(self.config_directory):
             for filename in filenames:
                 filepath = os.path.join(dirpath, filename)
                 if filename.endswith("-project.yaml"):
+                    self.config_paths.append(filepath)
                     yield filepath
+
+    def validate_config(self, config: Dict) -> None:
+        """Validate Tower project configuration
+
+        Args:
+            config (Dict): Tower project configuration
+
+        Raises:
+            InvalidTowerProject: When the config is invalid
+        """
+        has_stack_name = "stack_name" in config
+        is_valid = (
+            has_stack_name
+            and "template_path" in config
+            and config["template_path"] == "tower-project.yaml"
+            and "parameters" in config
+            and (
+                "S3ReadWriteAccessArns" in config["parameters"]
+                or "S3ReadOnlyAccessArns" in config["parameters"]
+            )
+        )
+        if not is_valid:
+            if has_stack_name:
+                stack_name = config["stack_name"]
+                raise InvalidTowerProject(f"{stack_name}.yaml is invalid")
+            else:
+                raise InvalidTowerProject(f"This config is invalid:\n{config}")
 
     def load_projects(self) -> Iterator[dict]:
         """Load all project configuration files from given directory
@@ -136,10 +176,7 @@ class Projects:
         for config_path in self.list_projects():
             with open(config_path) as config_file:
                 config = yaml.load(config_file, Loader=yaml.Loader)
-            if (
-                "template_path" in config
-                and config["template_path"] == "tower-project.yaml"
-            ):
+                self.validate_config(config)
                 yield config
 
     def extract_emails(self, arns: Sequence[str]) -> List[str]:
@@ -177,12 +214,6 @@ class Projects:
         """
         users_per_project = dict()
         for config in self.load_projects():
-            assert "stack_name" in config
-            assert "parameters" in config
-            assert (
-                "S3ReadWriteAccessArns" in config["parameters"]
-                or "S3ReadOnlyAccessArns" in config["parameters"]
-            )
             stack_name = config["stack_name"]
             maintainer_arns = config["parameters"].get("S3ReadWriteAccessArns", [])
             viewer_arns = config["parameters"].get("S3ReadOnlyAccessArns", [])
@@ -231,7 +262,7 @@ class AwsClient:
 
 
 class TowerClient:
-    def __init__(self) -> None:
+    def __init__(self, tower_token=None) -> None:
         """Generate NextflowTower instance
 
         The descriptions below for the user types were copied
@@ -245,7 +276,7 @@ class TowerClient:
         self.tower_api_base_url = self.get_tower_api_base_url()
         # Retrieve Nextflow token from environment
         try:
-            self.tower_token = os.environ["NXF_TOWER_TOKEN"]
+            self.tower_token = tower_token or os.environ["NXF_TOWER_TOKEN"]
         except KeyError as e:
             raise KeyError(
                 "The 'NXF_TOWER_TOKEN' environment variable must "
@@ -612,6 +643,19 @@ class TowerOrganization:
             ws = TowerWorkspace(self, name, users)
             self.workspaces[name] = ws
         return self.workspaces
+
+
+def parse_args() -> argparse.Namespace:
+    """Parse and validate command-line arguments
+
+    Returns:
+        argparse.Namespace: Parsed command-line arguments
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument("projects_dir")
+    parser.add_argument("--dry_run", "-n", action="store_true")
+    args = parser.parse_args()
+    return args
 
 
 if __name__ == "__main__":
