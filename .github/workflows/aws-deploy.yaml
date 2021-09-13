@@ -56,7 +56,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.NEXTFLOW_DEV_CI_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
           role-to-assume: arn:aws:iam::035458030717:role/workflows-nextflow-ci-service-account-ServiceRole-188LV3KMGCYBL
-          role-duration-seconds: 1200
+          role-duration-seconds: 3600
 
       - name: Deploy common configuration to develop account
         run: pipenv run sceptre launch common --yes
@@ -87,7 +87,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.NEXTFLOW_PROD_CI_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
           role-to-assume: arn:aws:iam::728882028485:role/workflows-nextflow-ci-service-account-ServiceRole-CTLXKJIOCRO4
-          role-duration-seconds: 1200
+          role-duration-seconds: 3600
 
       - name: Deploy common configuration to prod account
         run: pipenv run sceptre launch common --yes
