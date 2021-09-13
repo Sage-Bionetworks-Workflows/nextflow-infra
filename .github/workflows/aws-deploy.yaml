@@ -64,6 +64,22 @@ jobs:
       - name: Deploy develop configuration
         run: pipenv run sceptre launch develop --yes
 
+      - name: Deploy projects-dev configuration
+        run: pipenv run sceptre launch projects-dev --yes
+
+      - name: Wait for tower-dev to be up
+        uses: nev7n/wait_for_response@v1
+        with:
+          url: https://tower-dev.sagebionetworks.org/
+          responseCode: 200
+          timeout: 180000
+          interval: 10000
+
+      - name: Configure projects-dev in Tower
+        run: pipenv run bin/configure-tower-projects.py config/projects-dev/
+        env:
+          NXF_TOWER_TOKEN: ${{ secrets.TOWER_DEV_TOKEN }}
+
       - name: Assume AWS role in prod account
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -82,7 +98,16 @@ jobs:
       - name: Deploy projects configuration
         run: pipenv run sceptre launch projects --yes
 
-      - name: Configure projects in Tower
-        run: pipenv run bin/configure-tower-projects.py config/projects/
-        env:
-          NXF_TOWER_TOKEN: ${{ secrets.TOWER_PROD_TOKEN }}
+      # TODO: Uncomment once Tower-prod is working
+      # - name: Wait for tower-prod to be up
+      #   uses: nev7n/wait_for_response@v1
+      #   with:
+      #     url: https://tower.sagebionetworks.org/
+      #     responseCode: 200
+      #     timeout: 180000   # milliseconds
+      #     interval: 30000   # milliseconds
+
+      # - name: Configure projects in Tower
+      #   run: pipenv run bin/configure-tower-projects.py config/projects/
+      #   env:
+      #     NXF_TOWER_TOKEN: ${{ secrets.TOWER_PROD_TOKEN }}
