@@ -212,7 +212,41 @@ class TestAwsClient:
 
 
 class TestTowerClient:
-    pass
+    tower_token = "fake_tower_token"
+
+    @pytest.fixture
+    def tower_client(self, mocker):
+        mocker.patch("configure_tower.AwsClient")
+        mocker.patch("configure_tower.TowerClient.get_tower_api_base_url")
+        return configure_tower.TowerClient(self.tower_token)
+
+    def test__init__valid(self, tower_client):
+        assert tower_client.tower_token == self.tower_token
+        tower_client.aws.get_cfn_stack_outputs.assert_called_once()
+        tower_client.get_tower_api_base_url.assert_called_once()
+
+    def test__init__env(self, mocker):
+        mocker.patch("configure_tower.AwsClient")
+        mocker.patch("configure_tower.TowerClient.get_tower_api_base_url")
+        mocker.patch.object(os, "environ", {"NXF_TOWER_TOKEN": self.tower_token})
+        tower_client_env = configure_tower.TowerClient()
+        assert tower_client_env.tower_token == self.tower_token
+
+    def test__init__invalid(self, mocker):
+        mocker.patch("configure_tower.AwsClient")
+        mocker.patch("configure_tower.TowerClient.get_tower_api_base_url")
+        mocker.patch.object(os, "environ", dict())
+        with pytest.raises(KeyError):
+            configure_tower.TowerClient(None)
+
+    def test_get_valid_name(self):
+        assert True
+
+    def test_get_tower_api_base_url(self):
+        assert True
+
+    def test_request(self):
+        assert True
 
 
 class TestTowerWorkspace:
