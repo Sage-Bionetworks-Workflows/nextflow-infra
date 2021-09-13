@@ -78,8 +78,6 @@ Conditions:
     !Not [!Equals [!Join [",", !Ref S3ReadWriteAccessArns], ""]]
   HasS3ReadOnlyAccessArns:
     !Not [!Equals [!Join [",", !Ref S3ReadOnlyAccessArns], ""]]
-  HasAnyS3AccessArns:
-    !Or [!Condition HasS3ReadWriteAccessArns, !Condition HasS3ReadOnlyAccessArns]
 
 Resources:
   TowerForgeServiceUser:
@@ -299,74 +297,16 @@ Resources:
                 - !Sub "arn:aws:s3:::${TowerBucket}/*"
             - !Ref AWS::NoValue
 
-  TowerProjectConfigurationSecret:
+  TowerForgeServiceUserAccessKeySecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: !Sub "${AWS::StackName}-TowerProjectConfiguration"
-      Description: !Sub "Configuration for ${AWS::StackName} Project in Tower"
-      SecretString: !Sub
-        - >-
-          {
-            "forge_access_key_id":      "${ForgeAccessKeyId}",
-            "forge_secret_access_key":  "${ForgeSecretAccessKey}",
-            "forge_service_role_arn":   "${ForgeServiceRoleArn}",
-            "forge_head_role_arn":      "${ForgeHeadRoleArn}",
-            "forge_work_role_arn":      "${ForgeWorkRoleArn}",
-            "bucket_name":              "${BucketName}",
-            "read_write_arns":          "${ReadWriteArns}",
-            "read_only_arns":           "${ReadOnlyArns}",
-            "vpc_id":                   "${VpcId}",
-            "subnet_ids":               "${SubnetIds}"
-          }
-        - ForgeAccessKeyId: !Ref TowerForgeServiceUserAccessKey
-          ForgeSecretAccessKey: !GetAtt TowerForgeServiceUserAccessKey.SecretAccessKey
-          ForgeServiceRoleArn: !GetAtt TowerForgeServiceRole.Arn
-          ForgeHeadRoleArn: !GetAtt TowerForgeBatchHeadJobRole.Arn
-          ForgeWorkRoleArn: !GetAtt TowerForgeBatchWorkJobRole.Arn
-          BucketName: !Ref TowerBucket
-          ReadWriteArns: !Join [ ",", !Ref S3ReadWriteAccessArns ]
-          ReadOnlyArns: !Join [ ",", !Ref S3ReadOnlyAccessArns ]
-          VpcId: !ImportValue
-            'Fn::Sub': '${AWS::Region}-nextflow-vpc-VPCId'
-          SubnetIds: !Join
-            - ","
-            - - !ImportValue
-                'Fn::Sub': '${AWS::Region}-nextflow-vpc-PrivateSubnet'
-              - !ImportValue
-                'Fn::Sub': '${AWS::Region}-nextflow-vpc-PrivateSubnet1'
-              - !ImportValue
-                'Fn::Sub': '${AWS::Region}-nextflow-vpc-PrivateSubnet2'
-              - !ImportValue
-                'Fn::Sub': '${AWS::Region}-nextflow-vpc-PrivateSubnet3'
+      Description: !Sub "AWS credentials for the ${TowerForgeServiceUser} IAM user"
+      SecretString: !Sub >-
+        {
+          "aws_access_key_id":      "${TowerForgeServiceUserAccessKey}",
+          "aws_secret_access_key":  "${TowerForgeServiceUserAccessKey.SecretAccessKey}"
+        }
       KmsKeyId: !GetAtt EncryptionKeyStack.Outputs.Key
-
-  TowerProjectConfigurationSecretPolicy:
-    Type: AWS::SecretsManager::ResourcePolicy
-    Condition: HasAnyS3AccessArns
-    Properties:
-      BlockPublicPolicy: True
-      SecretId: !Ref TowerProjectConfigurationSecret
-      ResourcePolicy:
-        Version: "2012-10-17"
-        Statement:
-          - !If
-            - HasS3ReadWriteAccessArns
-            - Sid: GrantReadAccessToS3ReadWriteAccessArns
-              Effect: Allow
-              Action: "secretsmanager:GetSecretValue"
-              Principal:
-                AWS: !Ref S3ReadWriteAccessArns
-              Resource: !Ref TowerProjectConfigurationSecret
-            - !Ref AWS::NoValue
-          - !If
-            - HasS3ReadOnlyAccessArns
-            - Sid: GrantReadAccessToS3ReadOnlyAccessArns
-              Effect: Allow
-              Action: "secretsmanager:GetSecretValue"
-              Principal:
-                AWS: !Ref S3ReadOnlyAccessArns
-              Resource: !Ref TowerProjectConfigurationSecret
-            - !Ref AWS::NoValue
 
 Outputs:
   S3ReadWriteAccessArns:
@@ -411,12 +351,32 @@ Outputs:
     Export:
       Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceRoleArn"
 
-  TowerProjectConfigurationSecret:
+  TowerForgeBatchHeadJobRole:
+    Value: !Ref TowerForgeBatchHeadJobRole
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeBatchHeadJobRole"
+
+  TowerForgeBatchHeadJobRoleArn:
+    Value: !GetAtt TowerForgeBatchHeadJobRole.Arn
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeBatchHeadJobRoleArn"
+
+  TowerForgeBatchWorkJobRole:
+    Value: !Ref TowerForgeBatchWorkJobRole
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeBatchWorkJobRole"
+
+  TowerForgeBatchWorkJobRoleArn:
+    Value: !GetAtt TowerForgeBatchWorkJobRole.Arn
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeBatchWorkJobRoleArn"
+
+  TowerForgeServiceUserAccessKeySecret:
     Value: !Sub "${AWS::StackName}-TowerProjectConfiguration"
     Export:
-      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerProjectConfigurationSecret"
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceUserAccessKeySecret"
 
-  TowerProjectConfigurationSecretArn:
-    Value: !Ref TowerProjectConfigurationSecret
+  TowerForgeServiceUserAccessKeySecretArn:
+    Value: !Ref TowerForgeServiceUserAccessKeySecret
     Export:
-      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerProjectConfigurationSecretArn"
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceUserAccessKeySecretArn"

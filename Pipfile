@@ -11,6 +11,12 @@ sceptre-resolver-aws-secrets-manager = {file = "https://github.com/iAnomaly/scep
 sceptre-ssm-resolver = "1.2.1"
 
 [requires]
-python_version = "3.9"
+python_version = "3.8"
 
 [packages]
+boto3 = "*"
+requests = "*"
+types-requests = "*"
+
+[pipenv]
+allow_prereleases = true
