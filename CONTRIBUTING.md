@@ -12,33 +12,33 @@ You must first install [`pipenv`](https://pipenv.pypa.io/en/latest/install/#inst
 
 For testing, you can use the `workflows-nextflow-dev` AWS account that was set up [here](https://github.com/Sage-Bionetworks-IT/organizations-infra/blob/3dfe3fe2db327bd07cf31610cd77f02c3bacc130/org-formation/organization.yaml#L316-L326). You can [open an issue](https://github.com/Sage-Bionetworks-Workflows/aws-workflows-nextflow-infra/issues/new/choose) to request for access to the AWS account. One of the project admins will create an IAM user in this AWS account and share the credentials in a secure way.
 
-```
+```console
 # Create directory for remote sceptre templates
 mkdir -p templates/remote/
 
-# Install dependencies in isolated virtual environment
+# Install dependencies in an isolated virtual environment
 pipenv install --dev
 
 # Install pre-commit hooks into Git
 pipenv run pre-commit install
 
 # Set up an AWS CLI profile with admin access for a test account
-aws configure --profile $AWS_PROFILE
+aws configure --profile "<profile-name>"
 ```
 
 ### Testing sceptre deployment
 
 If your text editor (_e.g._ Visual Studio Code) or shell (_e.g._ using [`direnv`](https://direnv.net/)) can automatically activate the `pipenv` virtual environment, you can omit the `pipenv shell` command.
 
-```
-# Activate the pipenv virtual environment to use sceptre
-pipenv shell
+```console
+# Define the AWS CLI profile you want to use for testing
+export AWS_PROFILE="<profile-name>"
 
-# Test the deployment of the 'prod' stack group
-sceptre --var "profile=$AWS_PROFILE" launch --yes prod
+# Test the deployment of a specific 'develop' stack
+pipenv run sceptre launch --yes develop/some-stack.yaml
 
-# Delete the test deployment of the 'prod' stack group
-sceptre --var "profile=$AWS_PROFILE" delete --yes prod
+# Delete the test deployment of the specific 'develop' stack
+pipenv run sceptre delete --yes develop/some-stack.yaml
 ```
 
 ## AWS Accounts
@@ -68,12 +68,12 @@ Bespoke [CloudFormation templates](https://docs.aws.amazon.com/AWSCloudFormation
 
 ### Configuration
 
-Instances of each template are configured to be deployed in the `config/` directory, which is organized into subfolders known as stack groups. In this case, we have defined three stack groups: `common`, `develop`, and `prod`. The [CI/CD](#cicd) workflow deploys these stack groups to the [AWS accounts](#aws-accounts) as follows (in the listed order):
+Instances of each template are configured to be deployed in the `config/` directory, which is organized into subfolders known as stack groups. In this case, we have defined several stack groups: `common`, `develop`, `prod`, `projects-dev`, and `projects`. The [CI/CD](#cicd) workflow deploys these stack groups to the [AWS accounts](#aws-accounts) as follows (in the listed order):
 
-- `common` and `develop` to the `workflows-nextflow-dev` account
-- `common` and `prod` to the `workflows-nextflow-prod` account
+- `common`, `develop`, and `projects-dev` to the `workflows-nextflow-dev` account
+- `common`, `prod`, and `projects` to the `workflows-nextflow-prod` account
 
-All three stack groups currently share the same [stack group configuration](https://sceptre.cloudreach.com/2.6.3/docs/stack_group_config.html): [`config/config.yaml`](config/config.yaml). Two values in this configuration file can be tweaked when running Sceptre, namely `profile` and `region`. The default region (`us-east-1`) is typically left as is, but the profile variable is useful for local testing. Our [contribution guidelines](CONTRIBUTING.md) describe how to use the Sceptre `--var` CLI option to specify an AWS CLI profile to use for deployment.
+There are two types of [stack group configurations](https://sceptre.cloudreach.com/2.6.3/docs/stack_group_config.html) used in this repository. First, we have a shared [`config/config.yaml`](config/config.yaml) configuration, which contains values that are applicable to all stack groups. Second, we have configurations that are specific to individual stack groups, which define account-specific values (like IAM role ARNs).
 
 ### CI/CD
 
@@ -87,11 +87,31 @@ The lint checks are defined as [pre-commit hooks](.pre-commit-config.yaml) and a
 
 This repository uses the [Pipenv](https://pipenv.pypa.io/) Python package to manage dependencies. The main dependencies and their required versions (if applicable) are listed in the [Pipfile](Pipfile) whereas the [Pipfile.lock](Pipfile.lock) lists all recursive dependencies, their versions, and their checksums at the time of generating the lockfile. This Pipenv environment is used for [CI/CD](#cicd), but it can also be used for local development and testing. Our [contribution guidelines](CONTRIBUTING.md) detail how to set up a local development environment using Pipenv.
 
+Additional dependencies exist for the [pre-commit hooks](.pre-commit-config.yaml) that we've added to this repository. The virtual environments for these hooks are automatically configured when you run `pre-commit`.
+
 ## Secrets
 
-The [CI/CD workflow](#cicd) uses secrets stored at the level of the [Sage-Bionetworks-Workflows](https://github.com/Sage-Bionetworks-Workflows) GitHub organization. These include the AWS credentials (_i.e._ access key IDs and secret access keys) for IAM users with permission to assume account-specific admin roles, which are used to provision resources.
+The [CI/CD workflow](#cicd) and [Sceptre configurations](#configuration) make use of the following secrets.
 
-The templates and configurations also leverage secrets stored in AWS Secrets Manager. These are retrieved using a [Sceptre resolver](https://github.com/iAnomaly/sceptre-resolver-aws-secrets-manager). Most of these secrets are created during deployment ([example](https://github.com/Sage-Bionetworks-Workflows/aws-workflows-nextflow-infra/blob/db37741e53fa5276b33b24d1af247d8d29bc0e56/templates/nextflow-tower-secret.yaml#L14-L34)), but the following were added manually:
+### GitHub Organization Secrets
+
+The following secrets are the AWS credentials for logging in as the service accounts set up for the CI/CD workflow and assuming an IAM role (see `role-to-assume` in [`aws-deploy.yaml`](.github/workflows/aws-deploy.yaml)).
+
+- `NEXTFLOW_DEV_CI_ACCESS_KEY`
+- `NEXTFLOW_DEV_CI_SECRET_ACCESS_KEY`
+- `NEXTFLOW_PROD_CI_ACCESS_KEY`
+- `NEXTFLOW_PROD_CI_SECRET_ACCESS_KEY`
+
+### GitHub Repository Secrets
+
+The following secrets are access tokens created in our development and production instances of Nextflow Tower. They were created using the Google service accounts that we provisioned for creating the Google OAuth clients, `nextflowgdev.dev@sagebase.org` and `nextflowgdev.prod@sagebase.org`, respectively. The passwords for these two Google accounts are stored in LastPass under the `Shared-IBC-DPE-Workflows` folder.
+
+- `TOWER_DEV_TOKEN`
+- `TOWER_PROD_TOKEN`
+
+### AWS Secrets
+
+The following secrets were manually created in AWS Secrets Manager. They are used in some [Sceptre configurations](#configuration) and are retrieved using a [Sceptre resolver](https://github.com/iAnomaly/sceptre-resolver-aws-secrets-manager). We also create secrets during deployment and store them in Secrets Manager ([example](https://github.com/Sage-Bionetworks-Workflows/aws-workflows-nextflow-infra/blob/db37741e53fa5276b33b24d1af247d8d29bc0e56/templates/nextflow-tower-secret.yaml#L14-L34)), but these aren't listed here.
 
 - `nextflow/license`: The paid license key for Nextflow Tower
 - `nextflow/google_oauth_app`: The Google OAuth client credentials
