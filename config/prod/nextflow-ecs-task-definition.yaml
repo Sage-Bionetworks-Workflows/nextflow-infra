@@ -1,15 +1,15 @@
 template_path: nextflow-ecs-task-definition.yaml
 stack_name: nextflow-ecs-task-definition
 dependencies:
-  - develop/nextflow-aurora-mysql.yaml
-  - develop/nextflow-efs-file-system.yaml
+  - prod/nextflow-aurora-mysql.yaml
+  - prod/nextflow-efs-file-system.yaml
 parameters:
   TowerSmtpHost: 'email-smtp.us-east-1.amazonaws.com'
   TowerSmtpPort: '587'
   TowerSmtpUser: !ssm 'smtp-username'
   TowerSmtpPassword: !ssm 'smtp-password'
   TowerContactEmail: nextflow-admins@sagebase.org
-  TowerServerUrl: https://tower-dev.sagebionetworks.org/
+  TowerServerUrl: https://tower.sagebionetworks.org/
   TowerJwtSecret: !aws_secrets_manager nextflow-tower-secret/jwt::SecretString::secret
   TowerCryptoSecretkey: !aws_secrets_manager nextflow-tower-secret/crypto::SecretString::secret
   TowerLicense: !aws_secrets_manager nextflow/license::SecretString::license_key

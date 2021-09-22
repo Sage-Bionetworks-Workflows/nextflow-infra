@@ -1,4 +1,4 @@
-{% set stack_name = "nextflow-tower-config-bucket" %}
+# {% set stack_name = "nextflow-tower-config" %}
 template_path: nextflow-tower-config-bucket.yaml
 stack_name: {{ stack_name }}
 parameters:

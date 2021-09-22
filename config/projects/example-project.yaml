@@ -16,7 +16,7 @@ parameters:
     - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/bruno.grande@sagebase.org
 
     # (Optional) Step 4: Uncomment and update the following line(s) to grant additional users with read/write access
-    # - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/daisy.han@sagebase.org
+    # - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/tess.thyer@sagebase.org
     # - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/william.poehlman@sagebase.org
 
   # (Optional) Step 5: Uncomment and update the following line(s) to grant additional users with read-only access
@@ -35,7 +35,7 @@ parameters:
   # DO NOT EDIT ANYTHING BELOW THIS LINE ------------------------------------------------------------------------
 
   AccountAdminArns:
-    - {{stack_group_config.sso_admin_role.arn}}
+    - '{{stack_group_config.sso_admin_role.arn}}'
     - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
   TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
   TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
@@ -44,6 +44,5 @@ parameters:
 template_path: tower-project.yaml
 
 dependencies:
-  - prod/nextflow-vpc.yaml
   - common/nextflow-forge-iam-policy.yaml
   - common/nextflow-launch-iam-policy.yaml

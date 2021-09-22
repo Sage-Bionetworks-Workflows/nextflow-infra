@@ -31,19 +31,23 @@ Parameters:
 
   AutoscalingGroupMaxSize:
     Type: Number
-    Description: >
-      Specifies the number of instances to launch and register to the cluster.
+    Description: (Optional) Limit on number of ECS cluster instances
       Defaults to 1.
+    Default: '2'
+
+  AutoscalingGroupDesiredCapacity:
+    Type: Number
+    Description: (Optional) Ideal number of ECS cluster instances
     Default: '1'
 
   RootEbsVolumeSize:
     Type: Number
-    Description: Optional - Specifies the Size in GBs of the root EBS volume
+    Description: (Optional) Specifies the Size in GBs of the root EBS volume
     Default: 30
 
   EbsVolumeType:
     Type: String
-    Description: Specifies the Type of (Amazon EBS) volume.
+    Description: (Optional) Specifies the Type of (Amazon EBS) volume.
     AllowedValues:
       - io1
       - gp2
@@ -55,7 +59,7 @@ Parameters:
 
   RootDeviceName:
     Type: String
-    Description: Optional - Specifies the device mapping for the root EBS volume.
+    Description: (Optional) Specifies the device mapping for the root EBS volume.
     Default: '/dev/xvda'
 
 Resources:
@@ -67,6 +71,20 @@ Resources:
       ClusterSettings:
         - Name: containerInsights
           Value: enabled
+      CapacityProviders:
+        - !Ref EcsCapacityProvider
+
+  EcsCapacityProvider:
+    Type: AWS::ECS::CapacityProvider
+    Properties:
+      AutoScalingGroupProvider:
+        AutoScalingGroupArn: !Ref EcsAutoScalingGroup
+        ManagedScaling:
+          Status: ENABLED
+          MinimumScalingStepSize: 1
+          MaximumScalingStepSize: 1
+          TargetCapacity: 90
+        ManagedTerminationProtection: DISABLED
 
   EcsRole:
     Type: AWS::IAM::Role
@@ -140,7 +158,12 @@ Resources:
       LaunchConfigurationName: !Ref EcsLaunchConfiguration
       MinSize: '0'
       MaxSize: !Ref AutoscalingGroupMaxSize
-      DesiredCapacity: !Ref AutoscalingGroupMaxSize
+      DesiredCapacity: !Ref AutoscalingGroupDesiredCapacity
+      TerminationPolicies:
+        - OldestLaunchConfiguration
+        - OldestInstance
+      MetricsCollection:
+        - Granularity: 1Minute
 
 Outputs:
 
