@@ -16,6 +16,6 @@ parameters:
   TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
 
 stack_tags:
-  Department: CompOnc
+  Department: SCCE
   Project: Neurofibromatosis
   OwnerEmail: bruno.grande@sagebase.org
