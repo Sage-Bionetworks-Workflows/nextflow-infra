@@ -504,7 +504,7 @@ class TowerWorkspace:
                         "efsMode": "None",
                         "type": "SPOT",
                         "minCpus": 0,
-                        "maxCpus": 100,
+                        "maxCpus": 500,
                         "gpuEnabled": False,
                         "ebsAutoScale": True,
                         "allowBuckets": [],
