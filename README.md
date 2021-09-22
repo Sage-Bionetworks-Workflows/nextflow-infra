@@ -1,30 +1,36 @@
 # Nextflow Infrastructure
 
-The AWS infrastructure for hosting a [private instance](https://tower.sagebionetworks.org) of [Nextflow Tower](https://tower.nf/) and executing [Nextflow workflows](https://nextflow.io/) is defined in this repository and deployed using [CloudFormation](https://aws.amazon.com/cloudformation/) via [Sceptre](https://sceptre.cloudreach.com/).
+The AWS infrastructure for hosting a private instance (see link below) of [Nextflow Tower](https://tower.nf/) and executing [Nextflow workflows](https://nextflow.io/) is defined in this repository and deployed using [CloudFormation](https://aws.amazon.com/cloudformation/) via [Sceptre](https://sceptre.cloudreach.com/).
 
-➡️ **Nextflow Tower for Sage Bionetworks:** https://tower.sagebionetworks.org
+## Access Tower
+
+Click the link below and login with your `@sagebase.org` Google account:
+
+<p align="center">➡️&ensp;<a href="https://tower.sagebionetworks.org/orgs/Sage-Bionetworks/workspaces" target="_blank" rel="noopener noreferrer"><b>Nextflow Tower</b> @ Sage Bionetworks</a>&ensp;⬅️</p>
 
 ## Getting Started
 
 ### Prospective Tower Users
 
-Follow the [Tower User Onboarding](#tower-user-onboarding) instructions below. Access is currently restricted to Sage Bionetworks staff.
+Follow the [Tower User Onboarding](#tower-user-onboarding) instructions below. Access is currently restricted to Sage Bionetworks staff. **See [below](#getting-help) for how to get help if you run into any issues.**
 
 ### Prospective Contributors
 
 Read through the [contribution guidelines](CONTRIBUTING.md) for more information. Contributions are welcome from anyone!
 
+### Getting Help
+
+Message us in the [`#workflow_users`](https://sagebionetworks.slack.com/archives/C8SJHFCKT) Slack channel or email us at `nextflow-admins[at]sagebase[dot]org`.
+
 ## Tower User Onboarding
 
-Before you can use Nextflow Tower, you need to first deploy a Tower project, which consists an encrypted S3 bucket and the IAM resources (_i.e._ users, roles, and policies) that Tower requires to access the encrypted bucket and execute the workflow on [AWS Batch](https://help.tower.nf/compute-envs/aws-batch/). Once these resources exist, they need to be configured in Nextflow Tower, which is a process that has been automated with the Docker command below.
+Before you can use Nextflow Tower, you need to first deploy a Tower project, which consists an encrypted S3 bucket and the IAM resources (_i.e._ users, roles, and policies) that Tower requires to access the encrypted bucket and execute the workflow on [AWS Batch](https://help.tower.nf/compute-envs/aws-batch/). Once these resources exist, they need to be configured in Nextflow Tower, which is a process that has been automated using CI/CD.
 
 1. Determine what is known as the stack name by concatenating the project name with the suffix `-project` (_e.g._ `imcore-project`, `amp-ad-project`, `commonmind-project`).
 
    **N.B.:** Anytime that `<stack_name>` appears below with the angle brackets, replace the placeholder with the actual stack name, omitting any angle brackets.
 
-2. Install [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) and [Docker](https://docs.docker.com/engine/install/) on your local computer or on a server available to you.
-
-3. [Create](https://sagebionetworks.jira.com/jira/software/c/projects/IT/issues/) an IT JIRA ticket requesting membership to the following JumpCloud groups for anyone who needs read/write or read-only access to the S3 bucket:
+2. [Create](https://sagebionetworks.jira.com/jira/software/c/projects/IT/issues/) an IT JIRA ticket requesting membership to the following JumpCloud groups for anyone who needs read/write or read-only access to the S3 bucket:
 
    - `aws-sandbox-developers`
    - `aws-workflow-nextflow-tower-viewer`
@@ -33,55 +39,37 @@ Before you can use Nextflow Tower, you need to first deploy a Tower project, whi
 
    ![AWS SSO Screenshot](assets/img/aws_sso.png)
 
-4. Open a pull request on this repository in which you duplicate [`config/prod/example-project.yaml`](config/prod/example-project.yaml) as `<stack_name>.yaml` in the `prod/` subdirectory and then follow the numbered steps listed in the file. Note that some steps are required whereas others are optional.
+3. Open a pull request on this repository in which you duplicate [`config/projects/example-project.yaml`](config/projects/example-project.yaml) as `<stack_name>.yaml` in the `projects/` subdirectory and then follow the numbered steps listed in the file. Note that some steps are required whereas others are optional.
 
    **N.B.** In this case, read/write vs read-only access refers to the level of access granted to individuals for the encrypted S3 bucket that will be provisioned once the PR is merged. **Given that access is granted to the entire bucket, you might want to create more specific Tower projects that provide more granular access control.**
 
-   **Getting Help:** If you are unfamiliar with Git/GitHub or don't know how to open a pull request, message us in the [`#workflow_users`](https://sagebionetworks.slack.com/archives/C8SJHFCKT) Slack channel or email us at `nextflow-admins[at]sagebase[dot]org`.
+   **Getting Help:** If you are unfamiliar with Git/GitHub or don't know how to open a pull request, see [above](#getting-help) for how to get help.
 
-5. Once the pull request is approved and merged, [confirm](https://github.com/Sage-Bionetworks-Workflows/aws-workflows-nextflow-infra/actions?query=event%3Apush+branch%3Amain) that your PR was deployed successfully and if so, open a terminal to perform the following steps:
+4. Once the pull request is approved and merged, [confirm](https://github.com/Sage-Bionetworks-Workflows/aws-workflows-nextflow-infra/actions?query=event%3Apush+branch%3Amain) that your PR was deployed successfully. If so, the following happened on your behalf:
 
-   1. [Copy](https://d-906769aa66.awsapps.com/start#/) the temporary credentials for your Developer `sandbox` role, available under:
-      ```
-      AWS Accounts > org-sagebase-sandbox > Developer > Command line or programmatic access > Option 1
-      ```
-      Run the copied `export` commands in the terminal, which should look like this:
-      ```
-      export AWS_ACCESS_KEY_ID="..."
-      export AWS_SECRET_ACCESS_KEY="..."
-      export AWS_SESSION_TOKEN="..."
-      ```
+   - All users listed under `S3ReadWriteAccessArns` and `S3ReadOnlyAccessArns` were added to the Sage Bionetworks organization in Tower.
 
-   2. [Create](https://tower.sagebionetworks.org/tokens) a new token in Nextflow Tower called `<stack_name>`, copy the token (which is only displayed once), and run the following command, updating `<token>` with the copied value:
-      ```
-      export NXF_TOWER_TOKEN="<token>"
-      ```
+   - A new Tower workspace called `<stack_name>` was created under this organization.
 
-   3. [Create](https://www.synapse.org/#!PersonalAccessTokens:) a new personal access token in Synapse called `<stack_name>` with all scopes enabled, copy the token (which is only displayed once), and run the following command, updating `<token>` with the copied value:
-      ```
-      export SYNAPSE_TOKEN="<token>"
-      ```
+   - Users listed under `S3ReadWriteAccessArns` were added as workspace participants with the `Maintain` role, which grants the following permissions:
 
-   4. Run the following Docker command to configure your project in Nextflow Tower, updating `<stack_name>` with the stack name:
-      ```
-      docker run -e STACK_NAME="<stack_name>" -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e NXF_TOWER_TOKEN -e SYNAPSE_TOKEN -v "$HOME/.aws:/root/.aws" sagebionetworks/setup-tower-project > project-config.json
-      ```
+     > The users can launch pipeline and modify pipeline executions
+       (e.g. can change the pipeline launch compute env, parameters,
+       pre/post-run scripts, nextflow config) and create new pipeline
+       configuration in the Launchpad. The users cannot modify Compute
+       env settings and Credentials
 
-      The above Docker command performs the following tasks:
+   - Users listed under `S3ReadOnlyAccessArns` were added as workspace participants with the `View` role, which grants the following permissions:
 
-      - In your AWS CLI configuration (`~/.aws/config`), it configures two profiles if they don't already exist:
-        - `sandbox` for using the `Developer` role from the `sandbox` AWS account
-        - `tower` for using the `TowerViewer` role from the `nextflow-prod` AWS account
+     > The users can access to the team resources in read-only mode
 
-        You can login using these profiles with the following commands
-        ```
-           aws --profile sandbox sso login
-           aws --profile tower sso login
-        ```
+   - A set of AWS credentials called `<stack_name>` was added under this Tower workspace.
 
-      - In Nextflow Tower, the credentials for the Forge service user were created under the name `<stack_name>`.
+   - An AWS Batch compute environment called `<stack_name> (default)` was created using these credentials with a default configuration that should satisfy most use cases.
 
-      - In Nextflow Tower, a compute environment was created using the above credentials under the name `<stack_name> (default)`. If you need to tweak the compute environment, we recommend that you clone the default one and make adjustments as necessary.
+   **N.B.** If you need have special needs (_e.g._ more CPUs, on-demand EC2 instances, FSx for Lustre), see [above](#getting-help) for how to contact the administrators, who can create additional compute environments in your workspace.
+
+5. Log into Nextflow Tower using the [link](#access-nextflow-tower) at the top of this README and open your project workspace. If you were listed under `S3ReadWriteAccessArns`, then you'll be able to add pipelines to your workspace and launch them on your data.
 
 ## License
 
