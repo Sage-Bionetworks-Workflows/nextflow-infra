@@ -98,16 +98,15 @@ jobs:
       - name: Deploy projects configuration
         run: pipenv run sceptre launch projects --yes
 
-      # TODO: Uncomment once Tower-prod is working
-      # - name: Wait for tower-prod to be up
-      #   uses: nev7n/wait_for_response@v1
-      #   with:
-      #     url: https://tower.sagebionetworks.org/
-      #     responseCode: 200
-      #     timeout: 180000   # milliseconds
-      #     interval: 30000   # milliseconds
+      - name: Wait for tower-prod to be up
+        uses: nev7n/wait_for_response@v1
+        with:
+          url: https://tower.sagebionetworks.org/
+          responseCode: 200
+          timeout: 180000
+          interval: 30000
 
-      # - name: Configure projects in Tower
-      #   run: pipenv run bin/configure-tower-projects.py config/projects/
-      #   env:
-      #     NXF_TOWER_TOKEN: ${{ secrets.TOWER_PROD_TOKEN }}
+      - name: Configure projects in Tower
+        run: pipenv run bin/configure-tower-projects.py config/projects/
+        env:
+          NXF_TOWER_TOKEN: ${{ secrets.TOWER_PROD_TOKEN }}
