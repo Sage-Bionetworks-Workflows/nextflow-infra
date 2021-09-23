@@ -26,11 +26,11 @@ parameters:
 
   # (Optional) Step 6: Uncomment and update the following lines to change the S3 bucket lifecycle configuration
   # EnableDataLifeCycle: Enabled
-  # LifecycleDataTransition: 30  # In days
+  # LifecycleDataTransition: '30'  # In days
   # LifecycleDataStorageClass: INTELLIGENT_TIERING
 
   # (Optional) Step 7: Uncomment and update the following line to change when objects are deleted automatically
-  # LifecycleDataExpiration: 183  # In days (i.e., 6 months)
+  # LifecycleDataExpiration: '183'  # In days (i.e., 6 months)
 
   # DO NOT EDIT ANYTHING BELOW THIS LINE ------------------------------------------------------------------------
 
