@@ -1,5 +1,5 @@
 template_path: remote/gateway-vpc-endpoint.yaml
-stack_name: nextflow-vpc-endpoint
+stack_name: nextflow-s3-vpc-endpoint
 dependencies:
   - develop/nextflow-vpc.yaml
 parameters:
