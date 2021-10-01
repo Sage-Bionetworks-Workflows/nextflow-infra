@@ -1,0 +1,10 @@
+template_path: remote/gateway-vpc-endpoint.yaml
+stack_name: nextflow-vpc-endpoint
+dependencies:
+  - prod/nextflow-vpc.yaml
+parameters:
+  VpcName: "nextflow-vpc"
+  ServiceName: "com.amazonaws.us-east-1.s3"
+hooks:
+  before_launch:
+    - !cmd "wget {{stack_group_config.aws_infra_templates_root_url}}/v0.3.2/templates/gateway-vpc-endpoint.yaml -O templates/remote/gateway-vpc-endpoint.yaml"
