@@ -1,0 +1,5 @@
+template_path: remote/maintenance.yaml
+stack_name: maintenance
+hooks:
+  before_launch:
+    - !cmd "wget {{stack_group_config.aws_infra_templates_root_url}}/v0.3.2/templates/maintenance.yaml -O templates/remote/maintenance.yaml"
