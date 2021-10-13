@@ -120,7 +120,7 @@ Resources:
     Properties:
       ImageId: !Ref EcsAmiId
       InstanceType: !Ref EcsInstanceType
-      AssociatePublicIpAddress: true
+      AssociatePublicIpAddress: false
       IamInstanceProfile: !Ref EcsInstanceProfile
       SecurityGroups:
         - !Ref EcsSecurityGroupId
