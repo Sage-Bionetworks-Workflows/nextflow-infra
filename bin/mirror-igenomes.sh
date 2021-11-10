@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# This script assumes that `AWS_PROFILE` has been set to a AWS CLI
+# profile that has write-access to the `s3://sage-igenomes` bucket
+# (or using any other means of authenticating with the AWS CLI).
+
 prefixes=(
     "Homo_sapiens/Ensembl/GRCh37"
     "Homo_sapiens/NCBI/GRCh38"

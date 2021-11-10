@@ -89,6 +89,10 @@ This repository uses the [Pipenv](https://pipenv.pypa.io/) Python package to man
 
 Additional dependencies exist for the [pre-commit hooks](.pre-commit-config.yaml) that we've added to this repository. The virtual environments for these hooks are automatically configured when you run `pre-commit`.
 
+### Scripts
+
+- `bin/mirror-igenomes.sh`: This Bash script is manually run to synchronize a subset of human and mouse reference files from the [nf-core iGenomes bucket](https://ewels.github.io/AWS-iGenomes/) to a Sage-owned bucket in `us-east-1`. There are multiple reasons: (1) Sage AWS accounts cannot make requests to regions outside of the US; (2) we don't want nf-core to incur egress charges on our behalf; (3) creating a local mirror in `us-east-1` should reduce latency; and (4) we own a copy of the reference files in case anything happens to the nf-core bucket (_e.g._ AWS funding being cut). At the moment, this script is intended to be run manually because reference files shouldn't change all that often and thus automating the process wasn't deemed worth the effort.
+
 ## Secrets
 
 The [CI/CD workflow](#cicd) and [Sceptre configurations](#configuration) make use of the following secrets.
