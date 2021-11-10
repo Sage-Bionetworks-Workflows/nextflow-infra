@@ -1,0 +1,157 @@
+# Adapted from https://github.com/Sage-Bionetworks/aws-infra/blob/master/templates/Billing/budgets.yaml
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+
+  budgetName:
+    Type: String
+
+  emailAddress:
+    Type: String
+    Default: ''
+
+  budgetAmount:
+    Type: Number
+    Default: 50
+
+  serviceFilters:
+    Type: List<String>
+    Default: ''
+    Description: >-
+      Valid values include: Amazon API Gateway, Amazon DynamoDB, Amazon Elastic Block Store,
+      Amazon Elastic Compute Cloud - Compute, Amazon Elastic Container Service,
+      Amazon Elastic File System, Amazon Elastic Load Balancing, Amazon GuardDuty,
+      Amazon Relational Database Service, Amazon Route 53, Amazon Simple Notification Service,
+      Amazon Simple Queue Service, Amazon Simple Storage Service, Amazon Virtual Private Cloud,
+      AmazonCloudWatch, AWS Backup, AWS CloudShell, AWS CloudTrail, AWS Config, AWS DataSync,
+      AWS Glue, AWS Key Management Service, AWS Lambda, AWS Secrets Manager, AWS Service Catalog,
+      AWS Systems Manager
+
+      These values were obtained by scraping the `data-value` HTML tag from the
+      dropdown list when creating a new budget on the AWS Management Console.
+      Unfortunately, no comprehensive list was found in the AWS documentation.
+      Some of these names are inadequate. For example, the "EC2-Other" display value,
+      which includes NAT gateway charges, corresponds to the "Amazon Elastic Block
+      Store" data value that can be used in CloudFormation.
+
+Conditions:
+
+  hasSubscription: !Not [ !Equals [ '', !Ref emailAddress ] ]
+  hasNoFilters: !Equals [ '', !Join [',', !Ref serviceFilters] ]
+  hasFilters: !Not [ !Equals [ '', !Join [',', !Ref serviceFilters] ] ]
+
+Resources:
+
+  NotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: Budgets Notification
+      TopicName: !Sub '${budgetName}-topic'
+
+  EmailSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: hasSubscription
+    Properties:
+      Endpoint: !Ref emailAddress
+      Protocol: email
+      TopicArn: !Ref NotificationTopic
+
+  NotificationTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref NotificationTopic
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowBudgetsPublish
+            Effect: Allow
+            Principal:
+              Service: budgets.amazonaws.com
+            Action: sns:Publish
+            Resource: !Ref NotificationTopic
+
+  # note that changing some attributes on Budget resources will result in an error.
+  # this unfortunately is a cloudformation error described here: https://github.com/aws-cloudformation/aws-cloudformation-coverage-roadmap/issues/365
+  # workaround is to delete the budget resource and then re-add it.
+  UnfilteredBudget:
+    Type: AWS::Budgets::Budget
+    Condition: hasNoFilters
+    Properties:
+      Budget:
+        BudgetName: !Ref budgetName
+        BudgetLimit:
+          Amount: !Ref budgetAmount
+          Unit: USD
+        TimeUnit: MONTHLY
+        BudgetType: COST
+        CostTypes:
+          IncludeSupport: false
+          IncludeTax: false
+      NotificationsWithSubscribers:
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 80
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref NotificationTopic
+        - Notification:
+            NotificationType: FORECASTED
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref NotificationTopic
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref NotificationTopic
+
+  FilteredBudget:
+    Type: AWS::Budgets::Budget
+    Condition: hasFilters
+    Properties:
+      Budget:
+        BudgetName: !Ref budgetName
+        BudgetLimit:
+          Amount: !Ref budgetAmount
+          Unit: USD
+        CostFilters:
+          Service: !Ref serviceFilters
+        TimeUnit: MONTHLY
+        BudgetType: COST
+        CostTypes:
+          IncludeSupport: false
+          IncludeTax: false
+      NotificationsWithSubscribers:
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 80
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref NotificationTopic
+        - Notification:
+            NotificationType: FORECASTED
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref NotificationTopic
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref NotificationTopic

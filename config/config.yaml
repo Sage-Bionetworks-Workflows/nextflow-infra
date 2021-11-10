@@ -3,3 +3,34 @@ profile: {{ var.profile | default() }}
 region: {{ var.region | default("us-east-1") }}
 aws_infra_templates_root_url: https://raw.githubusercontent.com/Sage-Bionetworks/aws-infra
 admincentral_cf_bucket: bootstrap-awss3cloudformationbucket-19qromfd235z9
+notifications_email: nextflow-admins@sagebase.org
+services:
+  compute:
+    - Amazon Elastic Compute Cloud - Compute
+  storage:
+    - Amazon Simple Storage Service
+  other:
+    - Amazon API Gateway
+    - Amazon DynamoDB
+    - Amazon Elastic Block Store
+    - Amazon Elastic Container Service
+    - Amazon Elastic File System
+    - Amazon Elastic Load Balancing
+    - Amazon GuardDuty
+    - Amazon Relational Database Service
+    - Amazon Route 53
+    - Amazon Simple Notification Service
+    - Amazon Simple Queue Service
+    - Amazon Virtual Private Cloud
+    - AmazonCloudWatch
+    - AWS Backup
+    - AWS CloudShell
+    - AWS CloudTrail
+    - AWS Config
+    - AWS DataSync
+    - AWS Glue
+    - AWS Key Management Service
+    - AWS Lambda
+    - AWS Secrets Manager
+    - AWS Service Catalog
+    - AWS Systems Manager
