@@ -1,0 +1,12 @@
+template_path: public-bucket.yaml
+stack_name: igenomes-bucket
+
+parameters:
+  BucketName: "sage-igenomes-dev"
+  SameRegionResourceAccessToBucket: "true"
+  TemplateRootUrl: "https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com"
+
+stack_tags:
+  Department: "IBC"
+  Project: "Infrastructure"
+  OwnerEmail: "nextflow-admins@sagebase.org"

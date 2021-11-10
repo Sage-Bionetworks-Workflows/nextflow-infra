@@ -71,6 +71,10 @@ Before you can use Nextflow Tower, you need to first deploy a Tower project, whi
 
 5. Log into Nextflow Tower using the [link](#access-nextflow-tower) at the top of this README and open your project workspace. If you were listed under `S3ReadWriteAccessArns`, then you'll be able to add pipelines to your workspace and launch them on your data.
 
+6. Acknowledge the following details:
+
+   - **Reference Files:** Sage Bionetworks has mirrored a subset of human and mouse reference files from the [nf-core iGenomes bucket](https://ewels.github.io/AWS-iGenomes/). These are found in the public `s3://sage-igenomes` S3 bucket, which **can only be accessed from the `us-east-1` region** (all other requests will be denied). If you're running nf-core pipelines, you should set the `--igenomes_base` parameter to `s3://sage-igenomes/igenomes`.
+
 ## License
 
 This repository is licensed under the [Apache License 2.0](LICENSE).
