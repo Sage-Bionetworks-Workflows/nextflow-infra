@@ -5,7 +5,7 @@ stack_name: htan-project
 
 stack_tags:
   # (REQUIRED) Step 2: Update all three values below
-  Department: IBC & SCCE
+  Department: SCCE
   Project: Human Tumor Atlas Network
   OwnerEmail: adam.taylor@sagebase.org
 
