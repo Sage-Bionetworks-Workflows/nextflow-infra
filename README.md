@@ -47,6 +47,8 @@ Before you can use Nextflow Tower, you need to first deploy a Tower project, whi
 
 4. Once the pull request is approved and merged, [confirm](https://github.com/Sage-Bionetworks-Workflows/aws-workflows-nextflow-infra/actions?query=event%3Apush+branch%3Amain) that your PR was deployed successfully. If so, the following happened on your behalf:
 
+   - An S3 bucket called `s3://<stack_name>-tower-bucket/` was created, and users listed under `S3ReadWriteAccessArns` and `S3ReadOnlyAccessArns` have read/write and read-only access, respectively.
+
    - All users listed under `S3ReadWriteAccessArns` and `S3ReadOnlyAccessArns` were added to the Sage Bionetworks organization in Tower.
 
    - A new Tower workspace called `<stack_name>` was created under this organization.
@@ -72,6 +74,23 @@ Before you can use Nextflow Tower, you need to first deploy a Tower project, whi
 5. Log into Nextflow Tower using the [link](#access-nextflow-tower) at the top of this README and open your project workspace. If you were listed under `S3ReadWriteAccessArns`, then you'll be able to add pipelines to your workspace and launch them on your data.
 
 6. Acknowledge the following details:
+
+   - **Uploading Files:**  To upload files to your project bucket (_i.e._ `s3://<stack_name>-tower-bucket/`), you need to use the `bucket-owner-full-control` canned ACL. Otherwise, you will get `Access Denied` errors. Using the AWS CLI, this would look like:
+
+     ```console
+     # Make sure that you are logged in with the right account/role
+     # Compare the Arn with what's listed in `<stack_name>.yaml`
+     aws sts get-caller-identity
+
+     # Uploading a single file
+     aws s3 cp /path/to/file.txt s3://<stack_name>-tower-bucket/ --acl bucket-owner-full-control
+
+     # Uploading an entire folder
+     aws s3 cp /path/to/folder/ s3://<stack_name>-tower-bucket/ --acl bucket-owner-full-control --recursive
+
+     # Syncing between buckets
+     aws s3 sync s3://some-bucket/data/ s3://<stack_name>-tower-bucket/ --acl bucket-owner-full-control
+     ```
 
    - **Reference Files:** Sage Bionetworks has mirrored a subset of human and mouse reference files from the [nf-core iGenomes bucket](https://ewels.github.io/AWS-iGenomes/). These are found in the public `s3://sage-igenomes` S3 bucket, which **can only be accessed from the `us-east-1` region** (all other requests will be denied). If you're running nf-core pipelines, you should set the `--igenomes_base` parameter to `s3://sage-igenomes/igenomes`.
 
