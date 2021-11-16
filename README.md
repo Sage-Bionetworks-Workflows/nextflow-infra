@@ -92,6 +92,10 @@ Before you can use Nextflow Tower, you need to first deploy a Tower project, whi
      aws s3 sync s3://some-bucket/data/ s3://<stack_name>-tower-bucket/ --acl bucket-owner-full-control
      ```
 
+   - **Synapse Authentication:** For now, Synapse authentication needs to be done with a [configuration file]([authtoken](https://python-docs.synapse.org/build/html/Credentials.html#use-synapseconfig)) (_i.e._ `.synapseConfig`) in the project bucket, and the `authtoken` approach is strongly recommended. If only one person has access to the bucket, then personal credentials can be used. If multiple people have (or might eventually have) access to the project bucket, we recommend creating a Synapse service account for the project and manage the Synapse credentials in LastPass. Once the configuration file is in the bucket, you can refer to it using the S3 URI (_e.g._ `s3://<stack_name>-tower-bucket/.synapseConfig`) in parameters. Please refer to the [`nf-tool-synapseclient`](https://github.com/Sage-Bionetworks-Workflows/nf-tool-synapseclient) repository for an example Nextflow workflow that pulls data from Synapse using a configuration file.
+
+     **N.B.** We are actively working on streamlining this process. We will communicate any improvements once they become available.
+
    - **Reference Files:** Sage Bionetworks has mirrored a subset of human and mouse reference files from the [nf-core iGenomes bucket](https://ewels.github.io/AWS-iGenomes/). These are found in the public `s3://sage-igenomes` S3 bucket, which **can only be accessed from the `us-east-1` region** (all other requests will be denied). If you're running nf-core pipelines, you should set the `--igenomes_base` parameter to `s3://sage-igenomes/igenomes`.
 
 ## License
