@@ -115,10 +115,10 @@ Resources:
             Action: sts:AssumeRole
             Principal:
               AWS: !GetAtt TowerForgeServiceUser.Arn
-          - Effect: Allow
+          - Effect: Allow  # Do account admins really need to be able to assume this role? for debugging?
             Action: sts:AssumeRole
             Principal:
-              AWS: !Ref AccountAdminArns
+              AWS: !Ref AccountAdminArns 
 
   TowerForgeBatchHeadJobRole:
     Type: AWS::IAM::Role
@@ -151,7 +151,7 @@ Resources:
   TowerForgeBatchHeadJobPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: TowerForgeBucketAccessPolicy
+      PolicyName: TowerForgeBucketAccessPolicy #This policy allows more actions and should be renamed
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -173,7 +173,7 @@ Resources:
               - ec2:DescribeInstanceAttribute
               - ec2:DescribeInstanceTypes
               - ec2:DescribeInstanceStatus
-            Resource: "*"
+            Resource: "*" #Should this be conditional on project resources only?
           - Sid: IAMConfig
             Effect: Allow
             Action:
@@ -186,7 +186,7 @@ Resources:
   EncryptionKeyStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub ${TemplateRootUrl}/aws-infra/v0.3.1/KMS/kms-key.yaml
+      TemplateURL: !Sub ${TemplateRootUrl}/KMS/kms-key.yaml
       TimeoutInMinutes: 5
       Parameters:
         AliasName: !Sub "alias/${AWS::StackName}-EncryptionKey"
@@ -225,7 +225,7 @@ Resources:
   TowerBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "${AWS::StackName}-tower-bucket"
+      BucketName: !Sub "${AWS::StackName}-tower-bucket" #would it make sense to append project bucket names with a tenant name?
       OwnershipControls:
         Rules:
           - ObjectOwnership: BucketOwnerPreferred
