@@ -1,4 +1,6 @@
-template_path: remote/gateway-vpc-endpoint.yaml
+template:
+  type: http
+  url: "{{stack_group_config.aws_infra_templates_root_url}}/v0.3.2/templates/gateway-vpc-endpoint.yaml"
 stack_name: nextflow-s3-vpc-endpoint
 dependencies:
   - develop/nextflow-vpc.yaml
@@ -9,7 +11,3 @@ parameters:
 
 stack_tags:
   {{stack_group_config.default_stack_tags}}
-
-hooks:
-  before_launch:
-    - !cmd "wget {{stack_group_config.aws_infra_templates_root_url}}/v0.3.2/templates/gateway-vpc-endpoint.yaml -O templates/remote/gateway-vpc-endpoint.yaml"
