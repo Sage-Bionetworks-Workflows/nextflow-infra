@@ -1,6 +1,9 @@
 name: aws-deploy
 
-on: push
+on:
+  push:
+    paths-ignore:
+      - '**.md'
 
 jobs:
   pre-commit:

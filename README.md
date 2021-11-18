@@ -73,30 +73,11 @@ Before you can use Nextflow Tower, you need to first deploy a Tower project, whi
 
 5. Log into Nextflow Tower using the [link](#access-nextflow-tower) at the top of this README and open your project workspace. If you were listed under `S3ReadWriteAccessArns`, then you'll be able to add pipelines to your workspace and launch them on your data.
 
-6. Acknowledge the following details:
+6. Make sure that this [Confluence wiki page](https://sagebionetworks.jira.com/l/c/1hm4NP7a) is watched by everyone who will be running workflows on Tower. This generally doesn't need to include individuals listed as view-only in the `<stack_name>.yaml` file.
 
-   - **Uploading Files:**  To upload files to your project bucket (_i.e._ `s3://<stack_name>-tower-bucket/`), you need to use the `bucket-owner-full-control` canned ACL. Otherwise, you will get `Access Denied` errors. Using the AWS CLI, this would look like:
+   **N.B.** To obtain a list of current watchers and to add new watchers, click the "Manage watchers" button under the 👁 (eye) icon at the top right of the Confluence page.
 
-     ```console
-     # Make sure that you are logged in with the right account/role
-     # Compare the Arn with what's listed in `<stack_name>.yaml`
-     aws sts get-caller-identity
-
-     # Uploading a single file
-     aws s3 cp /path/to/file.txt s3://<stack_name>-tower-bucket/ --acl bucket-owner-full-control
-
-     # Uploading an entire folder
-     aws s3 cp /path/to/folder/ s3://<stack_name>-tower-bucket/ --acl bucket-owner-full-control --recursive
-
-     # Syncing between buckets
-     aws s3 sync s3://some-bucket/data/ s3://<stack_name>-tower-bucket/ --acl bucket-owner-full-control
-     ```
-
-   - **Synapse Authentication:** For now, Synapse authentication needs to be done with a [configuration file]([authtoken](https://python-docs.synapse.org/build/html/Credentials.html#use-synapseconfig)) (_i.e._ `.synapseConfig`) in the project bucket, and the `authtoken` approach is strongly recommended. If only one person has access to the bucket, then personal credentials can be used. If multiple people have (or might eventually have) access to the project bucket, we recommend creating a Synapse service account for the project and manage the Synapse credentials in LastPass. Once the configuration file is in the bucket, you can refer to it using the S3 URI (_e.g._ `s3://<stack_name>-tower-bucket/.synapseConfig`) in parameters. Please refer to the [`nf-tool-synapseclient`](https://github.com/Sage-Bionetworks-Workflows/nf-tool-synapseclient) repository for an example Nextflow workflow that pulls data from Synapse using a configuration file.
-
-     **N.B.** We are actively working on streamlining this process. We will communicate any improvements once they become available.
-
-   - **Reference Files:** Sage Bionetworks has mirrored a subset of human and mouse reference files from the [nf-core iGenomes bucket](https://ewels.github.io/AWS-iGenomes/). These are found in the public `s3://sage-igenomes` S3 bucket, which **can only be accessed from the `us-east-1` region** (all other requests will be denied). If you're running nf-core pipelines, you should set the `--igenomes_base` parameter to `s3://sage-igenomes/igenomes`.
+7. Read through the "Usage Details" and "Scheduled Downtime" sections on the wiki page. Any important updates to this page will be shared with watchers.
 
 ## License
 
