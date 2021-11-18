@@ -3,13 +3,14 @@ stack_name: nextflow-ecs-task-definition
 dependencies:
   - prod/nextflow-aurora-mysql.yaml
   - prod/nextflow-efs-file-system.yaml
+
 parameters:
   TowerSmtpHost: 'email-smtp.us-east-1.amazonaws.com'
   TowerSmtpPort: '587'
   TowerSmtpUser: !ssm 'smtp-username'
   TowerSmtpPassword: !ssm 'smtp-password'
   TowerContactEmail: nextflow-admins@sagebase.org
-  TowerServerUrl: https://tower.sagebionetworks.org/
+  TowerServerUrl: https://tower.sagebionetworks.org
   TowerJwtSecret: !aws_secrets_manager nextflow-tower-secret/jwt::SecretString::secret
   TowerCryptoSecretkey: !aws_secrets_manager nextflow-tower-secret/crypto::SecretString::secret
   TowerLicense: !aws_secrets_manager nextflow/license::SecretString::license_key
@@ -25,7 +26,6 @@ parameters:
   EfsFileSystemId: !stack_output_external nextflow-efs-file-system::FileSystemId
   EfsVolumeMountPath: '/efs'
   TowerConfigFileName: 'tower.yaml'
+
 stack_tags:
-  Department: IBC
-  Project: Infrastructure
-  OwnerEmail: nextflow-admins@sagebase.org
+  {{stack_group_config.default_stack_tags}}

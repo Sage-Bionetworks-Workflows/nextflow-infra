@@ -1,9 +1,9 @@
 template_path: "remote/public-bucket.yaml"
 stack_name: "cloudformation-templates"
+
 stack_tags:
-  Department: "CompOnc"
-  Project: "imCORE"
-  OwnerEmail: "bruno.grande@sagebase.org"
+  {{stack_group_config.default_stack_tags}}
+
 hooks:
   before_launch:
     - !cmd "wget {{stack_group_config.aws_infra_templates_root_url}}/v0.2.3/templates/S3/public-bucket.yaml -O templates/remote/public-bucket.yaml"
