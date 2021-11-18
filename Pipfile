@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [dev-packages]
-sceptre = "2.5.0"
+sceptre = "~=2.7"
 sceptre-cmd-resolver = "1.1.2"
 pre-commit = "*"
 sceptre-resolver-aws-secrets-manager = {file = "https://github.com/iAnomaly/sceptre-resolver-aws-secrets-manager/archive/v1.0.0.tar.gz"}

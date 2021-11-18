@@ -1,4 +1,6 @@
-template_path: remote/acm-certificate.yaml
+template:
+  type: http
+  url: "{{stack_group_config.aws_infra_templates_root_url}}/v0.3.0/templates/acm-certificate.yaml"
 stack_name: tower-dev-certificate
 parameters:
   Department: IBC
@@ -6,6 +8,3 @@ parameters:
   OwnerEmail: nextflow-admins@sagebase.org
   DnsDomainName: sagebionetworks.org
   DnsSubDomainName: tower-dev
-hooks:
-  before_launch:
-    - !cmd "wget {{stack_group_config.aws_infra_templates_root_url}}/v0.3.0/templates/acm-certificate.yaml -O templates/remote/acm-certificate.yaml"
