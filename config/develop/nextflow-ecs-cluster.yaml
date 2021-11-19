@@ -3,10 +3,10 @@ stack_name: nextflow-ecs-cluster
 dependencies:
   - develop/nextflow-vpc.yaml
   - develop/nextflow-ecs-security-group.yaml
+
 parameters:
   EcsSecurityGroupId: !stack_output_external nextflow-ecs-security-group::SecurityGroupId
   SubnetId: !stack_output_external nextflow-vpc::PrivateSubnet
+
 stack_tags:
-  Department: IBC
-  Project: Infrastructure
-  OwnerEmail: nextflow-admins@sagebase.org
+  {{stack_group_config.default_stack_tags}}

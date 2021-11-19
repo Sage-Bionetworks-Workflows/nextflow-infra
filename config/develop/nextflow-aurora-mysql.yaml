@@ -3,6 +3,7 @@ stack_name: nextflow-aurora-mysql
 dependencies:
   - develop/nextflow-vpc.yaml
   - develop/nextflow-ecs-security-group.yaml
+
 parameters:
   VpcID: !stack_output_external nextflow-vpc::VPCId
   SubnetIDs:
@@ -13,7 +14,6 @@ parameters:
   AccountAdminArns:
     - {{stack_group_config.sso_admin_role.arn}}
     - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
+
 stack_tags:
-  Department: IBC
-  Project: Infrastructure
-  OwnerEmail: nextflow-admins@sagebase.org
+  {{stack_group_config.default_stack_tags}}

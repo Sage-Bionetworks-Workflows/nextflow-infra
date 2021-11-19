@@ -5,12 +5,12 @@ dependencies:
   - prod/nextflow-ecs-security-group.yaml
   - prod/nextflow-tower-config-bucket.yaml
   - prod/nextflow-ecs-cluster.yaml
+
 parameters:
   VpcId: !stack_output_external nextflow-vpc::VPCId
   SubnetId: !stack_output_external nextflow-ecs-cluster::EcsAutoScalingGroupSubnetId
   EcsSecurityGroupId: !stack_output_external nextflow-ecs-security-group::SecurityGroupId
   NextflowTowerConfigBucketArn: !stack_output_external nextflow-tower-config::BucketArn
+
 stack_tags:
-  Department: IBC
-  Project: Infrastructure
-  OwnerEmail: nextflow-admins@sagebase.org
+  {{stack_group_config.default_stack_tags}}

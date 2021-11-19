@@ -1,8 +1,12 @@
 template_path: budget.yaml
 stack_name: budget-compute
+
 parameters:
   budgetName: budget-compute
   emailAddress: "{{stack_group_config.notifications_email}}"
   budgetAmount: "5000"
   serviceFilters:
     {{stack_group_config.services.compute}}
+
+stack_tags:
+  {{stack_group_config.default_stack_tags}}

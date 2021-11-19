@@ -4,10 +4,11 @@
 stack_name: example-project
 
 stack_tags:
-  # (REQUIRED) Step 2: Update all three values below
+  # (REQUIRED) Step 2: Update all four values below
   Department: IBC
   Project: Infrastructure
   OwnerEmail: nextflow-admins@sagebase.org
+  CostCenter: Indirects  # Valid values here: https://sagebionetworks.jira.com/l/c/0PyR5JSM
 
 parameters:
 

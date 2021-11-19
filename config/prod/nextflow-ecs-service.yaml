@@ -3,6 +3,7 @@ stack_name: nextflow-ecs-service
 dependencies:
   - prod/nextflow-ecs-cluster.yaml
   - prod/nextflow-ecs-task-definition.yaml
+
 parameters:
   ClusterName: !stack_output_external nextflow-ecs-cluster::EcsClusterName
   TaskDefinitionArn: !stack_output_external nextflow-ecs-task-definition::TaskDefinitionArn
@@ -13,7 +14,6 @@ parameters:
     - !stack_output_external nextflow-vpc::PublicSubnet
     - !stack_output_external nextflow-vpc::PublicSubnet1
   SSLCertificateArn: !stack_output_external tower-certificate::CertificateArn
+
 stack_tags:
-  Department: IBC
-  Project: Infrastructure
-  OwnerEmail: nextflow-admins@sagebase.org
+  {{stack_group_config.default_stack_tags}}

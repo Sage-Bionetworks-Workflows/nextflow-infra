@@ -4,6 +4,10 @@ template:
 stack_name: nextflow-s3-vpc-endpoint
 dependencies:
   - develop/nextflow-vpc.yaml
+
 parameters:
   VpcName: "nextflow-vpc"
   ServiceName: "com.amazonaws.us-east-1.s3"
+
+stack_tags:
+  {{stack_group_config.default_stack_tags}}
