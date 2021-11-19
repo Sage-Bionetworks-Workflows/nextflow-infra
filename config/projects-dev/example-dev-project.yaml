@@ -19,4 +19,7 @@ parameters:
   TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
 
 stack_tags:
-  {{stack_group_config.default_stack_tags}}
+  Department: IBC
+  Project: Infrastructure
+  OwnerEmail: nextflow-admins@sagebase.org
+  CostCenter: Indirects
