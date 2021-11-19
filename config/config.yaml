@@ -7,7 +7,7 @@ default_stack_tags:
   Department: IBC
   Project: Infrastructure
   OwnerEmail: nextflow-admins@sagebase.org
-  SageFinanceProgramCode: Indirects
+  CostCenter: Indirects
 notifications_email: nextflow-admins@sagebase.org
 services:
   compute:

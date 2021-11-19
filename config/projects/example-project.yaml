@@ -8,7 +8,7 @@ stack_tags:
   Department: IBC
   Project: Infrastructure
   OwnerEmail: nextflow-admins@sagebase.org
-  SageFinanceProgramCode: Indirects  # Valid values here: https://sagebionetworks.jira.com/l/c/0PyR5JSM
+  CostCenter: Indirects  # Valid values here: https://sagebionetworks.jira.com/l/c/0PyR5JSM
 
 parameters:
 
