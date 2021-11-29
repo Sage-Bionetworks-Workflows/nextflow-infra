@@ -386,7 +386,7 @@ class TowerWorkspace:
         data = {
             "memberId": member_id,
             "teamId": None,
-            "userNameOrstr": None,
+            "userNameOrEmail": None,
         }
         response = self.tower.request("PUT", f"{endpoint}/add", json=data)
         # If the user is already a member, you get the following message:
