@@ -386,7 +386,7 @@ class TowerWorkspace:
         data = {
             "memberId": member_id,
             "teamId": None,
-            "userNameOrstr": None,
+            "userNameOrEmail": None,
         }
         response = self.tower.request("PUT", f"{endpoint}/add", json=data)
         # If the user is already a member, you get the following message:
@@ -465,7 +465,7 @@ class TowerWorkspace:
         """
         # Check if compute environment has already been created for this project
         endpoint = "/compute-envs"
-        comp_env_name = f"{self.stack_name} (default)"
+        comp_env_name = f"{self.stack_name} (v1)"
         params = {"workspaceId": self.id}
         response = self.tower.request("GET", endpoint, params=params)
         for comp_env in response["computeEnvs"]:
@@ -502,7 +502,7 @@ class TowerWorkspace:
                         "subnets": [self.tower.vpc[o] for o in VPC_STACK_OUTPUT_SIDS],
                         "fsxMode": "None",
                         "efsMode": "None",
-                        "type": "SPOT",
+                        "type": "SPOT",  # Note: This value is "EC2" for on-demand
                         "minCpus": 0,
                         "maxCpus": 500,
                         "gpuEnabled": False,
@@ -514,7 +514,7 @@ class TowerWorkspace:
                         "ec2KeyPair": None,
                         "imageId": None,
                         "securityGroups": [],
-                        "ebsBlockSize": None,
+                        "ebsBlockSize": 250,
                         "fusionEnabled": False,
                         "efsCreate": False,
                         "bidPercentage": None,
@@ -523,7 +523,19 @@ class TowerWorkspace:
             }
         }
         response = self.tower.request("POST", endpoint, params=params, json=data)
-        return response["computeEnvId"]
+        compute_env_id = response["computeEnvId"]
+        self.set_primary_compute_environment(compute_env_id)
+        return compute_env_id
+
+    def set_primary_compute_environment(self, compute_env_id: str) -> None:
+        """Mark the given compute environment as the primary one (default)
+
+        Args:
+            compute_env_id (str): Compute environment ID
+        """
+        endpoint = f"/compute-envs/{compute_env_id}/primary"
+        params = {"workspaceId": self.id}
+        self.tower.request("POST", endpoint, params=params, json="{}")
 
 
 class TowerOrganization:
