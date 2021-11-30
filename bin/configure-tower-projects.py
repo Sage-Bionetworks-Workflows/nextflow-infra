@@ -5,7 +5,7 @@ import argparse
 import json
 import os
 import re
-from typing import List, Tuple, Sequence, Dict, Iterator
+from typing import List, Tuple, Sequence, Dict, Iterator, Optional
 
 import boto3
 import requests  # type: ignore
@@ -457,32 +457,21 @@ class TowerWorkspace:
         response = self.tower.request("POST", endpoint, params=params, json=data)
         return response["credentialsId"]
 
-    def create_compute_environment(self) -> str:
-        """Create default compute environment under the given workspace
+    def generate_compute_environment(self, name: str, model: str) -> dict:
+        """Generate request object for creating a compute environment.
+
+        Args:
+            name (str): Name of the compute environment
+            type (str): Pricing model, either "EC2" (on-demand) or "SPOT"
 
         Returns:
-            str: Identifier for the compute environment
+            dict: [description]
         """
-        # Check if compute environment has already been created for this project
-        endpoint = "/compute-envs"
-        comp_env_name = f"{self.stack_name} (v1)"
-        params = {"workspaceId": self.id}
-        response = self.tower.request("GET", endpoint, params=params)
-        for comp_env in response["computeEnvs"]:
-            if (
-                comp_env["name"] == comp_env_name
-                and comp_env["platform"] == "aws-batch"
-                and (
-                    comp_env["status"] == "AVAILABLE"
-                    or comp_env["status"] == "CREATING"
-                )
-            ):
-                return comp_env["id"]
-        # Otherwise, create a new compute environment for the project
+        assert model in {"SPOT", "EC2"}, "Wrong provisioning model"
         credentials_id = self.create_credentials()
         data = {
             "computeEnv": {
-                "name": comp_env_name,
+                "name": name,
                 "platform": "aws-batch",
                 "credentialsId": credentials_id,
                 "config": {
@@ -502,7 +491,7 @@ class TowerWorkspace:
                         "subnets": [self.tower.vpc[o] for o in VPC_STACK_OUTPUT_SIDS],
                         "fsxMode": "None",
                         "efsMode": "None",
-                        "type": "SPOT",  # Note: This value is "EC2" for on-demand
+                        "type": model,
                         "minCpus": 0,
                         "maxCpus": 500,
                         "gpuEnabled": False,
@@ -522,10 +511,42 @@ class TowerWorkspace:
                 },
             }
         }
-        response = self.tower.request("POST", endpoint, params=params, json=data)
-        compute_env_id = response["computeEnvId"]
-        self.set_primary_compute_environment(compute_env_id)
-        return compute_env_id
+        return data
+
+    def create_compute_environment(self) -> Dict[str, Optional[str]]:
+        """Create default compute environment under the given workspace
+
+        Returns:
+            Dict[str, Optional[str]]: Identifier for the compute environment
+        """
+        compute_env_ids: dict[str, Optional[str]] = {"SPOT": None, "EC2": None}
+        # Create compute environment names
+        comp_env_prefix = f"{self.stack_name} (v2)"
+        comp_env_spot = f"{comp_env_prefix} (spot)"
+        comp_env_ec2 = f"{comp_env_prefix} (on-demand)"
+        # Check if compute environment has already been created for this project
+        endpoint = "/compute-envs"
+        params = {"workspaceId": self.id}
+        response = self.tower.request("GET", endpoint, params=params)
+        for comp_env in response["computeEnvs"]:
+            if comp_env["platform"] == "aws-batch" and (
+                comp_env["status"] == "AVAILABLE" or comp_env["status"] == "CREATING"
+            ):
+                if comp_env["name"] == comp_env_spot:
+                    compute_env_ids["SPOT"] = comp_env["id"]
+                elif comp_env["name"] == comp_env_ec2:
+                    compute_env_ids["EC2"] = comp_env["id"]
+        # Create any missing compute environments for the project
+        if compute_env_ids["SPOT"] is None:
+            data = self.generate_compute_environment(comp_env_spot, "SPOT")
+            response = self.tower.request("POST", endpoint, params=params, json=data)
+            compute_env_ids["SPOT"] = response["computeEnvId"]
+            self.set_primary_compute_environment(response["computeEnvId"])
+        if compute_env_ids["EC2"] is None:
+            data = self.generate_compute_environment(comp_env_ec2, "EC2")
+            response = self.tower.request("POST", endpoint, params=params, json=data)
+            compute_env_ids["EC2"] = response["computeEnvId"]
+        return compute_env_ids
 
     def set_primary_compute_environment(self, compute_env_id: str) -> None:
         """Mark the given compute environment as the primary one (default)
