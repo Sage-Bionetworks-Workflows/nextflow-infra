@@ -1,0 +1,7 @@
+template:
+  type: http
+  url: "https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com/cfn-s3objects-macro/0.0.4/cfn-s3objects-macro.yaml"
+stack_name: cfn-s3objects-macro
+
+stack_tags:
+  {{stack_group_config.default_stack_tags}}

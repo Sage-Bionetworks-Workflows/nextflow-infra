@@ -1,11 +1,23 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: An S3 bucket readable by the account only
 
+Transform: S3Objects
+
 Parameters:
 
   BucketName:
     Type: String
     Description: Name of the created bucket.
+
+  GitHubUsername:
+    Type: String
+    Description: Username of GitHub service account
+    NoEcho: 'true'
+
+  GitHubPassword:
+    Type: String
+    Description: Password of GitHub service account
+    NoEcho: 'true'
 
 Resources:
 
@@ -32,6 +44,31 @@ Resources:
               AWS: !Sub '${AWS::AccountId}'
             Action: 's3:GetObject'
             Resource: !Sub 'arn:aws:s3:::${Bucket}/*'
+
+  TowerConfigFile:
+    Type: AWS::S3::Object
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            - E3001
+    Properties:
+      Target:
+        Bucket: !Ref Bucket
+        Key: tower.yaml
+        ContentType: text
+      Body: !Sub |
+        tower:
+          auth:
+            google:
+              allow-list:
+                - "*@sagebase.org"
+                - "*@sagebionetworks.org"
+          scm:
+            providers:
+              github:
+                user: ${GitHubUsername}
+                password: ${GitHubPassword}
 
 Outputs:
 
