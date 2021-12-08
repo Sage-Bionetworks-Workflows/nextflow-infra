@@ -224,11 +224,16 @@ Resources:
 
   TowerBucket:
     Type: AWS::S3::Bucket
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            - E3030  # "BucketOwnerEnforced" isn't supported at the time of writing
     Properties:
       BucketName: !Sub "${AWS::StackName}-tower-bucket"
       OwnershipControls:
         Rules:
-          - ObjectOwnership: BucketOwnerPreferred
+          - ObjectOwnership: BucketOwnerEnforced
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - BucketKeyEnabled: true
@@ -292,26 +297,13 @@ Resources:
               - !Sub "arn:aws:s3:::${TowerBucket}/*"
           - !If
             - HasS3ReadWriteAccessArns
-            - Sid: GrantWriteAccessToS3ReadWriteAccessArns
-              Effect: Allow
-              Principal:
-                AWS: !Ref S3ReadWriteAccessArns
-              Action:
-                - "s3:PutObject*"
-              Condition:
-                StringEquals:
-                  s3:x-amz-acl: bucket-owner-full-control
-              Resource:
-                - !Sub "arn:aws:s3:::${TowerBucket}/*"
-            - !Ref AWS::NoValue
-          - !If
-            - HasS3ReadWriteAccessArns
-            - Sid: GrantRemainingAccessToS3ReadWriteAccessArns
+            - Sid: GrantReadWriteAccessToS3ReadWriteAccessArns
               Effect: Allow
               Principal:
                 AWS: !Ref S3ReadWriteAccessArns
               Action:
                 - "s3:GetObject*"
+                - "s3:PutObject*"
                 - "s3:DeleteObject*"
                 - "s3:*MultipartUpload*"
                 - "s3:ListBucket*"
