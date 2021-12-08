@@ -1,6 +1,0 @@
-tower:
-  auth:
-    google:
-      allow-list:
-        - "*@sagebase.org"
-        - "*@sagebionetworks.org"
