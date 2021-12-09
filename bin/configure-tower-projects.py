@@ -14,8 +14,6 @@ import yaml  # type: ignore
 
 REGION = "us-east-1"
 ORG_NAME = "Sage Bionetworks"
-R53_STACK_NAME = "nextflow-r53-alias-record"
-R53_STACK_OUTPUT = "Route53RecordSet"
 VPC_STACK_NAME = "nextflow-vpc"
 VPC_STACK_OUTPUT_VID = "VPCId"
 VPC_STACK_OUTPUT_SIDS = [
@@ -262,7 +260,7 @@ class AwsClient:
 
 
 class TowerClient:
-    def __init__(self, tower_token=None) -> None:
+    def __init__(self, tower_token=None, tower_api_url=None) -> None:
         """Generate NextflowTower instance
 
         The descriptions below for the user types were copied
@@ -270,17 +268,25 @@ class TowerClient:
 
         Raises:
             KeyError: The 'NXF_TOWER_TOKEN' environment variable isn't defined
+            KeyError: The 'NXF_TOWER_API_URL' environment variable isn't defined
         """
         self.aws = AwsClient()
         self.vpc = self.aws.get_cfn_stack_outputs(VPC_STACK_NAME)
-        self.tower_api_base_url = self.get_tower_api_base_url()
-        # Retrieve Nextflow token from environment
+        # Retrieve Nextflow Tower token from environment
         try:
             self.tower_token = tower_token or os.environ["NXF_TOWER_TOKEN"]
         except KeyError as e:
             raise KeyError(
                 "The 'NXF_TOWER_TOKEN' environment variable must "
                 "be defined with a Nextflow Tower API token."
+            ) from e
+        # Retrieve Nextflow Tower API URL from environment
+        try:
+            self.tower_api_base_url = tower_api_url or os.environ["NXF_TOWER_API_URL"]
+        except KeyError as e:
+            raise KeyError(
+                "The 'NXF_TOWER_API_URL' environment variable must "
+                "be defined with a Nextflow Tower API URL."
             ) from e
 
     def get_valid_name(self, full_name: str) -> str:
@@ -293,17 +299,6 @@ class TowerClient:
             str: Name with only alphanumeric, dash and underscore characters
         """
         return re.sub(r"[^A-Za-z0-9_-]", "-", full_name)
-
-    def get_tower_api_base_url(self) -> str:
-        """Infer Nextflow Tower API endpoint from CloudFormation
-
-        Returns:
-            str: A full URL for the Tower API endpoint
-        """
-        stack = self.aws.get_cfn_stack_outputs(R53_STACK_NAME)
-        hostname = stack[R53_STACK_OUTPUT]
-        endpoint = f"https://{hostname}/api"
-        return endpoint
 
     def request(self, method: str, endpoint: str, **kwargs) -> dict:
         """Make an authenticated HTTP request to the Nextflow Tower API
