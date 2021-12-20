@@ -482,7 +482,7 @@ class TowerWorkspace:
                     "computeJobRole": self.stack["TowerForgeBatchWorkJobRoleArn"],
                     "headJobRole": self.stack["TowerForgeBatchHeadJobRoleArn"],
                     "headJobCpus": None,
-                    "headJobMemoryMb": None,
+                    "headJobMemoryMb": 7168,
                     "preRunScript": None,
                     "postRunScript": None,
                     "cliPath": None,
@@ -493,7 +493,7 @@ class TowerWorkspace:
                         "efsMode": "None",
                         "type": model,
                         "minCpus": 0,
-                        "maxCpus": 500,
+                        "maxCpus": 1000,
                         "gpuEnabled": False,
                         "ebsAutoScale": True,
                         "allowBuckets": [],
@@ -521,7 +521,7 @@ class TowerWorkspace:
         """
         compute_env_ids: dict[str, Optional[str]] = {"SPOT": None, "EC2": None}
         # Create compute environment names
-        comp_env_prefix = f"{self.stack_name} (v2)"
+        comp_env_prefix = f"{self.stack_name} (v3)"
         comp_env_spot = f"{comp_env_prefix} (spot)"
         comp_env_ec2 = f"{comp_env_prefix} (on-demand)"
         # Check if compute environment has already been created for this project
