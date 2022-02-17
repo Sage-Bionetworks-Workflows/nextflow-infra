@@ -24,7 +24,7 @@ jobs:
         job-environment:
           - workflows-nextflow-dev
           - workflows-nextflow-prod
-          - org-sagebase-sandbox
+          - org-sagebase-strides-ampad-workflows
         include:
           - job-environment: workflows-nextflow-dev
             sceptre-suffix: dev
@@ -32,9 +32,9 @@ jobs:
           - job-environment: workflows-nextflow-prod
             sceptre-suffix: prod
             tower-url: https://tower.sagebionetworks.org
-          - job-environment: org-sagebase-sandbox
-            sceptre-suffix: sandbox
-            tower-url: https://tower-dev.sagebionetworks.org
+          - job-environment: org-sagebase-strides-ampad-workflows
+            sceptre-suffix: ampad
+            tower-url: https://tower.sagebionetworks.org
     environment: ${{ matrix.job-environment }}
     steps:
 
@@ -95,5 +95,5 @@ jobs:
       - name: Configure projects in Tower
         run: pipenv run bin/configure-tower-projects.py config/projects-${{ matrix.sceptre-suffix }}
         env:
-          NXF_TOWER_TOKEN: ${{ secrets.TOWER_DEV_TOKEN }}
+          NXF_TOWER_TOKEN: ${{ secrets.TOWER_TOKEN }}
           NXF_TOWER_API_URL: ${{ matrix.tower-url }}/api
