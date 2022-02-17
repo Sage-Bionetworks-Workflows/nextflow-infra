@@ -1,8 +1,8 @@
 template_path: nextflow-r53-alias-record.yaml
 stack_name: nextflow-r53-alias-record
 dependencies:
-  - prod/nextflow-r53-hostedzone.yaml
-  - prod/nextflow-ecs-service.yaml
+  - infra-prod/nextflow-r53-hostedzone.yaml
+  - infra-prod/nextflow-ecs-service.yaml
 
 parameters:
   Hostname: tower.sagebionetworks.org

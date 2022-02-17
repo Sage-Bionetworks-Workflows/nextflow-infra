@@ -1,8 +1,8 @@
 template_path: nextflow-aurora-mysql.yaml
 stack_name: nextflow-aurora-mysql
 dependencies:
-  - prod/nextflow-vpc.yaml
-  - prod/nextflow-ecs-security-group.yaml
+  - infra-prod/nextflow-vpc.yaml
+  - infra-prod/nextflow-ecs-security-group.yaml
 
 parameters:
   VpcID: !stack_output_external nextflow-vpc::VPCId

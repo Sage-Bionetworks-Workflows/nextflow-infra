@@ -35,10 +35,10 @@ If your text editor (_e.g._ Visual Studio Code) or shell (_e.g._ using [`direnv`
 export AWS_PROFILE="<profile-name>"
 
 # Test the deployment of a specific 'develop' stack
-pipenv run sceptre launch --yes develop/some-stack.yaml
+pipenv run sceptre launch --yes infra-dev/some-stack.yaml
 
 # Delete the test deployment of the specific 'develop' stack
-pipenv run sceptre delete --yes develop/some-stack.yaml
+pipenv run sceptre delete --yes infra-dev/some-stack.yaml
 ```
 
 ## AWS Accounts
@@ -47,6 +47,7 @@ Two AWS accounts are managed by this repository, both of which were [bootstrappe
 
 - `workflows-nextflow-prod` (or `nextflow-prod`) for production use
 - `workflows-nextflow-dev` (or `nextflow-dev`) for testing purposes
+- `org-sagebase-strides-ampad-workflows` (or `strides-ampad`) for production use within the AMP-AD project (AWS bills directly to the NIH) and should be treated like `nextflow-prod`
 
 In general, we use the `nextflow-dev` account for testing templates before deploying them into the `nextflow-prod` account. New [template configurations](#configuration) don't necessarily need to go through `nextflow-dev` first. For example, new instances of the `tower-project.yaml` template don't need to be deployed in `nextflow-dev` first.
 
@@ -68,10 +69,11 @@ Bespoke [CloudFormation templates](https://docs.aws.amazon.com/AWSCloudFormation
 
 ### Configuration
 
-Instances of each template are configured to be deployed in the `config/` directory, which is organized into subfolders known as stack groups. In this case, we have defined several stack groups: `common`, `develop`, `prod`, `projects-dev`, and `projects`. The [CI/CD](#cicd) workflow deploys these stack groups to the [AWS accounts](#aws-accounts) as follows (in the listed order):
+Instances of each template are configured to be deployed in the `config/` directory, which is organized into subfolders known as stack groups. In this case, we have defined several stack groups: `common`, `infra-*`, and `projects-*`. The [CI/CD](#cicd) workflow deploys these stack groups to the [AWS accounts](#aws-accounts) as follows (in the listed order):
 
-- `common`, `develop`, and `projects-dev` to the `workflows-nextflow-dev` account
-- `common`, `prod`, and `projects` to the `workflows-nextflow-prod` account
+- `common` and `*-dev` to the `nextflow-dev` account
+- `common` and `*-prod` to the `nextflow-prod` account
+- `common` and `*-ampad` to the `strides-ampad` account
 
 There are two types of [stack group configurations](https://sceptre.cloudreach.com/2.6.3/docs/stack_group_config.html) used in this repository. First, we have a shared [`config/config.yaml`](config/config.yaml) configuration, which contains values that are applicable to all stack groups. Second, we have configurations that are specific to individual stack groups, which define account-specific values (like IAM role ARNs).
 
@@ -79,13 +81,15 @@ There are two types of [stack group configurations](https://sceptre.cloudreach.c
 
 [GitHub Actions](https://github.com/features/actions) are used for continuous integration and deployment (CI/CD). Currently, this repository is configured with a single workflow, [aws-deploy](.github/workflows/aws-deploy.yaml), which runs some lint checks and conditionally deploys the [stacks](#configuration) on pushes to the `main` branch.
 
-The lint checks are defined as [pre-commit hooks](.pre-commit-config.yaml) and are partially configured by the [.yamllint](.yamllint) file. Our [contribution guidelines](CONTRIBUTING.md) describe how to locally set up pre-commit hooks in Git to ensure that these checks are run before every commit.
+The lint checks are defined as [pre-commit hooks](.pre-commit-config.yaml) and are partially configured by the [.yamllint](.yamllint) file. See [above](#setting-up-the-repository-for-development) for how to locally set up pre-commit hooks in Git to ensure that these checks are run before every commit.
+
+The CI/CD workflow uses a matrix strategy in conjunction with repository environments. See [below](#secrets) for more information on secrets managements.
 
 **N.B.** If the CI/CD workflow fails (either due to new commits or earlier commits), some changes might not get deployed. You can check the state of deployments from the `main` branch [here](https://github.com/Sage-Bionetworks-Workflows/aws-workflows-nextflow-infra/actions?query=event%3Apush+branch%3Amain).
 
 ### Dependencies
 
-This repository uses the [Pipenv](https://pipenv.pypa.io/) Python package to manage dependencies. The main dependencies and their required versions (if applicable) are listed in the [Pipfile](Pipfile) whereas the [Pipfile.lock](Pipfile.lock) lists all recursive dependencies, their versions, and their checksums at the time of generating the lockfile. This Pipenv environment is used for [CI/CD](#cicd), but it can also be used for local development and testing. Our [contribution guidelines](CONTRIBUTING.md) detail how to set up a local development environment using Pipenv.
+This repository uses the [Pipenv](https://pipenv.pypa.io/) Python package to manage dependencies. The main dependencies and their required versions (if applicable) are listed in the [Pipfile](Pipfile) whereas the [Pipfile.lock](Pipfile.lock) lists all recursive dependencies, their versions, and their checksums at the time of generating the lockfile. This Pipenv environment is used for [CI/CD](#cicd), but it can also be used for local development and testing. See [above](#setting-up-the-repository-for-development) for how to set up a local development environment using Pipenv.
 
 Additional dependencies exist for the [pre-commit hooks](.pre-commit-config.yaml) that we've added to this repository. The virtual environments for these hooks are automatically configured when you run `pre-commit`.
 
@@ -99,19 +103,20 @@ The [CI/CD workflow](#cicd) and [Sceptre configurations](#configuration) make us
 
 ### GitHub Organization Secrets
 
-The following secrets are the AWS credentials for logging in as the service accounts set up for the CI/CD workflow and assuming an IAM role (see `role-to-assume` in [`aws-deploy.yaml`](.github/workflows/aws-deploy.yaml)).
-
-- `NEXTFLOW_DEV_CI_ACCESS_KEY`
-- `NEXTFLOW_DEV_CI_SECRET_ACCESS_KEY`
-- `NEXTFLOW_PROD_CI_ACCESS_KEY`
-- `NEXTFLOW_PROD_CI_SECRET_ACCESS_KEY`
+After switching to a matrix strategy in the CI/CD workflow, all secrets are being stored in repository environments (see [below](#github-repository-secrets)). Organization secrets are no longer being used.
 
 ### GitHub Repository Secrets
 
-The following secrets are access tokens created in our development and production instances of Nextflow Tower. They were created using the Google service accounts that we provisioned for creating the Google OAuth clients, `nextflowgdev.dev@sagebase.org` and `nextflowgdev.prod@sagebase.org`, respectively. The passwords for these two Google accounts are stored in LastPass under the `Shared-IBC-DPE-Workflows` folder.
+Our GitHub secrets are stored in [account-specific environments](https://github.com/Sage-Bionetworks-Workflows/nextflow-infra/settings/environments). These secrets contain AWS and Nextflow Tower credentials.
 
-- `TOWER_DEV_TOKEN`
-- `TOWER_PROD_TOKEN`
+The AWS credentials were bootstrapped in the [`organizations-infra`](https://github.com/Sage-Bionetworks-IT/organizations-infra/) repository. For `nextflow-dev` and `nextflow-prod`, look for `WorkflowsNextflowCIServiceAccounts` in [this file](https://github.com/Sage-Bionetworks-IT/organizations-infra/blob/master/org-formation/600-access/_tasks.yaml). For `strides-ampad`, look at [this file](https://github.com/Sage-Bionetworks-IT/organizations-infra/blob/master/sceptre/strides-ampad-workflows/config/prod/workflows-nextflow-ci-service-account.yaml). The secrets can be retrieved from the CloudFormation Console in the respective AWS accounts under the `workflows-nextflow-ci-service-account` stack.
+
+The Nextflow Tower credentials (_i.e._ access tokens) were created manually using the Google service accounts that we provisioned for creating the Google OAuth clients, `nextflowgdev.dev@sagebase.org` and `nextflowgdev.prod@sagebase.org`, respectively. The login info for these two Google accounts are stored in LastPass under the `Shared-IBC-DPE-Workflows` folder. Note that the `*-prod` and `*-ampad` stacks are configured to use the token associated with `nextflowgdev.prod@sagebase.org` whereas the `*-dev` stacks are configured to use the token associated with `nextflowgdev.dev@sagebase.org`.
+
+- `CI_USER_ACCESS_KEY_ID`: The AWS access key ID for authenticating as an IAM CI service user.
+- `CI_USER_SECRET_ACCESS_KEY`: The AWS secret access key for authenticating as an IAM CI service user.
+- `CI_ROLE_TO_ASSUME`: The ARN of the IAM role that will be assumed after authenticating with the above IAM user credentials.
+- `TOWER_TOKEN`: The Nextflow Tower access token that will be used to provision the Tower workspaces, credentials, and compute environments.
 
 ### AWS Secrets
 

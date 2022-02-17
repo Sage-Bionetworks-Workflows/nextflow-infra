@@ -1,10 +1,10 @@
 template_path: nextflow-efs-file-system.yaml
 stack_name: nextflow-efs-file-system
 dependencies:
-  - prod/nextflow-vpc.yaml
-  - prod/nextflow-ecs-security-group.yaml
-  - prod/nextflow-tower-config-bucket.yaml
-  - prod/nextflow-ecs-cluster.yaml
+  - infra-prod/nextflow-vpc.yaml
+  - infra-prod/nextflow-ecs-security-group.yaml
+  - infra-prod/nextflow-tower-config-bucket.yaml
+  - infra-prod/nextflow-ecs-cluster.yaml
 
 parameters:
   VpcId: !stack_output_external nextflow-vpc::VPCId

@@ -3,7 +3,7 @@ template:
   url: "{{stack_group_config.aws_infra_templates_root_url}}/v0.3.2/templates/gateway-vpc-endpoint.yaml"
 stack_name: nextflow-s3-vpc-endpoint
 dependencies:
-  - prod/nextflow-vpc.yaml
+  - infra-prod/nextflow-vpc.yaml
 
 parameters:
   VpcName: "nextflow-vpc"
