@@ -1,8 +1,8 @@
 template_path: nextflow-ecs-task-definition.yaml
 stack_name: nextflow-ecs-task-definition
 dependencies:
-  - develop/nextflow-aurora-mysql.yaml
-  - develop/nextflow-efs-file-system.yaml
+  - infra-dev/nextflow-aurora-mysql.yaml
+  - infra-dev/nextflow-efs-file-system.yaml
 
 parameters:
   TowerSmtpHost: 'email-smtp.us-east-1.amazonaws.com'

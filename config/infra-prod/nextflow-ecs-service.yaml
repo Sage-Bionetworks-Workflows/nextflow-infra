@@ -1,8 +1,8 @@
 template_path: nextflow-ecs-service.yaml
 stack_name: nextflow-ecs-service
 dependencies:
-  - prod/nextflow-ecs-cluster.yaml
-  - prod/nextflow-ecs-task-definition.yaml
+  - infra-prod/nextflow-ecs-cluster.yaml
+  - infra-prod/nextflow-ecs-task-definition.yaml
 
 parameters:
   ClusterName: !stack_output_external nextflow-ecs-cluster::EcsClusterName
