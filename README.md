@@ -26,13 +26,13 @@ Message us in the [`#workflow_users`](https://sagebionetworks.slack.com/archives
 
 ## Tower User Onboarding
 
-Before you can use Nextflow Tower, you need to first deploy a Tower project, which consists an encrypted S3 bucket and the IAM resources (_i.e._ users, roles, and policies) that Tower requires to access the encrypted bucket and execute the workflow on [AWS Batch](https://help.tower.nf/compute-envs/aws-batch/). Once these resources exist, they need to be configured in Nextflow Tower, which is a process that has been automated using CI/CD.
+Before you can use Nextflow Tower, you need to first deploy a Tower project, which consists of an encrypted S3 bucket and the IAM resources (_i.e._ users, roles, and policies) that Tower requires to access the encrypted bucket and execute the workflow on [AWS Batch](https://help.tower.nf/21.12/compute-envs/aws-batch/). Once these resources exist, they need to be configured in Nextflow Tower, which is a process that has been automated using CI/CD.
 
-1. Determine what is known as the stack name by concatenating the project name with the suffix `-project` (_e.g._ `imcore-project`, `amp-ad-project`, `commonmind-project`).
+1. Create a 'stack name' by following this naming convention: concatenate a project name with the suffix `-project` (_e.g._ `imcore-project`, `amp-ad-project`, `commonmind-project`).
 
    **N.B.:** Anytime that `<stack_name>` appears below with the angle brackets, replace the placeholder with the actual stack name, omitting any angle brackets.
 
-2. [Create](https://sagebionetworks.jira.com/jira/software/c/projects/IT/issues/) an IT JIRA ticket requesting membership to the following JumpCloud groups for anyone who needs read/write or read-only access to the S3 bucket:
+2. [Create an IT JIRA ticket](https://sagebionetworks.jira.com/jira/secure/CreateIssue.jspa?issuetype=3&pid=10083) requesting membership to the following JumpCloud groups for anyone who needs read/write or read-only access to the S3 bucket:
 
    - `aws-sandbox-developers`
    - `aws-workflow-nextflow-tower-viewer`
@@ -41,7 +41,7 @@ Before you can use Nextflow Tower, you need to first deploy a Tower project, whi
 
    ![AWS SSO Screenshot](assets/img/aws_sso.png)
 
-3. Open a pull request on this repository in which you duplicate [`config/projects/example-project.yaml`](config/projects/example-project.yaml) as `<stack_name>.yaml` in the `projects/` subdirectory and then follow the numbered steps listed in the file. Note that some steps are required whereas others are optional.
+3. Open a pull request on this repository in which you duplicate [`config/projects/example-project.yaml`](config/projects-prod/example-project.yaml) as `<stack_name>.yaml` in the `projects/` subdirectory and then follow the numbered steps listed in the file. Note that some steps are required whereas others are optional.
 
    **N.B.** Here, read/write vs read-only access refers to the level of access granted to users for the encrypted S3 bucket and to the Tower workspace (more details below). **Given that access is granted to the entire bucket, you might want to create more specific Tower projects that provide more granular access control.**
 
@@ -73,7 +73,7 @@ Before you can use Nextflow Tower, you need to first deploy a Tower project, whi
 
    **N.B.** If you need have special needs (_e.g._ more CPUs, on-demand EC2 instances, FSx for Lustre), see [above](#getting-help) for how to contact the administrators, who can create additional compute environments in your workspace.
 
-5. Log into Nextflow Tower using the [link](#access-nextflow-tower) at the top of this README and open your project workspace. If you were listed under `S3ReadWriteAccessArns`, then you'll be able to add pipelines to your workspace and launch them on your data.
+5. Log into Nextflow Tower using the [link](#access-tower) at the top of this README and open your project workspace. If you were listed under `S3ReadWriteAccessArns`, then you'll be able to add pipelines to your workspace and launch them on your data.
 
 6. Make sure that this [Confluence wiki page](https://sagebionetworks.jira.com/l/c/1hm4NP7a) is watched by everyone who will be running workflows on Tower. This generally doesn't need to include individuals listed as view-only in the `<stack_name>.yaml` file.
 
