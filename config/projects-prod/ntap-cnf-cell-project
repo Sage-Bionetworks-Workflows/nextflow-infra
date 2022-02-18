@@ -29,7 +29,7 @@ parameters:
   # LifecycleDataStorageClass: INTELLIGENT_TIERING
 
   # (Optional) Step 7: Uncomment and update the following line to change when objects are deleted automatically
-  #LifecycleDataExpiration: '730'  # In days (i.e., 2 years)
+  # LifecycleDataExpiration: '730'  # In days (i.e., 2 years)
 
   # DO NOT EDIT ANYTHING BELOW THIS LINE ------------------------------------------------------------------------
 
