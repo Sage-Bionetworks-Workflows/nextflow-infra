@@ -73,7 +73,7 @@ Before you can use Nextflow Tower, you need to first deploy a Tower project, whi
 
    **N.B.** If you need have special needs (_e.g._ more CPUs, on-demand EC2 instances, FSx for Lustre), see [above](#getting-help) for how to contact the administrators, who can create additional compute environments in your workspace.
 
-5. Log into Nextflow Tower using the [link](#access-nextflow-tower) at the top of this README and open your project workspace. If you were listed under `S3ReadWriteAccessArns`, then you'll be able to add pipelines to your workspace and launch them on your data.
+5. Log into Nextflow Tower using the [link](#access-tower) at the top of this README and open your project workspace. If you were listed under `S3ReadWriteAccessArns`, then you'll be able to add pipelines to your workspace and launch them on your data.
 
 6. Make sure that this [Confluence wiki page](https://sagebionetworks.jira.com/l/c/1hm4NP7a) is watched by everyone who will be running workflows on Tower. This generally doesn't need to include individuals listed as view-only in the `<stack_name>.yaml` file.
 
