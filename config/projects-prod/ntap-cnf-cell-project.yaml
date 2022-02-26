@@ -4,7 +4,7 @@ stack_tags:
   Department: SCCE
   Project: Neurofibromatosis
   OwnerEmail: robert.allaway@sagebase.org
-  CostCenter: NTAP-JHU | 30110  # Valid values here: https://sagebionetworks.jira.com/l/c/0PyR5JSM
+  CostCenter: NTAP-JHU / 30110
 
 parameters:
 
