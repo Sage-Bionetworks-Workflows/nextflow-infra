@@ -55,7 +55,7 @@ Before you can use Nextflow Tower, you need to first deploy a Tower project, whi
 
    - A new Tower workspace called `<stack_name>` was created under this organization.
 
-   - Users listed under `S3ReadWriteAccessArns` were added as workspace participants with the `Maintain` role, which grants the following permissions:
+   - Users listed under `S3ReadWriteAccessArns` were added to a workspace team with the `Maintain` role, which grants the following permissions:
 
      > The users can launch pipeline and modify pipeline executions
        (e.g. can change the pipeline launch compute env, parameters,
@@ -63,7 +63,7 @@ Before you can use Nextflow Tower, you need to first deploy a Tower project, whi
        configuration in the Launchpad. The users cannot modify Compute
        env settings and Credentials
 
-   - Users listed under `S3ReadOnlyAccessArns` were added as workspace participants with the `View` role, which grants the following permissions:
+   - Users listed under `S3ReadOnlyAccessArns` were added to a workspace team with the `View` role, which grants the following permissions:
 
      > The users can access to the team resources in read-only mode
 
