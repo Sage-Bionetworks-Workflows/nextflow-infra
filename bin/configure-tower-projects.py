@@ -36,8 +36,7 @@ def main() -> None:
         )
     else:
         tower = TowerClient()
-        org = TowerOrganization(tower, projects)
-        org.create_workspaces()
+        TowerOrganization(tower, projects)
 
 
 class InvalidTowerProject(Exception):
@@ -383,12 +382,12 @@ class TowerWorkspace:
         return response["workspace"]
 
     def add_participant(self, role: str, user: str = None, team_id: int = None) -> int:
-        """Add user to the workspace (if need be) and return participant ID
+        """Add user or team to the workspace (if need be) and return participant ID
 
         Args:
             role (str): 'owner', 'admin', 'maintain', 'launch', or 'view'
-            user (str): Email address for the user
-            team_id (int): Team identifier
+            user (str): Email address for the user. Mutually exclusive with `team_id`.
+            team_id (int): Team identifier. Mutually exclusive with `user`.
 
         Returns:
             int: Participant ID for the user in the given workspace
@@ -617,6 +616,7 @@ class TowerOrganization:
         self.members: Dict[str, dict] = dict()
         self.populate()
         self.workspaces: Dict[str, TowerWorkspace] = dict()
+        self.create_workspaces()
 
     def create(self) -> dict:
         """Get or create Tower organization with the given name
@@ -745,9 +745,7 @@ class TowerOrganization:
         """
         endpoint = f"/orgs/{self.id}/teams/{team_id}/members"
         response = self.tower.request("GET", endpoint)
-        team_member_ids = list()
-        for team_member in response["members"]:
-            team_member_ids.append(team_member["memberId"])
+        team_member_ids = [member["memberId"] for member in response["members"]]
         return team_member_ids
 
     def populate(self) -> None:
