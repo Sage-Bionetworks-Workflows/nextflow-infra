@@ -93,7 +93,7 @@ jobs:
           interval: 10000
 
       - name: Configure projects in Tower
-        run: pipenv run bin/configure-tower-projects.py --debug config/projects-${{ matrix.sceptre-suffix }}
+        run: pipenv run bin/configure-tower-projects.py config/projects-${{ matrix.sceptre-suffix }}
         env:
           NXF_TOWER_TOKEN: ${{ secrets.TOWER_TOKEN }}
           NXF_TOWER_API_URL: ${{ matrix.tower-url }}/api
