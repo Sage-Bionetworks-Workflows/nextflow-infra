@@ -116,7 +116,7 @@ The Nextflow Tower credentials (_i.e._ access tokens) were created manually usin
 - `CI_USER_ACCESS_KEY_ID`: The AWS access key ID for authenticating as an IAM CI service user.
 - `CI_USER_SECRET_ACCESS_KEY`: The AWS secret access key for authenticating as an IAM CI service user.
 - `CI_ROLE_TO_ASSUME`: The ARN of the IAM role that will be assumed after authenticating with the above IAM user credentials.
-- `TOWER_TOKEN`: The Nextflow Tower access token that will be used to provision the Tower workspaces, credentials, and compute environments.
+- `TOWER_TOKEN`: The Nextflow Tower access token that will be used to provision the Tower teams, workspaces, credentials, and compute environments.
 
 ### AWS Secrets
 

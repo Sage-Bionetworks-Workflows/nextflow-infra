@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 import argparse
+from collections import defaultdict
 import json
 import os
 import re
@@ -35,8 +36,7 @@ def main() -> None:
         )
     else:
         tower = TowerClient()
-        org = TowerOrganization(tower, projects)
-        org.create_workspaces()
+        TowerOrganization(tower, projects)
 
 
 class InvalidTowerProject(Exception):
@@ -88,12 +88,13 @@ class Users:
         self.launchers = launchers
         self.viewers = viewers
 
-    def list_users(self) -> Iterator[Tuple[str, str]]:
+    def list_users(self) -> Iterator[Tuple[str, str, str]]:
         """List all users and their Tower roles
 
         Yields:
-            Iterator[Tuple[str, str]]:
-                Each element is the user email (str) and Tower role (str)
+            Iterator[Tuple[str, str, str]]:
+                Each element is the user email (str), the user group,
+                and Tower role (str)
         """
         role_mapping = {
             "owners": "owner",
@@ -105,7 +106,20 @@ class Users:
         for user_group, role in role_mapping.items():
             users = getattr(self, user_group)
             for user in users:
-                yield user, role
+                yield user, user_group, role
+
+    def list_teams(self) -> Iterator[Tuple[List[str], str, str]]:
+        """List all users grouped by their Tower roles
+
+        Yields:
+            Iterator[Tuple[List[str], str, str]]:
+                Each element is the list of user emails (List[str]),
+                the user group (str), and their Tower role (str)
+        """
+        teams = defaultdict(list)
+        for user, user_group, role in self.list_users():
+            teams[(user_group, role)].append(user)
+        return ((users, ugrp, role) for (ugrp, role), users in teams.items())
 
 
 class Projects:
@@ -326,7 +340,8 @@ class TowerWorkspace:
         self,
         org: TowerOrganization,
         stack_name: str,
-        users: Users,
+        users: Users = None,
+        teams: Dict[int, str] = None,
     ) -> None:
         self.org = org
         self.tower = org.tower
@@ -337,6 +352,7 @@ class TowerWorkspace:
         self.json = self.create()
         self.id = self.json["id"]
         self.users = users
+        self.teams = teams
         self.participants: Dict[str, dict] = dict()
         self.populate()
         self.create_compute_environment()
@@ -365,24 +381,38 @@ class TowerWorkspace:
         response = self.tower.request("POST", endpoint, json=data)
         return response["workspace"]
 
-    def add_participant(self, user: str, role: str) -> int:
-        """Add user to the workspace (if need be) and return participant ID
+    def add_participant(self, role: str, user: str = None, team_id: int = None) -> int:
+        """Add user or team to the workspace (if need be) and return participant ID
 
         Args:
-            user (str): Email address for the user
             role (str): 'owner', 'admin', 'maintain', 'launch', or 'view'
+            user (str): Email address for the user. Mutually exclusive with `team_id`.
+            team_id (int): Team identifier. Mutually exclusive with `user`.
 
         Returns:
             int: Participant ID for the user in the given workspace
         """
         # Attempt to add the user as a participant of the given workspace
         endpoint = f"/orgs/{self.org.id}/workspaces/{self.id}/participants"
-        member_id = self.org.members[user]["memberId"]
-        data = {
-            "memberId": member_id,
-            "teamId": None,
-            "userNameOrEmail": None,
-        }
+        if user and not team_id:
+            member_id = self.org.members[user]["memberId"]
+            identifier = member_id
+            data = {
+                "memberId": member_id,
+                "teamId": None,
+                "userNameOrEmail": None,
+            }
+        elif not user and team_id:
+            identifier = team_id
+            data = {
+                "memberId": None,
+                "teamId": team_id,
+                "userNameOrEmail": None,
+            }
+        else:
+            raise ValueError(
+                "Must provide value for exactly one of `user` or `team_id`."
+            )
         response = self.tower.request("PUT", f"{endpoint}/add", json=data)
         # If the user is already a member, you get the following message:
         #   "Already a participant"
@@ -390,12 +420,15 @@ class TowerWorkspace:
         if "message" in response and response["message"] == "Already a participant":
             response = self.tower.request("GET", endpoint)
             for participant in response["participants"]:
-                if participant["memberId"] == member_id:
+                if (
+                    participant.get("memberId") == identifier
+                    or participant.get("teamId") == identifier
+                ):
                     break
         # Otherwise, just return their new participant ID for the workspace
         else:
             participant = response["participant"]
-        self.participants[user] = participant
+        self.participants[identifier] = participant
         # Update participant role
         participant_id = participant["participantId"]
         self.set_participant_role(participant_id, role)
@@ -405,7 +438,7 @@ class TowerWorkspace:
         """Update the participant role in the given workspace
 
         Args:
-            part_id (int): Participant ID for the user
+            part_id (int): Participant ID for the user or team
             role (str): 'owner', 'admin', 'maintain', 'launch', or 'view'
         """
         endpoint = (
@@ -416,8 +449,12 @@ class TowerWorkspace:
 
     def populate(self) -> None:
         """Add maintainers and viewers to the organization and workspace"""
-        for user, role in self.users.list_users():
-            self.add_participant(user, role)
+        if self.users:
+            for user, _, role in self.users.list_users():
+                self.add_participant(role, user=user)
+        if self.teams:
+            for team_id, role in self.teams.items():
+                self.add_participant(role, team_id=team_id)
 
     def create_credentials(self) -> int:
         """Create entry for Forge credentials under the given workspace
@@ -575,9 +612,11 @@ class TowerOrganization:
         self.id = self.json["orgId"]
         self.projects = projects
         self.users_per_project = projects.users_per_project
+        self.teamids_per_project: Dict[str, Dict[int, str]] = dict()
         self.members: Dict[str, dict] = dict()
         self.populate()
         self.workspaces: Dict[str, TowerWorkspace] = dict()
+        self.create_workspaces()
 
     def create(self) -> dict:
         """Get or create Tower organization with the given name
@@ -640,15 +679,99 @@ class TowerOrganization:
         self.members[user] = member
         return member
 
+    def add_member_to_team(self, team_id: int, user: str) -> int:
+        """Add user to given team within an organization
+
+        Args:
+            team_id (int): Team identifier
+            user (str): Email address for the user
+
+        Returns:
+            int: Team member identifier, which is the same as the
+                organization member identifier
+        """
+        endpoint = f"/orgs/{self.id}/teams/{team_id}/members"
+        data = {"userNameOrEmail": user}
+        response = self.tower.request("POST", endpoint, json=data)
+        # If the user is already a member, you get the following message:
+        #   "The member is already associated with the team"
+        # If this happens, just retrieve the member ID from the organization
+        if "message" in response and "already" in response["message"]:
+            member = self.add_member(user)
+            member_id = member["memberId"]
+        else:
+            member_id = response["member"]["memberId"]
+        return member_id
+
+    def remove_member_from_team(self, team_id: int, member_id: int) -> Dict:
+        """Remove a member from an organization team
+
+        Args:
+            team_id (int): Team identifier
+            member_id (int): Member identifier
+        """
+        endpoint = f"/orgs/{self.id}/teams/{team_id}/members/{member_id}/delete"
+        response = self.tower.request("DELETE", endpoint)
+        return response
+
+    def create_team(self, team_name: str) -> int:
+        """Create team under organization with the given name
+
+        Args:
+            team_name (str): Team name
+
+        Returns:
+            int: Team identifier
+        """
+        # Check if the team already exists
+        endpoint = f"/orgs/{self.id}/teams"
+        response = self.tower.request("GET", endpoint)
+        for team in response["teams"]:
+            if team["name"] == team_name:
+                return team["teamId"]
+        # If team doesn't exist, create one
+        data = {"team": {"name": team_name, "description": None, "avatar": None}}
+        response = self.tower.request("POST", endpoint, json=data)
+        return response["team"]["teamId"]
+
+    def list_team_members(self, team_id: int) -> List[int]:
+        """Retrieve a list of team member IDs
+
+        Args:
+            team_id (int): Team identifier
+
+        Returns:
+            List[int]: List of team member IDs
+        """
+        endpoint = f"/orgs/{self.id}/teams/{team_id}/members"
+        response = self.tower.request("GET", endpoint)
+        team_member_ids = [member["memberId"] for member in response["members"]]
+        return team_member_ids
+
     def populate(self) -> None:
         """Add all emails from across all projects to the organization
 
         Returns:
             Dict[str, dict]: Same as self.project, but with member IDs
         """
-        for project_users in self.users_per_project.values():
-            for user, _ in project_users.list_users():
-                self.add_member(user)
+        for project_name, project_users in self.users_per_project.items():
+            # Create and populate teams for each user group/role
+            self.teamids_per_project[project_name] = dict()
+            for users, user_group, role in project_users.list_teams():
+                team_name = f"{project_name}-{user_group}"
+                team_id = self.create_team(team_name)
+                self.teamids_per_project[project_name][team_id] = role
+                # Add expected team members
+                verified_ids = set()
+                for user in users:
+                    member = self.add_member(user)
+                    member_id = member["memberId"]
+                    verified_ids.add(member_id)
+                    self.add_member_to_team(team_id, user)
+                # Remove unexpected team members
+                for team_member_id in self.list_team_members(team_id):
+                    if team_member_id not in verified_ids:
+                        self.remove_member_from_team(team_id, team_member_id)
 
     def list_projects(self) -> Iterator[Tuple[str, Users]]:
         """Iterate over all projects and their users
@@ -667,8 +790,9 @@ class TowerOrganization:
             Dict[str, TowerWorkspace]:
                 Mapping of project names and their corresponding workspaces
         """
-        for name, users in self.list_projects():
-            ws = TowerWorkspace(self, name, users)
+        for name, _ in self.list_projects():
+            teams = self.teamids_per_project[name]
+            ws = TowerWorkspace(self, name, teams=teams)
             self.workspaces[name] = ws
         return self.workspaces
 
