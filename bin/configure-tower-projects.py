@@ -768,7 +768,8 @@ class TowerOrganization:
             # Create and populate teams for each user group/role
             self.teamids_per_project[project_name] = dict()
             for users, user_group, role in project_users.list_teams():
-                team_name = f"{project_name}-{user_group}"
+                project_prefix = project_name[:-8]  # Trim '-project' suffix
+                team_name = f"{project_prefix}-{user_group}"
                 team_id = self.create_team(team_name)
                 self.teamids_per_project[project_name][team_id] = role
                 # Add expected team members

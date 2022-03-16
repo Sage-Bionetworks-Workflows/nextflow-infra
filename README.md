@@ -28,7 +28,7 @@ Message us in the [`#workflow_users`](https://sagebionetworks.slack.com/archives
 
 Before you can use Nextflow Tower, you need to first deploy a Tower project, which consists of an encrypted S3 bucket and the IAM resources (_i.e._ users, roles, and policies) that Tower requires to access the encrypted bucket and execute the workflow on [AWS Batch](https://help.tower.nf/21.12/compute-envs/aws-batch/). Once these resources exist, they need to be configured in Nextflow Tower, which is a process that has been automated using CI/CD.
 
-1. Create a 'stack name' by following this naming convention: concatenate a project name with the suffix `-project` (_e.g._ `imcore-project`, `amp-ad-project`, `commonmind-project`).
+1. Create a 'stack name' by following this naming convention: concatenate a project name with the suffix `-project` (_e.g._ `imcore-project`, `amp-ad-project`, `commonmind-project`). Due to limits imposed by Tower, the stack name cannot contain more than 32 characters.
 
    **N.B.:** Anytime that `<stack_name>` appears below with the angle brackets, replace the placeholder with the actual stack name, omitting any angle brackets.
 
