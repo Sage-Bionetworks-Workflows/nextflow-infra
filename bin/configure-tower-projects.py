@@ -35,7 +35,7 @@ def main() -> None:
             "\n  - ".join(projects.config_paths),
         )
     else:
-        tower = TowerClient()
+        tower = TowerClient(debug_mode=args.debug)
         TowerOrganization(tower, projects)
 
 
@@ -274,7 +274,7 @@ class AwsClient:
 
 
 class TowerClient:
-    def __init__(self, tower_token=None, tower_api_url=None) -> None:
+    def __init__(self, tower_token=None, tower_api_url=None, debug_mode=False) -> None:
         """Generate NextflowTower instance
 
         The descriptions below for the user types were copied
@@ -286,6 +286,7 @@ class TowerClient:
         """
         self.aws = AwsClient()
         self.vpc = self.aws.get_cfn_stack_outputs(VPC_STACK_NAME)
+        self.debug = debug_mode
         # Retrieve Nextflow Tower token from environment
         try:
             self.tower_token = tower_token or os.environ["NXF_TOWER_TOKEN"]
@@ -327,11 +328,20 @@ class TowerClient:
         assert method in {"GET", "PUT", "POST", "DELETE"}
         url = self.tower_api_base_url + endpoint
         kwargs["headers"] = {"Authorization": f"Bearer {self.tower_token}"}
+        if self.debug:
+            print(f"\nEndpoint:\t {method} {url}")
+        if self.debug and "params" in kwargs:
+            print(f"Params: \t {kwargs['params']}")
+        if self.debug and "json" in kwargs:
+            print(f"Payload:\t {kwargs['json']}")
         response = requests.request(method, url, **kwargs)
         try:
             result = response.json()
         except json.decoder.JSONDecodeError:
             result = dict()
+        if self.debug:
+            print(f"Status Code:\t {response.status_code} / {response.reason}")
+            print(f"Response:\t {result}")
         return result
 
 
@@ -806,6 +816,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("projects_dir")
     parser.add_argument("--dry_run", "-n", action="store_true")
+    parser.add_argument("--debug", "-d", action="store_true")
     args = parser.parse_args()
     return args
 
