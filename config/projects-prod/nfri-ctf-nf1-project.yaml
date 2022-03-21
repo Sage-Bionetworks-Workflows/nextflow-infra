@@ -1,0 +1,48 @@
+stack_name: nfri-ctf-nf1-project
+
+stack_tags:
+  Department: SCCE
+  Project: Neurofibromatosis
+  OwnerEmail: robert.allaway@sagebase.org
+  CostCenter: Synodos-CTF / 304000
+
+parameters:
+
+  S3ReadWriteAccessArns:
+    # (REQUIRED) Step 3: Replace the email below with your '@sagebase.org' address
+    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/robert.allaway@sagebase.org
+
+    # (Optional) Step 4: Uncomment and update the following line(s) to grant additional users with read/write access
+    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/sasha.scott@sagebase.org
+    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/jineta.banerjee@sagebase.org
+    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/bruno.grande@sagebase.org
+
+  # (Optional) Step 5: Uncomment and update the following line(s) to grant additional users with read-only access
+  # S3ReadOnlyAccessArns:
+  #   - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/thomas.yu@sagebase.org
+  #   - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/jason.hwee@sagebase.org
+
+  # (Optional) Step 6: Uncomment and update the following lines to change the S3 bucket lifecycle configuration,
+  #                    which cannot be changed as long as 'AllowSynapseIndexing' is enabled (default)
+  # AllowSynapseIndexing: Disabled
+  # EnableDataLifeCycle: Enabled
+  # LifecycleDataTransition: '30'  # In days
+  # LifecycleDataStorageClass: INTELLIGENT_TIERING
+
+  # (Optional) Step 7: Uncomment and update the following line to change when objects are deleted automatically
+  # LifecycleDataExpiration: '730'  # In days (i.e., 2 years)
+
+  # DO NOT EDIT ANYTHING BELOW THIS LINE ------------------------------------------------------------------------
+
+  AccountAdminArns:
+    - '{{stack_group_config.sso_admin_role.arn}}'
+    - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
+  TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
+  TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
+  TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
+
+template_path: tower-project.yaml
+
+dependencies:
+  - common/nextflow-forge-iam-policy.yaml
+  - common/nextflow-launch-iam-policy.yaml
