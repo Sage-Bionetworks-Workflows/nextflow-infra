@@ -328,21 +328,41 @@ class TowerClient:
         assert method in {"GET", "PUT", "POST", "DELETE"}
         url = self.tower_api_base_url + endpoint
         kwargs["headers"] = {"Authorization": f"Bearer {self.tower_token}"}
-        if self.debug:
-            print(f"\nEndpoint:\t {method} {url}")
-        if self.debug and "params" in kwargs:
-            print(f"Params: \t {kwargs['params']}")
-        if self.debug and "json" in kwargs:
-            print(f"Payload:\t {kwargs['json']}")
         response = requests.request(method, url, **kwargs)
         try:
             result = response.json()
         except json.decoder.JSONDecodeError:
             result = dict()
         if self.debug:
+            print(f"\nEndpoint:\t {method} {url}")
+            print(f"Params: \t {kwargs.get('params')}")
+            print(f"Payload:\t {kwargs.get('json')}")
             print(f"Status Code:\t {response.status_code} / {response.reason}")
             print(f"Response:\t {result}")
         return result
+
+    def paged_request(self, method: str, endpoint: str, **kwargs) -> Iterator[dict]:
+        """Iterate through pages of results for a given request
+
+        Args:
+            method (str): An HTTP method (GET, PUT, POST, or DELETE)
+            endpoint (str): The API endpoint with the path parameters filled in
+
+        Returns:
+            Iterator[Dict]: An iterator traversing through pages of responses
+        """
+        params = kwargs.pop("params", {})
+        params["max"] = 50
+        num_items = 0
+        total_size = 1  # Artificial value for initiating the while-loop
+        while num_items < total_size:
+            params["offset"] = num_items
+            response = self.request(method, endpoint, params=params, **kwargs)
+            total_size = response.pop("totalSize", 0)
+            _, items = response.popitem()
+            for item in items:
+                num_items += 1
+                yield item
 
 
 class TowerWorkspace:
@@ -391,7 +411,7 @@ class TowerWorkspace:
         response = self.tower.request("POST", endpoint, json=data)
         return response["workspace"]
 
-    def add_participant(self, role: str, user: str = None, team_id: int = None) -> int:
+    def add_participant(self, role: str, user: str = None, team_id: int = None) -> dict:
         """Add user or team to the workspace (if need be) and return participant ID
 
         Args:
@@ -400,7 +420,7 @@ class TowerWorkspace:
             team_id (int): Team identifier. Mutually exclusive with `user`.
 
         Returns:
-            int: Participant ID for the user in the given workspace
+            dict: Participant info for the user or team in the given workspace
         """
         # Attempt to add the user as a participant of the given workspace
         endpoint = f"/orgs/{self.org.id}/workspaces/{self.id}/participants"
@@ -424,17 +444,16 @@ class TowerWorkspace:
                 "Must provide value for exactly one of `user` or `team_id`."
             )
         response = self.tower.request("PUT", f"{endpoint}/add", json=data)
-        # If the user is already a member, you get the following message:
+        # If the user is already a participant, you get the following message:
         #   "Already a participant"
         # In this case, look up the participant ID using the member ID
         if "message" in response and response["message"] == "Already a participant":
-            response = self.tower.request("GET", endpoint)
-            for participant in response["participants"]:
-                if (
-                    participant.get("memberId") == identifier
-                    or participant.get("teamId") == identifier
-                ):
-                    break
+            participant = dict()
+            participants = self.tower.paged_request("GET", endpoint)
+            for p in participants:
+                if p.get("memberId") == identifier or p.get("teamId") == identifier:
+                    participant = p
+            assert participant, f"Failed to find the given participant ({identifier})"
         # Otherwise, just return their new participant ID for the workspace
         else:
             participant = response["participant"]
@@ -677,12 +696,14 @@ class TowerOrganization:
         # This hacky approach is necessary because you need to retrieve the
         # member ID using the username (you can't with the email alone)
         if "message" in response and "already a member" in response["message"]:
+            member = dict()
             username = response["message"].split("'")[1]
-            response = self.tower.request("GET", endpoint)
-            members = response["members"]
-            for member in members:
-                if member["userName"] == username:
-                    break
+            params = {"search": username}
+            members = self.tower.paged_request("GET", endpoint, params=params)
+            for m in members:
+                if m["userName"] == username:
+                    member = m
+            assert member, f"Failed to find the given member ({user})"
         # Otherwise, just return their new member ID for the organization
         else:
             member = response["member"]
@@ -735,8 +756,8 @@ class TowerOrganization:
         """
         # Check if the team already exists
         endpoint = f"/orgs/{self.id}/teams"
-        response = self.tower.request("GET", endpoint)
-        for team in response["teams"]:
+        teams = self.tower.paged_request("GET", endpoint)
+        for team in teams:
             if team["name"] == team_name:
                 return team["teamId"]
         # If team doesn't exist, create one
@@ -754,8 +775,8 @@ class TowerOrganization:
             List[int]: List of team member IDs
         """
         endpoint = f"/orgs/{self.id}/teams/{team_id}/members"
-        response = self.tower.request("GET", endpoint)
-        team_member_ids = [member["memberId"] for member in response["members"]]
+        team_members = self.tower.paged_request("GET", endpoint)
+        team_member_ids = [member["memberId"] for member in team_members]
         return team_member_ids
 
     def populate(self) -> None:
