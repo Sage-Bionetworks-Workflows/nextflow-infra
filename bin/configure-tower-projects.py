@@ -352,7 +352,7 @@ class TowerClient:
             Iterator[Dict]: An iterator traversing through pages of responses
         """
         params = kwargs.pop("params", {})
-        params["max"] = 10
+        params["max"] = 50
         num_items = 0
         total_size = 1  # Artificial value for initiating the while-loop
         while num_items < total_size:
