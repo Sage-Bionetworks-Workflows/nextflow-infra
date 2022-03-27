@@ -115,6 +115,13 @@ Parameters:
   TowerConfigFileName:
     Type: String
     Description: Name of the tower config YAML file
+  TowerOidcTokenImport:
+    Type: String
+    Description: Whether to import the OIDC refresh token (JWT) as a user secret
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Default: 'false'
   AwslogsStreamPrefix:
     Type: String
     Description: Prefix used for CloudWatch log streams
@@ -203,6 +210,8 @@ Resources:
               Value: !Ref TowerGoogleClientId
             - Name: TOWER_GOOGLE_SECRET
               Value: !Ref TowerGoogleSecret
+            - Name: TOWER_OIDC_TOKEN_IMPORT
+              Value: !Ref TowerOidcTokenImport
             - Name: TOWER_CONFIG_FILE
               Value: !Sub '${EfsVolumeMountPath}/${TowerConfigFileName}'
           MountPoints:
@@ -269,6 +278,8 @@ Resources:
               Value: !Ref TowerGoogleClientId
             - Name: TOWER_GOOGLE_SECRET
               Value: !Ref TowerGoogleSecret
+            - Name: TOWER_OIDC_TOKEN_IMPORT
+              Value: !Ref TowerOidcTokenImport
             - Name: TOWER_CONFIG_FILE
               Value: !Sub '${EfsVolumeMountPath}/${TowerConfigFileName}'
           MountPoints:
@@ -355,6 +366,8 @@ Resources:
               Value: !Ref TowerGoogleClientId
             - Name: TOWER_GOOGLE_SECRET
               Value: !Ref TowerGoogleSecret
+            - Name: TOWER_OIDC_TOKEN_IMPORT
+              Value: !Ref TowerOidcTokenImport
             - Name: TOWER_CONFIG_FILE
               Value: !Sub '${EfsVolumeMountPath}/${TowerConfigFileName}'
           EntryPoint:
