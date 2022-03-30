@@ -29,3 +29,6 @@ parameters:
 
 stack_tags:
   {{stack_group_config.default_stack_tags}}
+
+sceptre_user_data:
+  environment: !file src/tower/resources/environment.yaml
