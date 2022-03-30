@@ -115,6 +115,13 @@ Parameters:
   TowerConfigFileName:
     Type: String
     Description: Name of the tower config YAML file
+  TowerOidcTokenImport:
+    Type: String
+    Description: Whether to import the OIDC refresh token (JWT) as a user secret
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Default: 'false'
   AwslogsStreamPrefix:
     Type: String
     Description: Prefix used for CloudWatch log streams
