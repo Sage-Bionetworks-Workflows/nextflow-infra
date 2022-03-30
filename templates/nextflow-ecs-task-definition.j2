@@ -167,44 +167,12 @@ Resources:
             - -c
             - /migrate-db.sh
           Environment:
-            - Name: TOWER_CONTACT_EMAIL
-              Value: !Ref 'TowerContactEmail'
-            - Name: TOWER_SMTP_HOST
-              Value: !Ref 'TowerSmtpHost'
-            - Name: TOWER_SMTP_PORT
-              Value: !Ref 'TowerSmtpPort'
-            - Name: TOWER_SMTP_USER
-              Value: !Ref 'TowerSmtpUser'
-            - Name: TOWER_SMTP_PASSWORD
-              Value: !Ref 'TowerSmtpPassword'
-            - Name: TOWER_DB_URL
-              Value: !Ref 'TowerDbUrl'
-            - Name: TOWER_DB_DRIVER
-              Value: com.mysql.cj.jdbc.Driver
-            - Name: TOWER_DB_DIALECT
-              Value: io.seqera.util.MySQL55DialectCollateBin
-            - Name: TOWER_DB_USER
-              Value: !Ref 'TowerDbUser'
-            - Name: TOWER_DB_PASSWORD
-              Value: !Ref 'TowerDbPassword'
-            - Name: TOWER_SERVER_URL
-              Value: !Ref 'TowerServerUrl'
             - Name: MICRONAUT_ENVIRONMENTS
               Value: prod,redis,cron,awsbatch-platform,auth-google
-            - Name: TOWER_JWT_SECRET
-              Value: !Ref 'TowerJwtSecret'
-            - Name: TOWER_CRYPTO_SECRETKEY
-              Value: !Ref 'TowerCryptoSecretkey'
-            - Name: TOWER_LICENSE
-              Value: !Ref 'TowerLicense'
-            - Name: FLYWAY_LOCATIONS
-              Value: classpath:db-schema/mysql
-            - Name: TOWER_GOOGLE_CLIENT
-              Value: !Ref TowerGoogleClientId
-            - Name: TOWER_GOOGLE_SECRET
-              Value: !Ref TowerGoogleSecret
-            - Name: TOWER_CONFIG_FILE
-              Value: !Sub '${EfsVolumeMountPath}/${TowerConfigFileName}'
+            {%- for name, value in sceptre_user_data.environment.items() %}
+            - Name: {{ name }}
+              Value: {{ value }}
+            {%- endfor %}
           MountPoints:
             - ContainerPath: !Ref EfsVolumeMountPath
               ReadOnly: true
@@ -233,44 +201,12 @@ Resources:
             - -c
             - /tower.sh
           Environment:
-            - Name: TOWER_CONTACT_EMAIL
-              Value: !Ref 'TowerContactEmail'
-            - Name: TOWER_SMTP_HOST
-              Value: !Ref 'TowerSmtpHost'
-            - Name: TOWER_SMTP_PORT
-              Value: !Ref 'TowerSmtpPort'
-            - Name: TOWER_SMTP_USER
-              Value: !Ref 'TowerSmtpUser'
-            - Name: TOWER_SMTP_PASSWORD
-              Value: !Ref 'TowerSmtpPassword'
-            - Name: TOWER_DB_URL
-              Value: !Ref 'TowerDbUrl'
-            - Name: TOWER_DB_DRIVER
-              Value: com.mysql.cj.jdbc.Driver
-            - Name: TOWER_DB_DIALECT
-              Value: io.seqera.util.MySQL55DialectCollateBin
-            - Name: TOWER_DB_USER
-              Value: !Ref 'TowerDbUser'
-            - Name: TOWER_DB_PASSWORD
-              Value: !Ref 'TowerDbPassword'
-            - Name: TOWER_SERVER_URL
-              Value: !Ref 'TowerServerUrl'
             - Name: MICRONAUT_ENVIRONMENTS
               Value: prod,redis,cron,awsbatch-platform,auth-google
-            - Name: TOWER_JWT_SECRET
-              Value: !Ref 'TowerJwtSecret'
-            - Name: TOWER_CRYPTO_SECRETKEY
-              Value: !Ref 'TowerCryptoSecretkey'
-            - Name: TOWER_LICENSE
-              Value: !Ref 'TowerLicense'
-            - Name: FLYWAY_LOCATIONS
-              Value: classpath:db-schema/mysql
-            - Name: TOWER_GOOGLE_CLIENT
-              Value: !Ref TowerGoogleClientId
-            - Name: TOWER_GOOGLE_SECRET
-              Value: !Ref TowerGoogleSecret
-            - Name: TOWER_CONFIG_FILE
-              Value: !Sub '${EfsVolumeMountPath}/${TowerConfigFileName}'
+            {%- for name, value in sceptre_user_data.environment.items() %}
+            - Name: {{ name }}
+              Value: {{ value }}
+            {%- endfor %}
           MountPoints:
             - ContainerPath: !Ref EfsVolumeMountPath
               ReadOnly: true
@@ -319,44 +255,12 @@ Resources:
             - ContainerName: redis
               Condition: START
           Environment:
-            - Name: TOWER_CONTACT_EMAIL
-              Value: !Ref 'TowerContactEmail'
-            - Name: TOWER_SMTP_HOST
-              Value: !Ref 'TowerSmtpHost'
-            - Name: TOWER_SMTP_PORT
-              Value: !Ref 'TowerSmtpPort'
-            - Name: TOWER_SMTP_USER
-              Value: !Ref 'TowerSmtpUser'
-            - Name: TOWER_SMTP_PASSWORD
-              Value: !Ref 'TowerSmtpPassword'
-            - Name: TOWER_DB_URL
-              Value: !Ref 'TowerDbUrl'
-            - Name: TOWER_DB_DRIVER
-              Value: com.mysql.cj.jdbc.Driver
-            - Name: TOWER_DB_DIALECT
-              Value: io.seqera.util.MySQL55DialectCollateBin
-            - Name: TOWER_DB_USER
-              Value: !Ref 'TowerDbUser'
-            - Name: TOWER_DB_PASSWORD
-              Value: !Ref 'TowerDbPassword'
-            - Name: TOWER_SERVER_URL
-              Value: !Ref 'TowerServerUrl'
             - Name: MICRONAUT_ENVIRONMENTS
               Value: prod,redis,ha,awsbatch-platform,auth-google
-            - Name: TOWER_JWT_SECRET
-              Value: !Ref 'TowerJwtSecret'
-            - Name: TOWER_CRYPTO_SECRETKEY
-              Value: !Ref 'TowerCryptoSecretkey'
-            - Name: TOWER_LICENSE
-              Value: !Ref 'TowerLicense'
-            - Name: FLYWAY_LOCATIONS
-              Value: classpath:db-schema/mysql
-            - Name: TOWER_GOOGLE_CLIENT
-              Value: !Ref TowerGoogleClientId
-            - Name: TOWER_GOOGLE_SECRET
-              Value: !Ref TowerGoogleSecret
-            - Name: TOWER_CONFIG_FILE
-              Value: !Sub '${EfsVolumeMountPath}/${TowerConfigFileName}'
+            {%- for name, value in sceptre_user_data.environment.items() %}
+            - Name: {{ name }}
+              Value: {{ value }}
+            {%- endfor %}
           EntryPoint:
             - /bin/sh
           Command:
