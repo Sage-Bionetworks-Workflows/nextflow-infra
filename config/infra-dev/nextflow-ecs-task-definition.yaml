@@ -1,4 +1,4 @@
-template_path: nextflow-ecs-task-definition.yaml
+template_path: nextflow-ecs-task-definition.j2
 stack_name: nextflow-ecs-task-definition
 dependencies:
   - infra-dev/nextflow-aurora-mysql.yaml
@@ -30,3 +30,6 @@ parameters:
 
 stack_tags:
   {{stack_group_config.default_stack_tags}}
+
+sceptre_user_data:
+  environment: !file src/tower/resources/environment.yaml
