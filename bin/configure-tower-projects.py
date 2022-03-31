@@ -565,9 +565,7 @@ class TowerWorkspace:
                     "headJobRole": self.stack["TowerForgeBatchHeadJobRoleArn"],
                     "headJobCpus": None,
                     "headJobMemoryMb": 7168,
-                    "preRunScript": (
-                        "export NXF_VER=21.10.6\nNXF_OPTS='-Xms1g -Xmx4g'"
-                    ),
+                    "preRunScript": "export NXF_VER=21.10.6\nNXF_OPTS='-Xms1g -Xmx4g'",
                     "postRunScript": None,
                     "cliPath": None,
                     "forge": {
