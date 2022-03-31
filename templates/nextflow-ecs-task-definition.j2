@@ -52,6 +52,24 @@ Parameters:
     Type: String
     Description: The client secret provided by Google for the OAuth app
     NoEcho: 'true'
+  TowerOidcClientId:
+    Type: String
+    Default: 'NULL'
+    Description: The client ID provided by your authentication service
+    NoEcho: 'true'
+  TowerOidcSecret:
+    Type: String
+    Default: 'NULL'
+    Description: >
+      The client secret provided by your authentication service.
+      Ignored if `TowerOidcClientId` is undefined.
+    NoEcho: 'true'
+  TowerOidcIssuer:
+    Type: String
+    Default: 'NULL'
+    Description: >
+      The authentication service URL to which Tower connects to authenticate
+      the sign-in request. Ignored if `TowerOidcClientId` is undefined.
   RedisContainerName:
     Type: String
     Description: (Optional) Name of the container that runs redis
@@ -126,6 +144,8 @@ Parameters:
     Type: String
     Description: Prefix used for CloudWatch log streams
     Default: 'tower'
+Conditions:
+  HasTowerOidcClient: !Not [!Equals [ !Ref TowerOidcClientId, "NULL"]]
 Resources:
   TowerTaskLogGroup:
     Type: AWS::Logs::LogGroup
@@ -175,7 +195,10 @@ Resources:
             - /migrate-db.sh
           Environment:
             - Name: MICRONAUT_ENVIRONMENTS
-              Value: prod,redis,cron,awsbatch-platform,auth-google
+              Value: !If
+                - HasTowerOidcClient
+                - prod,redis,cron,awsbatch-platform,auth-google,auth-oidc
+                - prod,redis,cron,awsbatch-platform,auth-google
             {%- for name, value in sceptre_user_data.environment.items() %}
             - Name: {{ name }}
               Value: {{ value }}
@@ -209,7 +232,10 @@ Resources:
             - /tower.sh
           Environment:
             - Name: MICRONAUT_ENVIRONMENTS
-              Value: prod,redis,cron,awsbatch-platform,auth-google
+              Value: !If
+                - HasTowerOidcClient
+                - prod,redis,cron,awsbatch-platform,auth-google,auth-oidc
+                - prod,redis,cron,awsbatch-platform,auth-google
             {%- for name, value in sceptre_user_data.environment.items() %}
             - Name: {{ name }}
               Value: {{ value }}
@@ -263,7 +289,10 @@ Resources:
               Condition: START
           Environment:
             - Name: MICRONAUT_ENVIRONMENTS
-              Value: prod,redis,ha,awsbatch-platform,auth-google
+              Value: !If
+                - HasTowerOidcClient
+                - prod,redis,cron,awsbatch-platform,auth-google,auth-oidc
+                - prod,redis,cron,awsbatch-platform,auth-google
             {%- for name, value in sceptre_user_data.environment.items() %}
             - Name: {{ name }}
               Value: {{ value }}
