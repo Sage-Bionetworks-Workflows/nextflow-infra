@@ -559,7 +559,7 @@ class TowerWorkspace:
                 "config": {
                     "configMode": "Batch Forge",
                     "region": self.tower.aws.region,
-                    "workDir": f"s3://{self.stack['TowerBucket']}/work",
+                    "workDir": f"s3://{self.stack['TowerScratch']}/work",
                     "credentials": None,
                     "computeJobRole": self.stack["TowerForgeBatchWorkJobRoleArn"],
                     "headJobRole": self.stack["TowerForgeBatchHeadJobRoleArn"],
