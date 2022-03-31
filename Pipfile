@@ -19,6 +19,9 @@ requests = "*"
 types-requests = "*"
 pyyaml = "<6"
 types-pyyaml = "*"
+cfn-lint = "*"
+networkx = "==2.5"
+click = "==8.0.2"
 
 [pipenv]
 allow_prereleases = true

@@ -22,36 +22,26 @@ Parameters:
       These ARNs will also have access to the configuration
       secret. You can provide role ARNs or assumed-role ARNs.
 
-  AllowSynapseIndexing:
-    Type: String
-    Description: Enabled to allow Synapse indexing, default is Enabled
-    AllowedValues:
-      - Enabled
-      - Disabled
-    Default: Enabled
-
-  EnableDataLifeCycle:
+  EnableScratchLifeCycle:
     Type: String
     Description: >-
-      Enabled to enable bucket lifecycle rule, default is Enabled
-      Set to 'Enabled' if AllowSynapseIndexing is enabled.
+      'Enabled' to add a lifecycle rule to the scratch bucket.
+      Default is 'Enabled'.
     AllowedValues:
       - Enabled
       - Disabled
     Default: Enabled
 
-  LifecycleDataTransition:
+  ScratchLifecycleTransition:
     Type: Number
     Description: >-
-      Number of days until S3 objects are moved to LifecycleDataStorageClass.
-      Set to '30' if AllowSynapseIndexing is enabled.
+      Number of days until S3 objects are moved to ScratchLifecycleStorageClass.
     Default: 30
 
-  LifecycleDataStorageClass:
+  ScratchLifecycleStorageClass:
     Type: String
     Description: >-
       S3 bucket objects will transition into this storage class.
-      Set to 'INTELLIGENT_TIERING' if AllowSynapseIndexing is enabled.
     AllowedValues:
       - DEEP_ARCHIVE
       - INTELLIGENT_TIERING
@@ -60,11 +50,10 @@ Parameters:
       - GLACIER
     Default: INTELLIGENT_TIERING
 
-  LifecycleDataExpiration:
+  ScratchLifecycleExpiration:
     Type: Number
     Description: >-
       Number of days (from creation) when objects are deleted from S3.
-      Disabled if AllowSynapseIndexing is enabled.
     Default: 183
 
   AccountAdminArns:
@@ -91,7 +80,6 @@ Conditions:
     !Not [!Equals [!Join [",", !Ref S3ReadWriteAccessArns], ""]]
   HasS3ReadOnlyAccessArns:
     !Not [!Equals [!Join [",", !Ref S3ReadOnlyAccessArns], ""]]
-  SynapseIndexingEnabled: !Equals [!Ref AllowSynapseIndexing, "Enabled"]
 
 Resources:
   TowerForgeServiceUser:
@@ -202,6 +190,7 @@ Resources:
             - !GetAtt TowerForgeBatchHeadJobRole.Arn
             - !GetAtt TowerForgeBatchWorkJobRole.Arn
             - !GetAtt TowerForgeServiceRole.Arn
+            - "arn:aws:iam::325565585839:root"  # Synapse
             - !Join
               - ","
               - !Ref AccountAdminArns
@@ -217,18 +206,9 @@ Resources:
                 - ","
                 - !Ref S3ReadOnlyAccessArns
               - !Ref AWS::NoValue
-            - !If
-              - SynapseIndexingEnabled
-              - "arn:aws:iam::325565585839:root"
-              - !Ref AWS::NoValue
 
   TowerBucket:
     Type: AWS::S3::Bucket
-    Metadata:
-      cfn-lint:
-        config:
-          ignore_checks:
-            - E3030  # "BucketOwnerEnforced" isn't supported at the time of writing
     Properties:
       BucketName: !Sub "${AWS::StackName}-tower-bucket"
       OwnershipControls:
@@ -242,33 +222,18 @@ Resources:
               KMSMasterKeyID: !GetAtt EncryptionKeyStack.Outputs.KeyArn
       LifecycleConfiguration:
         Rules:
-        - !If
-          - SynapseIndexingEnabled
           - Id: SynapseEnabledDataLifecycleRule
             Status: Enabled
             Transitions:
               - TransitionInDays: 30
                 StorageClass: INTELLIGENT_TIERING
-          - Id: UserDefinedDataLifecycleRule
-            Status: !Ref EnableDataLifeCycle
-            ExpirationInDays: !Ref LifecycleDataExpiration
-            Transitions:
-              - TransitionInDays: !Ref LifecycleDataTransition
-                StorageClass: !Ref LifecycleDataStorageClass
       CorsConfiguration:
         CorsRules:
-        - !If
-          - SynapseIndexingEnabled
           - Id: SynapseCORSRule
             AllowedHeaders: ["*"]
             AllowedOrigins: ["*"]
             AllowedMethods: [GET, POST, PUT, HEAD]
             MaxAge: 3000
-          - Id: NullCorsRule
-            AllowedHeaders: [""]
-            AllowedOrigins: [""]
-            AllowedMethods: ["GET"]
-            MaxAge: 0
 
   TowerBucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -327,28 +292,102 @@ Resources:
                 - !Sub "arn:aws:s3:::${TowerBucket}"
                 - !Sub "arn:aws:s3:::${TowerBucket}/*"
             - !Ref AWS::NoValue
+          - Sid: GrantBucketReadAccessToSynapse
+            Effect: Allow
+            Principal:
+              AWS: "arn:aws:iam::325565585839:root"  # Synapse Account
+            Action:
+              - "s3:ListBucket"
+              - "s3:GetBucketLocation"
+            Resource:
+              - !Sub "arn:aws:s3:::${TowerBucket}"
+          - Sid: GrantObjectReadAccessToSynapse
+            Effect: Allow
+            Principal:
+              AWS: "arn:aws:iam::325565585839:root"  # Synapse Account
+            Action:
+              - "s3:GetObject"
+            Resource:
+              - !Sub "arn:aws:s3:::${TowerBucket}/*"
+
+  TowerScratch:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${AWS::StackName}-tower-scratch"
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - BucketKeyEnabled: true
+            ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+              KMSMasterKeyID: !GetAtt EncryptionKeyStack.Outputs.KeyArn
+      LifecycleConfiguration:
+        Rules:
+          - Id: UserDefinedDataLifecycleRule
+            Status: !Ref EnableScratchLifeCycle
+            ExpirationInDays: !Ref ScratchLifecycleExpiration
+            Transitions:
+              - TransitionInDays: !Ref ScratchLifecycleTransition
+                StorageClass: !Ref ScratchLifecycleStorageClass
+
+  TowerScratchPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref TowerScratch
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: TowerForgeRoleS3Access
+            Effect: Allow
+            Principal:
+              AWS:
+                - !GetAtt TowerForgeServiceRole.Arn
+                - !GetAtt TowerForgeBatchHeadJobRole.Arn
+                - !GetAtt TowerForgeBatchWorkJobRole.Arn
+            Action:
+              - "s3:GetBucketLocation"
+              - "s3:ListBucket"
+              - "s3:GetObject"
+              - "s3:PutObject"
+              - "s3:PutObjectTagging"
+              - "s3:DeleteObject"
+              - "s3:*MultipartUpload*"
+            Resource:
+              - !Sub "arn:aws:s3:::${TowerScratch}"
+              - !Sub "arn:aws:s3:::${TowerScratch}/*"
           - !If
-            - SynapseIndexingEnabled
-            - Sid: GrantBucketReadAccessToSynapse
+            - HasS3ReadWriteAccessArns
+            - Sid: GrantReadWriteAccessToS3ReadWriteAccessArns
               Effect: Allow
               Principal:
-                AWS: "arn:aws:iam::325565585839:root"  # Synapse Account
+                AWS: !Ref S3ReadWriteAccessArns
               Action:
+                - "s3:GetObject*"
+                - "s3:PutObject*"
+                - "s3:DeleteObject*"
+                - "s3:*MultipartUpload*"
                 - "s3:ListBucket*"
                 - "s3:GetBucketLocation"
               Resource:
-                - !Sub "arn:aws:s3:::${TowerBucket}"
+                - !Sub "arn:aws:s3:::${TowerScratch}"
+                - !Sub "arn:aws:s3:::${TowerScratch}/*"
             - !Ref AWS::NoValue
           - !If
-            - SynapseIndexingEnabled
-            - Sid: GrantObjectReadAccessToSynapse
+            - HasS3ReadOnlyAccessArns
+            - Sid: GrantReadAccessToS3ReadOnlyAccessArns
               Effect: Allow
               Principal:
-                AWS: "arn:aws:iam::325565585839:root"  # Synapse Account
+                AWS: !Ref S3ReadOnlyAccessArns
               Action:
-                - "s3:GetObject*"
+                - "s3:ListBucket*"
+                - "s3:GetBucketLocation"
+                - "s3:GetObject"
+                - "s3:GetObjectAcl"
               Resource:
-                - !Sub "arn:aws:s3:::${TowerBucket}/*"
+                - !Sub "arn:aws:s3:::${TowerScratch}"
+                - !Sub "arn:aws:s3:::${TowerScratch}/*"
             - !Ref AWS::NoValue
 
   TowerForgeServiceUserAccessKeySecret:
@@ -384,6 +423,16 @@ Outputs:
     Value: !GetAtt TowerBucket.Arn
     Export:
       Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerBucketArn"
+
+  TowerScratch:
+    Value: !Ref TowerScratch
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerScratch"
+
+  TowerScratchArn:
+    Value: !GetAtt TowerScratch.Arn
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerScratchArn"
 
   TowerForgeServiceUser:
     Value: !Ref TowerForgeServiceUser
