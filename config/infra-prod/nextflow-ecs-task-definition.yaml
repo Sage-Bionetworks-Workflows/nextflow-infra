@@ -19,8 +19,9 @@ parameters:
   TowerDbPassword: !aws_secrets_manager nextflow-aurora-mysql-NextflowTowerDatabaseUserSecret::SecretString::password
   TowerGoogleClientId: !aws_secrets_manager nextflow/google_oauth_app::SecretString::client
   TowerGoogleSecret: !aws_secrets_manager nextflow/google_oauth_app::SecretString::secret
-  TowerOidcClientId: !aws_secrets_manager nextflow/synapse_oauth_client::SecretString::client_id
-  TowerOidcSecret: !aws_secrets_manager nextflow/synapse_oauth_client::SecretString::client_secret
+  # TowerOidcClientId: !aws_secrets_manager nextflow/synapse_oauth_client::SecretString::client_id
+  # TowerOidcSecret: !aws_secrets_manager nextflow/synapse_oauth_client::SecretString::client_secret
+  # TowerOidcIssuer: 'https://repo-prod.prod.sagebase.org/auth/v1'
   RedisContainerImage: 'redis:5.0.8'
   CronContainerImage: '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/backend:v21.12.0'
   FrontendContainerImage: '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/frontend:v21.12.0'
