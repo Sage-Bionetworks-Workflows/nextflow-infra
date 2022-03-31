@@ -8,7 +8,7 @@ stack_tags:
   Department: IBC
   Project: Infrastructure
   OwnerEmail: nextflow-admins@sagebase.org
-  CostCenter: NO PROGRAM / 000000  # Valid values here: https://sagebionetworks.jira.com/l/c/0PyR5JSM
+  CostCenter: NO PROGRAM / 000000  # Valid values here: https://github.com/Sage-Bionetworks/aws-infra/tree/master/templates/tags
 
 parameters:
 
