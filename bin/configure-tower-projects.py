@@ -385,7 +385,28 @@ class TowerWorkspace:
         self.teams = teams
         self.participants: Dict[str, dict] = dict()
         self.populate()
-        self.create_compute_environment()
+        if self.has_launchers():
+            self.create_compute_environment()
+
+    def has_launchers(self) -> bool:
+        """Checks whether at least one user is capable of launching a workflow
+
+        Returns:
+            bool: Whether there's at least one launcher
+        """
+        has_launchers = False
+        launcher_roles = set(["owner", "admin", "maintain", "launch"])
+        if self.users:
+            for _, _, role in self.users.list_users():
+                if role in launcher_roles:
+                    has_launchers = True
+                    break
+        if self.teams:
+            for role in self.teams.values():
+                if role in launcher_roles:
+                    has_launchers = True
+                    break
+        return has_launchers
 
     def create(self) -> dict:
         """Create a Tower workspace under an organization
