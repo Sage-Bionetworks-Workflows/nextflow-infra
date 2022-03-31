@@ -49,7 +49,10 @@ Before you can use Nextflow Tower, you need to first deploy a Tower project, whi
 
 4. Once the pull request is approved and merged, [confirm](https://github.com/Sage-Bionetworks-Workflows/aws-workflows-nextflow-infra/actions?query=event%3Apush+branch%3Amain) that your PR was deployed successfully. If so, the following happened on your behalf:
 
-   - An S3 bucket called `s3://<stack_name>-tower-bucket/` was created, and users listed under `S3ReadWriteAccessArns` and `S3ReadOnlyAccessArns` have read/write and read-only access, respectively.
+   - Two S3 buckets were created (listed below), and users listed under `S3ReadWriteAccessArns` and `S3ReadOnlyAccessArns` have read/write and read-only access, respectively. They each serve different purposes:
+
+     - `s3://<stack_name>-tower-bucket/`: This bucket is intended for archival purposes, _i.e._ to store files in the long term. It can also be indexed by Synapse by default. Whenever you specify the `outdir` or `publishDir` parameters for a workflow, they should generally point to an S3 prefix in this bucket.
+     - `s3://<stack_name>-tower-scratch/`: This bucket is intended to be used as scratch storage, _i.e._ to store files in the short term. The important difference with this bucket is that **files will automatically be deleted after 6 months.** This delay can be adjusted with the `ScratchLifecycleExpiration` parameter. This is intended as a convenience feature so users don't have to worry about cleaning up after themselves while benefitting from caching if the need arises (presumed here to be generally within 6 months). This bucket cannot be indexed by Synapse. It's ideal for storing the Nextflow work directories (configured on each compute environment by default) and for staging files from Synapse since they already exist somewhere else.
 
    - All users listed under `S3ReadWriteAccessArns` and `S3ReadOnlyAccessArns` were added to the Sage Bionetworks organization in Tower.
 
