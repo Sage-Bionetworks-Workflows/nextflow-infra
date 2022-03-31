@@ -385,7 +385,28 @@ class TowerWorkspace:
         self.teams = teams
         self.participants: Dict[str, dict] = dict()
         self.populate()
-        self.create_compute_environment()
+        if self.has_launchers():
+            self.create_compute_environment()
+
+    def has_launchers(self) -> bool:
+        """Checks whether at least one user is capable of launching a workflow
+
+        Returns:
+            bool: Whether there's at least one launcher
+        """
+        has_launchers = False
+        launcher_roles = set(["owner", "admin", "maintain", "launch"])
+        if self.users:
+            for _, _, role in self.users.list_users():
+                if role in launcher_roles:
+                    has_launchers = True
+                    break
+        if self.teams:
+            for role in self.teams.values():
+                if role in launcher_roles:
+                    has_launchers = True
+                    break
+        return has_launchers
 
     def create(self) -> dict:
         """Create a Tower workspace under an organization
@@ -538,13 +559,13 @@ class TowerWorkspace:
                 "config": {
                     "configMode": "Batch Forge",
                     "region": self.tower.aws.region,
-                    "workDir": f"s3://{self.stack['TowerBucket']}/work",
+                    "workDir": f"s3://{self.stack['TowerScratch']}/work",
                     "credentials": None,
                     "computeJobRole": self.stack["TowerForgeBatchWorkJobRoleArn"],
                     "headJobRole": self.stack["TowerForgeBatchHeadJobRoleArn"],
                     "headJobCpus": None,
-                    "headJobMemoryMb": None,
-                    "preRunScript": None,
+                    "headJobMemoryMb": 7168,
+                    "preRunScript": "export NXF_VER=21.10.6\nNXF_OPTS='-Xms1g -Xmx4g'",
                     "postRunScript": None,
                     "cliPath": None,
                     "forge": {
@@ -554,7 +575,7 @@ class TowerWorkspace:
                         "efsMode": "None",
                         "type": model,
                         "minCpus": 0,
-                        "maxCpus": 500,
+                        "maxCpus": 1000,
                         "gpuEnabled": False,
                         "ebsAutoScale": True,
                         "allowBuckets": [],
@@ -582,9 +603,9 @@ class TowerWorkspace:
         """
         compute_env_ids: dict[str, Optional[str]] = {"SPOT": None, "EC2": None}
         # Create compute environment names
-        comp_env_prefix = f"{self.stack_name} (v2)"
-        comp_env_spot = f"{comp_env_prefix} (spot)"
-        comp_env_ec2 = f"{comp_env_prefix} (on-demand)"
+        comp_env_prefix = f"{self.stack_name}-v3"
+        comp_env_spot = f"{comp_env_prefix}-spot"
+        comp_env_ec2 = f"{comp_env_prefix}-ondemand"
         # Check if compute environment has already been created for this project
         endpoint = "/compute-envs"
         params = {"workspaceId": self.id}
