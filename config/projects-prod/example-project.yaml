@@ -25,6 +25,20 @@ parameters:
   #   - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/thomas.yu@sagebase.org
   #   - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/jason.hwee@sagebase.org
 
+  # (Optional) Step 6: Uncomment the following line to disable the feature allowing Synapse to index files
+  #                    in the long-term (archival) S3 bucket (by default, this feature is enabled)
+  # AllowSynapseIndexing: Disabled
+
+  # (Optional) Step 7: Uncomment and update the following lines to change the data lifecycle configuration
+  #                    on the files in the short-term (scratch) S3 bucket (by default, this is enabled)
+  # EnableScratchLifeCycle: Enabled
+  # ScratchLifecycleTransition: '30'  # In days
+  # ScratchLifecycleStorageClass: INTELLIGENT_TIERING
+
+  # (Optional) Step 8: Uncomment and update the following line to change when files are deleted automatically
+  #                    in the short-term (scratch) S3 bucket (by default, this is enabled and set to 6 months)
+  # ScratchLifecycleExpiration: '183'  # In days (i.e., 6 months)
+
   # DO NOT EDIT ANYTHING BELOW THIS LINE ------------------------------------------------------------------------
 
   AccountAdminArns:

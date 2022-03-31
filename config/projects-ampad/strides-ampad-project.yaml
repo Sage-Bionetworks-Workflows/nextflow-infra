@@ -8,6 +8,7 @@ parameters:
   S3ReadWriteAccessArns:
     - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/william.poehlman@sagebase.org
     - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/tess.thyer@sagebase.org
+  AllowSynapseIndexing: Enabled
   AccountAdminArns:
     - '{{stack_group_config.sso_admin_role.arn}}'
     - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn

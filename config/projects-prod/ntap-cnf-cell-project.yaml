@@ -21,6 +21,16 @@ parameters:
   #   - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/thomas.yu@sagebase.org
   #   - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/jason.hwee@sagebase.org
 
+  # (Optional) Step 6: Uncomment and update the following lines to change the S3 bucket lifecycle configuration,
+  #                    which cannot be changed as long as 'AllowSynapseIndexing' is enabled (default)
+  # AllowSynapseIndexing: Disabled
+  # EnableDataLifeCycle: Enabled
+  # LifecycleDataTransition: '30'  # In days
+  # LifecycleDataStorageClass: INTELLIGENT_TIERING
+
+  # (Optional) Step 7: Uncomment and update the following line to change when objects are deleted automatically
+  # LifecycleDataExpiration: '730'  # In days (i.e., 2 years)
+
   # DO NOT EDIT ANYTHING BELOW THIS LINE ------------------------------------------------------------------------
 
   AccountAdminArns:
