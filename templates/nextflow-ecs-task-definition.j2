@@ -54,14 +54,17 @@ Parameters:
     NoEcho: 'true'
   TowerOidcClientId:
     Type: String
+    Default: 'NULL'
     Description: The client ID provided by your authentication service
     NoEcho: 'true'
   TowerOidcSecret:
     Type: String
+    Default: 'NULL'
     Description: The client secret provided by your authentication service
     NoEcho: 'true'
   TowerOidcIssuer:
     Type: String
+    Default: 'NULL'
     Description: >
       The authentication service URL to which Tower connects to authenticate
       the sign-in request
@@ -139,6 +142,8 @@ Parameters:
     Type: String
     Description: Prefix used for CloudWatch log streams
     Default: 'tower'
+Condition:
+  HasTowerOidcClient: !Not [!Equals [ !Ref TowerOidcClientId, "NULL"]]
 Resources:
   TowerTaskLogGroup:
     Type: AWS::Logs::LogGroup
