@@ -125,6 +125,7 @@ The following secrets were manually created in AWS Secrets Manager. They are use
 - `nextflow/license`: The paid license key for Nextflow Tower
 - `nextflow/google_oauth_app`: The Google OAuth client credentials
 - `nextflow/github_service_acct`: The GitHub service account credentials
+- `nextflow/synapse_oauth_client`: The Synapse OAuth client ID and secret
 
 ## Additional Notes
 

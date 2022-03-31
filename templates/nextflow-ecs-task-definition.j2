@@ -52,6 +52,19 @@ Parameters:
     Type: String
     Description: The client secret provided by Google for the OAuth app
     NoEcho: 'true'
+  TowerOidcClientId:
+    Type: String
+    Description: The client ID provided by your authentication service
+    NoEcho: 'true'
+  TowerOidcSecret:
+    Type: String
+    Description: The client secret provided by your authentication service
+    NoEcho: 'true'
+  TowerOidcIssuer:
+    Type: String
+    Description: >
+      The authentication service URL to which Tower connects to authenticate
+      the sign-in request
   RedisContainerName:
     Type: String
     Description: (Optional) Name of the container that runs redis
@@ -175,7 +188,7 @@ Resources:
             - /migrate-db.sh
           Environment:
             - Name: MICRONAUT_ENVIRONMENTS
-              Value: prod,redis,cron,awsbatch-platform,auth-google
+              Value: prod,redis,cron,awsbatch-platform,auth-google,auth-oidc
             {%- for name, value in sceptre_user_data.environment.items() %}
             - Name: {{ name }}
               Value: {{ value }}
@@ -209,7 +222,7 @@ Resources:
             - /tower.sh
           Environment:
             - Name: MICRONAUT_ENVIRONMENTS
-              Value: prod,redis,cron,awsbatch-platform,auth-google
+              Value: prod,redis,cron,awsbatch-platform,auth-google,auth-oidc
             {%- for name, value in sceptre_user_data.environment.items() %}
             - Name: {{ name }}
               Value: {{ value }}
@@ -263,7 +276,7 @@ Resources:
               Condition: START
           Environment:
             - Name: MICRONAUT_ENVIRONMENTS
-              Value: prod,redis,ha,awsbatch-platform,auth-google
+              Value: prod,redis,ha,awsbatch-platform,auth-google,auth-oidc
             {%- for name, value in sceptre_user_data.environment.items() %}
             - Name: {{ name }}
               Value: {{ value }}
