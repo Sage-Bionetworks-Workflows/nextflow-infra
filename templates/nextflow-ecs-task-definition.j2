@@ -194,11 +194,6 @@ Resources:
             - -c
             - /migrate-db.sh
           Environment:
-            - Name: MICRONAUT_ENVIRONMENTS
-              Value: !If
-                - HasTowerOidcClient
-                - prod,redis,cron,awsbatch-platform,auth-google,auth-oidc
-                - prod,redis,cron,awsbatch-platform,auth-google
             {%- for name, value in sceptre_user_data.environment.items() %}
             - Name: {{ name }}
               Value: {{ value }}
@@ -291,8 +286,8 @@ Resources:
             - Name: MICRONAUT_ENVIRONMENTS
               Value: !If
                 - HasTowerOidcClient
-                - prod,redis,cron,awsbatch-platform,auth-google,auth-oidc
-                - prod,redis,cron,awsbatch-platform,auth-google
+                - prod,redis,ha,awsbatch-platform,auth-google,auth-oidc
+                - prod,redis,ha,awsbatch-platform,auth-google
             {%- for name, value in sceptre_user_data.environment.items() %}
             - Name: {{ name }}
               Value: {{ value }}
