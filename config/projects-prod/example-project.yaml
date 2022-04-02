@@ -1,6 +1,7 @@
 # (REQUIRED) Step 0: Duplicate this file and rename using the updated stack name (see Step 1)
 
 # (REQUIRED) Step 1: Update the stack name below by replacing "example" with your project name
+#                    Note that the stack name cannot contain more than 32 characters
 stack_name: example-project
 
 stack_tags:
