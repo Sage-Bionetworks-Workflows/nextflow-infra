@@ -1,0 +1,14 @@
+template_path: nextflow-r53-alias-record.yaml
+stack_name: nextflow-r53-alias-record
+dependencies:
+  - infra-prod/nextflow-r53-hostedzone.yaml
+  - infra-prod/nextflow-ecs-service.yaml
+
+parameters:
+  Hostname: tower.sagebionetworks.org
+  HostedZoneId: !stack_output_external nextflow-r53-hostedzone::HostedZoneId
+  LoadBalancerDnsName: !stack_output_external nextflow-ecs-service::LoadBalancerDnsName
+  LoadBalancerCanonicalHostedZoneId: !stack_output_external nextflow-ecs-service::LoadBalancerCanonicalHostedZoneID
+
+stack_tags:
+  {{stack_group_config.default_stack_tags}}

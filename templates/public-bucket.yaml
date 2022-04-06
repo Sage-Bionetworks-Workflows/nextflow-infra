@@ -1,0 +1,98 @@
+# Adapted from https://github.com/Sage-Bionetworks/aws-infra/blob/master/templates/s3-bucket-v2.j2
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Public (optionally region-restricted) bucket
+
+Parameters:
+  BucketName:
+    Type: String
+    Description: (Optional) Name of the created bucket.
+    Default: ""
+
+  SameRegionResourceAccessToBucket:
+    Type: String
+    Description: >
+      THIS CURRENTLY ONLY WORKS IN THE us-east-1 REGION!!!!!
+      Data transfers within the same region between AWS resources are free.
+      true to restrict downloading files from this bucket to only AWS resources (e.g. EC2 , Lambda) within the same region as this bucket.
+      This will not allow even the owner of the bucket to download objects in this bucket when not using an AWS resource in the same region!
+    AllowedValues:
+      - true
+      - false
+    Default: false
+
+  BucketVersioning:
+    Type: String
+    Description: Enabled to enable bucket versioning, default is Enabled
+    AllowedValues:
+      - Enabled
+      - Suspended
+    Default: Enabled
+
+  EnableDataLifeCycle:
+    Type: String
+    Description: Enabled to enable bucket lifecycle rule, default is Enabled
+    AllowedValues:
+      - Enabled
+      - Disabled
+    Default: Enabled
+
+  LifecycleDataTransition:
+    Type: Number
+    Description: Number of days until S3 objects are moved to LifecycleDataStorageClass
+    Default: 30
+
+  LifecycleDataStorageClass:
+    Type: String
+    Description: S3 bucket objects will transition into this storage class
+    AllowedValues:
+      - DEEP_ARCHIVE
+      - INTELLIGENT_TIERING
+      - STANDARD_IA
+      - ONEZONE_IA
+      - GLACIER
+    Default: INTELLIGENT_TIERING
+
+  TemplateRootUrl:
+    Type: String
+    Description: URL of S3 bucket where templates are deployed
+    ConstraintDescription: Must be a valid S3 HTTP URL
+
+Conditions:
+  HasBucketName: !Not [!Equals [!Ref BucketName, ""]]
+  CreateIPAddressRestrictionLambda:
+    !Equals [!Ref SameRegionResourceAccessToBucket, true]
+
+Resources:
+  PublicBucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName: !If [HasBucketName, !Ref BucketName, !Ref "AWS::NoValue"]
+      AccessControl: PublicRead
+      VersioningConfiguration:
+        Status: !Ref BucketVersioning
+      LifecycleConfiguration:
+        Rules:
+          - Id: DataLifecycleRule
+            Status: !Ref EnableDataLifeCycle
+            Transitions:
+              - TransitionInDays: !Ref LifecycleDataTransition
+                StorageClass: !Ref LifecycleDataStorageClass
+
+  IPAddressRestrictionLambda:
+    Type: "AWS::CloudFormation::Stack"
+    Condition: CreateIPAddressRestrictionLambda
+    Properties:
+      TemplateURL: !Sub ${TemplateRootUrl}/aws-infra/v0.3.2/AddSameRegionBucketDownloadRestriction.yaml
+      Parameters:
+        BucketName: !Ref PublicBucket
+
+Outputs:
+  PublicBucket:
+    Value: !Ref PublicBucket
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-PublicBucket"
+
+  PublicBucketArn:
+    Value: !GetAtt PublicBucket.Arn
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-PublicBucketArn"

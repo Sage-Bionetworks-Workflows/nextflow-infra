@@ -2,6 +2,8 @@
 
 The AWS infrastructure for hosting a private instance (see link below) of [Nextflow Tower](https://tower.nf/) and executing [Nextflow workflows](https://nextflow.io/) is defined in this repository and deployed using [CloudFormation](https://aws.amazon.com/cloudformation/) via [Sceptre](https://sceptre.cloudreach.com/).
 
+The Nextflow infrastructure has been vetted by Sage IT to process sensitive or controlled-access (_e.g._ PHI) data. Notably, only [HIPAA eligible AWS services](https://aws.amazon.com/compliance/hipaa-eligible-services-reference/) are deployed.
+
 ## Access Tower
 
 Click the link below and login with your `@sagebase.org` Google account:
@@ -24,13 +26,13 @@ Message us in the [`#workflow_users`](https://sagebionetworks.slack.com/archives
 
 ## Tower User Onboarding
 
-Before you can use Nextflow Tower, you need to first deploy a Tower project, which consists an encrypted S3 bucket and the IAM resources (_i.e._ users, roles, and policies) that Tower requires to access the encrypted bucket and execute the workflow on [AWS Batch](https://help.tower.nf/compute-envs/aws-batch/). Once these resources exist, they need to be configured in Nextflow Tower, which is a process that has been automated using CI/CD.
+Before you can use Nextflow Tower, you need to first deploy a Tower project, which consists of an encrypted S3 bucket and the IAM resources (_i.e._ users, roles, and policies) that Tower requires to access the encrypted bucket and execute the workflow on [AWS Batch](https://help.tower.nf/21.12/compute-envs/aws-batch/). Once these resources exist, they need to be configured in Nextflow Tower, which is a process that has been automated using CI/CD.
 
-1. Determine what is known as the stack name by concatenating the project name with the suffix `-project` (_e.g._ `imcore-project`, `amp-ad-project`, `commonmind-project`).
+1. Create a 'stack name' by following this naming convention: concatenate a project name with the suffix `-project` (_e.g._ `imcore-project`, `amp-ad-project`, `commonmind-project`). Due to limits imposed by Tower, the stack name cannot contain more than 32 characters.
 
    **N.B.:** Anytime that `<stack_name>` appears below with the angle brackets, replace the placeholder with the actual stack name, omitting any angle brackets.
 
-2. [Create](https://sagebionetworks.jira.com/jira/software/c/projects/IT/issues/) an IT JIRA ticket requesting membership to the following JumpCloud groups for anyone who needs read/write or read-only access to the S3 bucket:
+2. [Create an IT JIRA ticket](https://sagebionetworks.jira.com/jira/secure/CreateIssue.jspa?issuetype=3&pid=10083) requesting membership to the following JumpCloud groups for anyone who needs read/write or read-only access to the S3 bucket:
 
    - `aws-sandbox-developers`
    - `aws-workflow-nextflow-tower-viewer`
@@ -39,7 +41,7 @@ Before you can use Nextflow Tower, you need to first deploy a Tower project, whi
 
    ![AWS SSO Screenshot](assets/img/aws_sso.png)
 
-3. Open a pull request on this repository in which you duplicate [`config/projects/example-project.yaml`](config/projects/example-project.yaml) as `<stack_name>.yaml` in the `projects/` subdirectory and then follow the numbered steps listed in the file. Note that some steps are required whereas others are optional.
+3. Open a pull request on this repository in which you duplicate [`config/projects/example-project.yaml`](config/projects-prod/example-project.yaml) as `<stack_name>.yaml` in the `projects/` subdirectory and then follow the numbered steps listed in the file. Note that some steps are required whereas others are optional.
 
    **N.B.** Here, read/write vs read-only access refers to the level of access granted to users for the encrypted S3 bucket and to the Tower workspace (more details below). **Given that access is granted to the entire bucket, you might want to create more specific Tower projects that provide more granular access control.**
 
@@ -47,11 +49,16 @@ Before you can use Nextflow Tower, you need to first deploy a Tower project, whi
 
 4. Once the pull request is approved and merged, [confirm](https://github.com/Sage-Bionetworks-Workflows/aws-workflows-nextflow-infra/actions?query=event%3Apush+branch%3Amain) that your PR was deployed successfully. If so, the following happened on your behalf:
 
+   - Two S3 buckets were created (listed below), and users listed under `S3ReadWriteAccessArns` and `S3ReadOnlyAccessArns` have read/write and read-only access, respectively. They each serve different purposes:
+
+     - `s3://<stack_name>-tower-bucket/`: This bucket is intended for archival purposes, _i.e._ to store files in the long term. It can also be indexed by Synapse by default. Whenever you specify the `outdir` or `publishDir` parameters for a workflow, they should generally point to an S3 prefix in this bucket.
+     - `s3://<stack_name>-tower-scratch/`: This bucket is intended to be used as scratch storage, _i.e._ to store files in the short term. The important difference with this bucket is that **files will automatically be deleted after 6 months.** This delay can be adjusted with the `ScratchLifecycleExpiration` parameter. This is intended as a convenience feature so users don't have to worry about cleaning up after themselves while benefitting from caching if the need arises (presumed here to be generally within 6 months). This bucket cannot be indexed by Synapse. It's ideal for storing the Nextflow work directories (configured on each compute environment by default) and for staging files from Synapse since they already exist somewhere else.
+
    - All users listed under `S3ReadWriteAccessArns` and `S3ReadOnlyAccessArns` were added to the Sage Bionetworks organization in Tower.
 
    - A new Tower workspace called `<stack_name>` was created under this organization.
 
-   - Users listed under `S3ReadWriteAccessArns` were added as workspace participants with the `Maintain` role, which grants the following permissions:
+   - Users listed under `S3ReadWriteAccessArns` were added to a workspace team with the `Maintain` role, which grants the following permissions:
 
      > The users can launch pipeline and modify pipeline executions
        (e.g. can change the pipeline launch compute env, parameters,
@@ -59,7 +66,7 @@ Before you can use Nextflow Tower, you need to first deploy a Tower project, whi
        configuration in the Launchpad. The users cannot modify Compute
        env settings and Credentials
 
-   - Users listed under `S3ReadOnlyAccessArns` were added as workspace participants with the `View` role, which grants the following permissions:
+   - Users listed under `S3ReadOnlyAccessArns` were added to a workspace team with the `View` role, which grants the following permissions:
 
      > The users can access to the team resources in read-only mode
 
@@ -69,7 +76,13 @@ Before you can use Nextflow Tower, you need to first deploy a Tower project, whi
 
    **N.B.** If you need have special needs (_e.g._ more CPUs, on-demand EC2 instances, FSx for Lustre), see [above](#getting-help) for how to contact the administrators, who can create additional compute environments in your workspace.
 
-5. Log into Nextflow Tower using the [link](#access-nextflow-tower) at the top of this README and open your project workspace. If you were listed under `S3ReadWriteAccessArns`, then you'll be able to add pipelines to your workspace and launch them on your data.
+5. Log into Nextflow Tower using the [link](#access-tower) at the top of this README and open your project workspace. If you were listed under `S3ReadWriteAccessArns`, then you'll be able to add pipelines to your workspace and launch them on your data.
+
+6. Make sure that this [Confluence wiki page](https://sagebionetworks.jira.com/l/c/1hm4NP7a) is watched by everyone who will be running workflows on Tower. This generally doesn't need to include individuals listed as view-only in the `<stack_name>.yaml` file.
+
+   **N.B.** To obtain a list of current watchers and to add new watchers, click the "Manage watchers" button under the 👁 (eye) icon at the top right of the Confluence page.
+
+7. Read through the "Usage Details" and "Scheduled Downtime" sections on the wiki page. Any important updates to this page will be shared with watchers.
 
 ## License
 

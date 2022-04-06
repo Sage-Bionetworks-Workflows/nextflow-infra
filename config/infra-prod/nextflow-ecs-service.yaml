@@ -1,0 +1,19 @@
+template_path: nextflow-ecs-service.yaml
+stack_name: nextflow-ecs-service
+dependencies:
+  - infra-prod/nextflow-ecs-cluster.yaml
+  - infra-prod/nextflow-ecs-task-definition.yaml
+
+parameters:
+  ClusterName: !stack_output_external nextflow-ecs-cluster::EcsClusterName
+  TaskDefinitionArn: !stack_output_external nextflow-ecs-task-definition::TaskDefinitionArn
+  TowerUIContainerName: !stack_output_external nextflow-ecs-task-definition::FrontendContainerName
+  TowerUIContainerPort: !stack_output_external nextflow-ecs-task-definition::FrontendContainerPort
+  VpcId: !stack_output_external nextflow-vpc::VPCId
+  SubnetIds:
+    - !stack_output_external nextflow-vpc::PublicSubnet
+    - !stack_output_external nextflow-vpc::PublicSubnet1
+  SSLCertificateArn: !stack_output_external tower-certificate::CertificateArn
+
+stack_tags:
+  {{stack_group_config.default_stack_tags}}

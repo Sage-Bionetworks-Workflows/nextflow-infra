@@ -1,0 +1,12 @@
+template_path: nextflow-ecs-cluster.yaml
+stack_name: nextflow-ecs-cluster
+dependencies:
+  - infra-prod/nextflow-vpc.yaml
+  - infra-prod/nextflow-ecs-security-group.yaml
+
+parameters:
+  EcsSecurityGroupId: !stack_output_external nextflow-ecs-security-group::SecurityGroupId
+  SubnetId: !stack_output_external nextflow-vpc::PrivateSubnet
+
+stack_tags:
+  {{stack_group_config.default_stack_tags}}

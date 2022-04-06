@@ -1,2 +1,5 @@
 template_path: nextflow-launch-iam-policy.yaml
 stack_name: nextflow-launch-iam-policy
+
+stack_tags:
+  {{stack_group_config.default_stack_tags}}

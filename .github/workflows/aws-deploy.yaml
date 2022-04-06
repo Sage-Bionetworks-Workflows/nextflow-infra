@@ -1,6 +1,9 @@
 name: aws-deploy
 
-on: push
+on:
+  push:
+    paths-ignore:
+      - '**.md'
 
 jobs:
   pre-commit:
@@ -11,18 +14,32 @@ jobs:
       - uses: actions/setup-python@v2
       - uses: pre-commit/action@v2.0.2
 
-  sceptre-deploy:
-    name: Deploy CloudFormation templates using sceptre
+  deploy:
+    name: Deploy CloudFormation templates and configure Tower
     runs-on: ubuntu-latest
     needs: pre-commit
     if: github.ref == 'refs/heads/main'
+    strategy:
+      matrix:
+        job-environment:
+          - workflows-nextflow-dev
+          - workflows-nextflow-prod
+          - org-sagebase-strides-ampad-workflows
+        include:
+          - job-environment: workflows-nextflow-dev
+            sceptre-suffix: dev
+            tower-url: https://tower-dev.sagebionetworks.org
+          - job-environment: workflows-nextflow-prod
+            sceptre-suffix: prod
+            tower-url: https://tower.sagebionetworks.org
+          - job-environment: org-sagebase-strides-ampad-workflows
+            sceptre-suffix: ampad
+            tower-url: https://tower.sagebionetworks.org
+    environment: ${{ matrix.job-environment }}
     steps:
 
       - name: Checkout repository
         uses: actions/checkout@v2
-
-      - name: Create directory for remote sceptre templates
-        run: mkdir -p templates/remote/
 
       - name: Set up python 3.9
         uses: actions/setup-python@v2
@@ -52,61 +69,31 @@ jobs:
       - name: Assume AWS role in dev account
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.NEXTFLOW_DEV_CI_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.NEXTFLOW_DEV_CI_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.CI_USER_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.CI_USER_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
-          role-to-assume: arn:aws:iam::035458030717:role/workflows-nextflow-ci-service-account-ServiceRole-188LV3KMGCYBL
+          role-to-assume: ${{ secrets.CI_ROLE_TO_ASSUME }}
           role-duration-seconds: 3600
 
-      - name: Deploy common configuration to develop account
+      - name: Deploy common configuration
         run: pipenv run sceptre launch common --yes
 
-      - name: Deploy develop configuration
-        run: pipenv run sceptre launch develop --yes
+      - name: Deploy infrastructure configuration
+        run: pipenv run sceptre launch infra-${{ matrix.sceptre-suffix }} --yes
 
-      - name: Deploy projects-dev configuration
-        run: pipenv run sceptre launch projects-dev --yes
+      - name: Deploy projects configuration
+        run: pipenv run sceptre launch projects-${{ matrix.sceptre-suffix }} --yes
 
       - name: Wait for tower-dev to be up
         uses: nev7n/wait_for_response@v1
         with:
-          url: https://tower-dev.sagebionetworks.org/
+          url: ${{ matrix.tower-url }}
           responseCode: 200
           timeout: 180000
           interval: 10000
 
-      - name: Configure projects-dev in Tower
-        run: pipenv run bin/configure-tower-projects.py config/projects-dev/
-        env:
-          NXF_TOWER_TOKEN: ${{ secrets.TOWER_DEV_TOKEN }}
-
-      - name: Assume AWS role in prod account
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.NEXTFLOW_PROD_CI_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.NEXTFLOW_PROD_CI_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-          role-to-assume: arn:aws:iam::728882028485:role/workflows-nextflow-ci-service-account-ServiceRole-CTLXKJIOCRO4
-          role-duration-seconds: 3600
-
-      - name: Deploy common configuration to prod account
-        run: pipenv run sceptre launch common --yes
-
-      - name: Deploy prod configuration
-        run: pipenv run sceptre launch prod --yes
-
-      - name: Deploy projects configuration
-        run: pipenv run sceptre launch projects --yes
-
-      - name: Wait for tower-prod to be up
-        uses: nev7n/wait_for_response@v1
-        with:
-          url: https://tower.sagebionetworks.org/
-          responseCode: 200
-          timeout: 180000
-          interval: 30000
-
       - name: Configure projects in Tower
-        run: pipenv run bin/configure-tower-projects.py config/projects/
+        run: pipenv run bin/configure-tower-projects.py config/projects-${{ matrix.sceptre-suffix }}
         env:
-          NXF_TOWER_TOKEN: ${{ secrets.TOWER_PROD_TOKEN }}
+          NXF_TOWER_TOKEN: ${{ secrets.TOWER_TOKEN }}
+          NXF_TOWER_API_URL: ${{ matrix.tower-url }}/api
