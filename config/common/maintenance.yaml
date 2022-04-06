@@ -1,5 +1,9 @@
-template_path: remote/maintenance.yaml
+template:
+  type: http
+  url: "{{stack_group_config.aws_infra_templates_root_url}}/v0.3.8/templates/maintenance.yaml"
 stack_name: maintenance
-hooks:
-  before_launch:
-    - !cmd "wget {{stack_group_config.aws_infra_templates_root_url}}/v0.3.2/templates/maintenance.yaml -O templates/remote/maintenance.yaml"
+dependencies:
+  - common/essentials.yaml
+
+stack_tags:
+  {{stack_group_config.default_stack_tags}}

@@ -1,0 +1,13 @@
+template:
+  type: http
+  url: "{{stack_group_config.aws_infra_templates_root_url}}/v0.3.8/templates/essentials.yaml"
+stack_name: essentials
+
+parameters:
+  VpcPeeringRequesterAwsAccountId: '745159704268'
+  Department: '{{stack_group_config.default_stack_tags.Department}}'
+  Project: '{{stack_group_config.default_stack_tags.Project}}'
+  OwnerEmail: '{{stack_group_config.default_stack_tags.OwnerEmail}}'
+
+stack_tags:
+  CostCenter: '{{stack_group_config.default_stack_tags.CostCenter}}'
