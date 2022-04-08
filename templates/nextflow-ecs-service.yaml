@@ -131,6 +131,7 @@ Resources:
         - CertificateArn: !Ref SSLCertificateArn
       Port: !Ref AlbListenerPort
       Protocol: HTTPS
+      SslPolicy: ELBSecurityPolicy-TLS-1-2-Ext-2018-06
 
   TowerService:
     Type: AWS::ECS::Service

@@ -164,6 +164,13 @@ Resources:
         - OldestInstance
       MetricsCollection:
         - Granularity: 1Minute
+      Tags:
+        - Key: ManagedInstanceMaintenanceTarget
+          PropagateAtLaunch: true
+          Value: 'Yes'
+        - Key: PatchGroup
+          PropagateAtLaunch: true
+          Value: 'prod-default'
 
 Outputs:
 
