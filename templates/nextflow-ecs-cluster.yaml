@@ -30,15 +30,16 @@ Parameters:
     Description: The VPC subnet where ECS instances will run.
 
   AutoscalingGroupMaxSize:
-    Type: Number
+    Type: String
     Description: (Optional) Limit on number of ECS cluster instances
-      Defaults to 1.
+      Defaults to 2.
     Default: '2'
 
   AutoscalingGroupDesiredCapacity:
-    Type: Number
+    Type: String
     Description: (Optional) Ideal number of ECS cluster instances
-    Default: '1'
+      Defaults to 0.
+    Default: '0'
 
   RootEbsVolumeSize:
     Type: Number
@@ -83,8 +84,8 @@ Resources:
           Status: ENABLED
           MinimumScalingStepSize: 1
           MaximumScalingStepSize: 1
-          TargetCapacity: 90
-        ManagedTerminationProtection: DISABLED
+          TargetCapacity: 100
+        ManagedTerminationProtection: ENABLED
 
   EcsRole:
     Type: AWS::IAM::Role
@@ -159,9 +160,7 @@ Resources:
       MinSize: '0'
       MaxSize: !Ref AutoscalingGroupMaxSize
       DesiredCapacity: !Ref AutoscalingGroupDesiredCapacity
-      TerminationPolicies:
-        - OldestLaunchConfiguration
-        - OldestInstance
+      NewInstancesProtectedFromScaleIn: true
       MetricsCollection:
         - Granularity: 1Minute
       Tags:
@@ -178,6 +177,11 @@ Outputs:
     Value: !Ref EcsCluster
     Export:
       Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsClusterName'
+
+  EcsCapacityProviderName:
+    Value: !Ref EcsCapacityProvider
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsCapacityProviderName'
 
   EcsRoleArn:
     Value: !GetAtt EcsRole.Arn

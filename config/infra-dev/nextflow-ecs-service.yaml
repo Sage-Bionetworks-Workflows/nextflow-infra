@@ -7,6 +7,7 @@ dependencies:
 parameters:
   ClusterName: !stack_output_external nextflow-ecs-cluster::EcsClusterName
   TaskDefinitionArn: !stack_output_external nextflow-ecs-task-definition::TaskDefinitionArn
+  TowerCapacityProviderName: !stack_output_external nextflow-ecs-cluster::EcsCapacityProviderName
   TowerUIContainerName: !stack_output_external nextflow-ecs-task-definition::FrontendContainerName
   TowerUIContainerPort: !stack_output_external nextflow-ecs-task-definition::FrontendContainerPort
   VpcId: !stack_output_external nextflow-vpc::VPCId
