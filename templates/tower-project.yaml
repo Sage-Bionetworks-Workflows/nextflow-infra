@@ -175,15 +175,47 @@ Resources:
               - ec2:DescribeInstanceAttribute
               - ec2:DescribeInstanceTypes
               - ec2:DescribeInstanceStatus
+              - secretsmanager:ListSecrets
             Resource: "*"
           - Sid: IAMConfig
             Effect: Allow
             Action:
               - iam:GetRole
               - iam:PassRole
-            Resource: !GetAtt TowerForgeBatchWorkJobRole.Arn
+            Resource:
+              - !GetAtt TowerForgeBatchWorkJobRole.Arn
+              - !GetAtt TowerForgeBatchExecutionRole.Arn
       Roles:
         - !Ref TowerForgeBatchHeadJobRole
+
+  TowerForgeBatchExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+
+  TowerForgeBatchExecutionPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: TowerForgeBatchExecutionSecretAccess
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: TowerForgeBatchExecutionSecretAccess
+            Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource: "arn:aws:secretsmanager:*:*:secret:tower-*"
+      Roles:
+        - !Ref TowerForgeBatchExecutionRole
 
   EncryptionKeyStack:
     Type: AWS::CloudFormation::Stack
@@ -503,6 +535,16 @@ Outputs:
     Value: !GetAtt TowerForgeBatchWorkJobRole.Arn
     Export:
       Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeBatchWorkJobRoleArn"
+
+  TowerForgeBatchExecutionRole:
+    Value: !Ref TowerForgeBatchExecutionRole
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeBatchExecutionRole"
+
+  TowerForgeBatchExecutionRoleArn:
+    Value: !GetAtt TowerForgeBatchExecutionRole.Arn
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeBatchExecutionRoleArn"
 
   TowerForgeServiceUserAccessKeySecret:
     Value: !Sub "${AWS::StackName}-TowerProjectConfiguration"

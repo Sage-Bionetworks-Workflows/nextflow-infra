@@ -130,6 +130,10 @@ Parameters:
   EfsVolumeMountPath:
     Type: String
     Description: Path where the EFS volume container tower configuration is mounted
+  TowerRootUsers:
+    Type: List<String>
+    Default: ""
+    Description: Comma-separated list of user emails
   TowerConfigFileName:
     Type: String
     Description: Name of the tower config YAML file
@@ -146,6 +150,7 @@ Parameters:
     Default: 'tower'
 Conditions:
   HasTowerOidcClient: !Not [!Equals [ !Ref TowerOidcClientId, "NULL"]]
+  HasTowerRootUsers: !Not [!Equals [!Join [",", !Ref TowerRootUsers], ""]]
 Resources:
   TowerTaskLogGroup:
     Type: AWS::Logs::LogGroup

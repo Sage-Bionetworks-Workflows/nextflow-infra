@@ -6,6 +6,7 @@
 
 # Ignore VS Code settings
 .vscode/
+*.env
 
 # Virtual environment
 .venv/
