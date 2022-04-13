@@ -556,6 +556,8 @@ class TowerWorkspace:
         for comp_env in response["computeEnvs"]:
             comp_env_id = comp_env["id"]
             comp_env_name = comp_env["name"]
+            if comp_env_name.endswith(CE_VERSION):
+                continue
             delete_endpoint = f"{endpoint}/{comp_env_id}"
             response = self.tower.request("DELETE", delete_endpoint, params=params)
             if "message" in response and "has active jobs" in response["message"]:
@@ -628,10 +630,9 @@ class TowerWorkspace:
             Dict[str, Optional[str]]: Identifier for the compute environment
         """
         compute_env_ids: dict[str, Optional[str]] = {"SPOT": None, "EC2": None}
-        # Create compute environment names
-        comp_env_prefix = f"{self.stack_name}-{CE_VERSION}"
-        comp_env_spot = f"{comp_env_prefix}-spot"
-        comp_env_ec2 = f"{comp_env_prefix}-ondemand"
+        # Create compute environment names}"
+        comp_env_spot = f"{self.stack_name}-spot-{CE_VERSION}"
+        comp_env_ec2 = f"{self.stack_name}-ondemand-{CE_VERSION}"
         # Check if compute environment has already been created for this project
         endpoint = "/compute-envs"
         params = {"workspaceId": self.id}
