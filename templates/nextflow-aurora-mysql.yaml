@@ -236,6 +236,7 @@ Resources:
       SnapshotIdentifier: !If [UseSnapshotTrue, !Ref SnapshotName, !Ref 'AWS::NoValue']
       StorageEncrypted:  !If [UseSnapshotTrue, !Ref 'AWS::NoValue', true]
       DBClusterParameterGroupName: !Ref AuroraClusterParameterGroup
+      BackupRetentionPeriod: 14
       EnableHttpEndpoint: true
       DBSubnetGroupName: !Ref DBSubnetGroup
       VpcSecurityGroupIds:

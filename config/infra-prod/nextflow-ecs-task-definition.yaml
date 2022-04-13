@@ -19,14 +19,10 @@ parameters:
   TowerDbPassword: !aws_secrets_manager nextflow-aurora-mysql-NextflowTowerDatabaseUserSecret::SecretString::password
   TowerGoogleClientId: !aws_secrets_manager nextflow/google_oauth_app::SecretString::client
   TowerGoogleSecret: !aws_secrets_manager nextflow/google_oauth_app::SecretString::secret
-  # TowerOidcClientId: !aws_secrets_manager nextflow/synapse_oauth_client::SecretString::client_id
-  # TowerOidcSecret: !aws_secrets_manager nextflow/synapse_oauth_client::SecretString::client_secret
-  # TowerOidcIssuer: 'https://repo-prod.prod.sagebase.org/auth/v1'
   RedisContainerImage: 'redis:5.0.8'
-  CronContainerImage: '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/backend:v21.12.3'
-  FrontendContainerImage: '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/frontend:v21.12.3'
-  BackendContainerImage: '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/backend:v21.12.3'
-  TowerOidcTokenImport: 'false'
+  CronContainerImage: '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/backend:v22.1.0'
+  FrontendContainerImage: '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/frontend:v22.1.0'
+  BackendContainerImage: '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/backend:v22.1.0'
   EfsFileSystemId: !stack_output_external nextflow-efs-file-system::FileSystemId
   EfsVolumeMountPath: '/efs'
   TowerConfigFileName: 'tower.yaml'

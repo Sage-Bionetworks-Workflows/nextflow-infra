@@ -563,9 +563,10 @@ class TowerWorkspace:
                     "credentials": None,
                     "computeJobRole": self.stack["TowerForgeBatchWorkJobRoleArn"],
                     "headJobRole": self.stack["TowerForgeBatchHeadJobRoleArn"],
+                    "executionRole": self.stack["TowerForgeBatchExecutionRoleArn"],
                     "headJobCpus": None,
                     "headJobMemoryMb": 7168,
-                    "preRunScript": "export NXF_VER=21.10.6\nNXF_OPTS='-Xms1g -Xmx4g'",
+                    "preRunScript": "NXF_OPTS='-Xms1g -Xmx4g'",
                     "postRunScript": None,
                     "cliPath": None,
                     "forge": {
@@ -603,7 +604,7 @@ class TowerWorkspace:
         """
         compute_env_ids: dict[str, Optional[str]] = {"SPOT": None, "EC2": None}
         # Create compute environment names
-        comp_env_prefix = f"{self.stack_name}-v3"
+        comp_env_prefix = f"{self.stack_name}-v4"
         comp_env_spot = f"{comp_env_prefix}-spot"
         comp_env_ec2 = f"{comp_env_prefix}-ondemand"
         # Check if compute environment has already been created for this project
