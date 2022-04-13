@@ -556,7 +556,7 @@ class TowerWorkspace:
         for comp_env in response["computeEnvs"]:
             comp_env_id = comp_env["id"]
             comp_env_name = comp_env["name"]
-            if comp_env_name.endswith(CE_VERSION):
+            if comp_env_name.endswith(CE_VERSION) and self.has_launchers():
                 continue
             delete_endpoint = f"{endpoint}/{comp_env_id}"
             response = self.tower.request("DELETE", delete_endpoint, params=params)
