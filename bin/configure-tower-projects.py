@@ -6,12 +6,16 @@ from collections import defaultdict
 import json
 import os
 import re
+import time
 from typing import List, Tuple, Sequence, Dict, Iterator, Optional
 
 import boto3
 import requests  # type: ignore
 import yaml  # type: ignore
 
+
+# Increment this version when updating compute environments
+CE_VERSION = "v4"
 
 REGION = "us-east-1"
 ORG_NAME = "Sage Bionetworks"
@@ -385,6 +389,7 @@ class TowerWorkspace:
         self.teams = teams
         self.participants: Dict[str, dict] = dict()
         self.populate()
+        self.cleanup_compute_environments()
         if self.has_launchers():
             self.create_compute_environment()
 
@@ -539,6 +544,26 @@ class TowerWorkspace:
         response = self.tower.request("POST", endpoint, params=params, json=data)
         return response["credentialsId"]
 
+    def cleanup_compute_environments(self):
+        """Delete inactive compute environments in the workspace
+
+        This step is necessary to avoid running into AWS' hard limit
+        on the number of compute environments, which is 50 per account
+        """
+        endpoint = "/compute-envs"
+        params = {"workspaceId": self.id}
+        response = self.tower.request("GET", endpoint, params=params)
+        for comp_env in response["computeEnvs"]:
+            comp_env_id = comp_env["id"]
+            comp_env_name = comp_env["name"]
+            delete_endpoint = f"{endpoint}/{comp_env_id}"
+            response = self.tower.request("DELETE", delete_endpoint, params=params)
+            if "message" in response and "has active jobs" in response["message"]:
+                print(
+                    f"Skipping the deletion of the '{self.name}/{comp_env_name}' "
+                    f"compute environment due to active jobs..."
+                )
+
     def generate_compute_environment(self, name: str, model: str) -> dict:
         """Generate request object for creating a compute environment.
 
@@ -604,7 +629,7 @@ class TowerWorkspace:
         """
         compute_env_ids: dict[str, Optional[str]] = {"SPOT": None, "EC2": None}
         # Create compute environment names
-        comp_env_prefix = f"{self.stack_name}-v4"
+        comp_env_prefix = f"{self.stack_name}-{CE_VERSION}"
         comp_env_spot = f"{comp_env_prefix}-spot"
         comp_env_ec2 = f"{comp_env_prefix}-ondemand"
         # Check if compute environment has already been created for this project
@@ -848,6 +873,10 @@ class TowerOrganization:
             teams = self.teamids_per_project[name]
             ws = TowerWorkspace(self, name, teams=teams)
             self.workspaces[name] = ws
+            # Adding a short delay between creating each workspace
+            # to allow time for compute environments to be deleted
+            # before creating new ones and running into the limit
+            time.sleep(30)
         return self.workspaces
 
 
