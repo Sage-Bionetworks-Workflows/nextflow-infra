@@ -20,9 +20,9 @@ parameters:
   TowerGoogleClientId: !aws_secrets_manager nextflow/google_oauth_app::SecretString::client
   TowerGoogleSecret: !aws_secrets_manager nextflow/google_oauth_app::SecretString::secret
   RedisContainerImage: 'redis:5.0.8'
-  CronContainerImage: '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/backend:v22.1.0'
-  FrontendContainerImage: '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/frontend:v22.1.0'
-  BackendContainerImage: '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/backend:v22.1.0'
+  CronContainerImage: '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/backend:{{stack_group_config.tower_version}}'
+  FrontendContainerImage: '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/frontend:{{stack_group_config.tower_version}}'
+  BackendContainerImage: '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/backend:{{stack_group_config.tower_version}}'
   EfsFileSystemId: !stack_output_external nextflow-efs-file-system::FileSystemId
   EfsVolumeMountPath: '/efs'
   TowerUserWorkspace: 'false'
