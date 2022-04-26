@@ -144,6 +144,13 @@ Parameters:
       - 'true'
       - 'false'
     Default: 'false'
+  TowerUserWorkspace:
+    Type: String
+    Description: Whether to enable private Tower workspaces for each user
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Default: 'false'
   AwslogsStreamPrefix:
     Type: String
     Description: Prefix used for CloudWatch log streams
@@ -234,8 +241,8 @@ Resources:
             - Name: MICRONAUT_ENVIRONMENTS
               Value: !If
                 - HasTowerOidcClient
-                - prod,redis,cron,awsbatch-platform,auth-google,auth-oidc
-                - prod,redis,cron,awsbatch-platform,auth-google
+                - prod,redis,cron,workspace,awsbatch-platform,auth-google,auth-oidc
+                - prod,redis,cron,workspace,awsbatch-platform,auth-google
             {%- for name, value in sceptre_user_data.environment.items() %}
             - Name: {{ name }}
               Value: {{ value }}
@@ -291,8 +298,8 @@ Resources:
             - Name: MICRONAUT_ENVIRONMENTS
               Value: !If
                 - HasTowerOidcClient
-                - prod,redis,ha,awsbatch-platform,auth-google,auth-oidc
-                - prod,redis,ha,awsbatch-platform,auth-google
+                - prod,redis,ha,workspace,awsbatch-platform,auth-google,auth-oidc
+                - prod,redis,ha,workspace,awsbatch-platform,auth-google
             {%- for name, value in sceptre_user_data.environment.items() %}
             - Name: {{ name }}
               Value: {{ value }}
