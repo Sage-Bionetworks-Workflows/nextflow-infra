@@ -1,7 +1,0 @@
-template:
-  type: http
-  url: "{{stack_group_config.aws_infra_templates_root_url}}/v0.2.3/templates/S3/public-bucket.yaml"
-stack_name: "cloudformation-templates"
-
-stack_tags:
-  {{stack_group_config.default_stack_tags}}
