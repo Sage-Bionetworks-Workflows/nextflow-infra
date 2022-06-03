@@ -15,7 +15,7 @@ import yaml  # type: ignore
 
 
 # Increment this version when updating compute environments
-CE_VERSION = "v4"
+CE_VERSION = "v5"
 
 REGION = "us-east-1"
 ORG_NAME = "Sage Bionetworks"
@@ -613,8 +613,8 @@ class TowerWorkspace:
                         "ec2KeyPair": None,
                         "imageId": None,
                         "securityGroups": [],
-                        "ebsBlockSize": 250,
-                        "fusionEnabled": False,
+                        "ebsBlockSize": 1000,
+                        "fusionEnabled": True,
                         "efsCreate": False,
                         "bidPercentage": None,
                     },
