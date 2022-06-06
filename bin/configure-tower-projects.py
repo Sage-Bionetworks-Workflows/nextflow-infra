@@ -606,7 +606,7 @@ class TowerWorkspace:
                         "maxCpus": 1000,
                         "gpuEnabled": False,
                         "ebsAutoScale": True,
-                        "allowBuckets": [],
+                        "allowBuckets": ["s3://sage-igenomes"],
                         "disposeOnDeletion": True,
                         "instanceTypes": [],
                         "allocStrategy": None,
