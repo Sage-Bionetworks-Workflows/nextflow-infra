@@ -2,3 +2,6 @@
 # it sits outside of our AWS Organization fo STRIDES billing
 sso_admin_role:
   arn: arn:aws:iam::751556145034:role/strides-ampad-workflows-admin
+budgets:
+  compute: 5000
+  storage: 2000

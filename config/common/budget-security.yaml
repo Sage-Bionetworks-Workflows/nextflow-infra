@@ -1,12 +1,12 @@
 template_path: budget.yaml
-stack_name: budget-other
+stack_name: budget-security
 
 parameters:
-  budgetName: budget-other
+  budgetName: budget-security
   emailAddress: "{{stack_group_config.notifications_email}}"
-  budgetAmount: "{{stack_group_config.budgets.other}}"
+  budgetAmount: "{{stack_group_config.budgets.security}}"
   serviceFilters:
-    {{stack_group_config.services.other}}
+    {{stack_group_config.services.security}}
 
 stack_tags:
   {{stack_group_config.default_stack_tags}}

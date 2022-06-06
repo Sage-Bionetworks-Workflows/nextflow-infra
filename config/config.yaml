@@ -3,18 +3,26 @@ profile: {{ var.profile | default() }}
 region: {{ var.region | default("us-east-1") }}
 aws_infra_templates_root_url: https://raw.githubusercontent.com/Sage-Bionetworks/aws-infra
 admincentral_cf_bucket: bootstrap-awss3cloudformationbucket-19qromfd235z9
-tower_version: v22.1.1
+tower_version: v22.1.3
 default_stack_tags:
   Department: IBC
   Project: Infrastructure
   OwnerEmail: nextflow-admins@sagebase.org
   CostCenter: NO PROGRAM / 000000
 notifications_email: nextflow-admins@sagebase.org
+budgets:
+  compute: 5000
+  storage: 2000
+  security: 1000
+  other: 500
 services:
   compute:
     - Amazon Elastic Compute Cloud - Compute
   storage:
     - Amazon Simple Storage Service
+  security:
+    - Amazon GuardDuty
+    - AWS Config
   other:
     - Amazon API Gateway
     - Amazon DynamoDB
@@ -22,7 +30,6 @@ services:
     - Amazon Elastic Container Service
     - Amazon Elastic File System
     - Amazon Elastic Load Balancing
-    - Amazon GuardDuty
     - Amazon Relational Database Service
     - Amazon Route 53
     - Amazon Simple Notification Service
@@ -32,7 +39,6 @@ services:
     - AWS Backup
     - AWS CloudShell
     - AWS CloudTrail
-    - AWS Config
     - AWS DataSync
     - AWS Glue
     - AWS Key Management Service
