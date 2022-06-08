@@ -78,17 +78,17 @@ jobs:
       - name: Deploy common configuration
         run: >
           pipenv run sceptre --var-file=src/sceptre/variables/${{ matrix.sceptre-suffix }}.yaml
-            launch common --yes
+          launch common --yes
 
       - name: Deploy infrastructure configuration
         run: >
           pipenv run sceptre --var-file=src/sceptre/variables/${{ matrix.sceptre-suffix }}.yaml
-            launch infra-${{ matrix.sceptre-suffix }} --yes
+          launch infra-${{ matrix.sceptre-suffix }} --yes
 
       - name: Deploy projects configuration
         run: >
           pipenv run sceptre --var-file=src/sceptre/variables/${{ matrix.sceptre-suffix }}.yaml
-            launch projects-${{ matrix.sceptre-suffix }} --yes
+          launch projects-${{ matrix.sceptre-suffix }} --yes
 
       - name: Wait for Nextflow Tower to be up
         uses: nev7n/wait_for_response@v1
