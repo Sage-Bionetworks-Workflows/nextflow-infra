@@ -11,10 +11,10 @@ default_stack_tags:
   CostCenter: NO PROGRAM / 000000
 notifications_email: nextflow-admins@sagebase.org
 budgets:
-  compute: 1000
-  storage: 100
-  security: 1000
-  other: 500
+  compute: {{ var.compute_budget | default(1000) }}
+  storage: {{ var.storage_budget | default(500) }}
+  security: {{ var.security_budget | default(100) }}
+  other: {{ var.other_budget | default(100) }}
 services:
   compute:
     - Amazon Elastic Compute Cloud - Compute

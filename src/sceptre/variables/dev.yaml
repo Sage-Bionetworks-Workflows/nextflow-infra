@@ -1,0 +1,4 @@
+compute_budget: 1000
+storage_budget: 100
+security_budget: 100
+other_budget: 250
