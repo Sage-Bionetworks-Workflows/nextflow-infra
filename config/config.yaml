@@ -10,11 +10,19 @@ default_stack_tags:
   OwnerEmail: nextflow-admins@sagebase.org
   CostCenter: NO PROGRAM / 000000
 notifications_email: nextflow-admins@sagebase.org
+budgets:
+  compute: {{ var.compute_budget | default("1000") }}
+  storage: {{ var.storage_budget | default("500") }}
+  security: {{ var.security_budget | default("100") }}
+  other: {{ var.other_budget | default("100") }}
 services:
   compute:
     - Amazon Elastic Compute Cloud - Compute
   storage:
     - Amazon Simple Storage Service
+  security:
+    - Amazon GuardDuty
+    - AWS Config
   other:
     - Amazon API Gateway
     - Amazon DynamoDB
@@ -22,7 +30,6 @@ services:
     - Amazon Elastic Container Service
     - Amazon Elastic File System
     - Amazon Elastic Load Balancing
-    - Amazon GuardDuty
     - Amazon Relational Database Service
     - Amazon Route 53
     - Amazon Simple Notification Service
@@ -32,7 +39,6 @@ services:
     - AWS Backup
     - AWS CloudShell
     - AWS CloudTrail
-    - AWS Config
     - AWS DataSync
     - AWS Glue
     - AWS Key Management Service
