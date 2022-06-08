@@ -76,17 +76,17 @@ jobs:
           role-duration-seconds: 3600
 
       - name: Deploy common configuration
-        run: |
+        run: >
           pipenv run sceptre --var-file=src/sceptre/variables/${{ matrix.sceptre-suffix }}.yaml
             launch common --yes
 
       - name: Deploy infrastructure configuration
-        run: |
+        run: >
           pipenv run sceptre --var-file=src/sceptre/variables/${{ matrix.sceptre-suffix }}.yaml
             launch infra-${{ matrix.sceptre-suffix }} --yes
 
       - name: Deploy projects configuration
-        run: |
+        run: >
           pipenv run sceptre --var-file=src/sceptre/variables/${{ matrix.sceptre-suffix }}.yaml
             launch projects-${{ matrix.sceptre-suffix }} --yes
 
