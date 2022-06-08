@@ -1,5 +1,2 @@
 sso_admin_role:
   arn: arn:aws:iam::035458030717:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_Administrator_580e9f32ac55c4e7
-budgets:
-  compute: 1000
-  storage: 100
