@@ -15,7 +15,7 @@ import yaml  # type: ignore
 
 
 # Increment this version when updating compute environments
-CE_VERSION = "v4"
+CE_VERSION = "v5"
 
 REGION = "us-east-1"
 ORG_NAME = "Sage Bionetworks"
@@ -592,8 +592,8 @@ class TowerWorkspace:
                     "headJobRole": self.stack["TowerForgeBatchHeadJobRoleArn"],
                     "executionRole": self.stack["TowerForgeBatchExecutionRoleArn"],
                     "headJobCpus": None,
-                    "headJobMemoryMb": 7168,
-                    "preRunScript": "NXF_OPTS='-Xms1g -Xmx4g'",
+                    "headJobMemoryMb": 15360,
+                    "preRunScript": "NXF_OPTS='-Xms4g -Xmx12g'",
                     "postRunScript": None,
                     "cliPath": None,
                     "forge": {
@@ -606,15 +606,19 @@ class TowerWorkspace:
                         "maxCpus": 1000,
                         "gpuEnabled": False,
                         "ebsAutoScale": True,
-                        "allowBuckets": [],
+                        "allowBuckets": [
+                            f"s3://{self.stack['TowerBucket']}",
+                            f"s3://{self.stack['TowerScratch']}",
+                            "s3://sage-igenomes",
+                        ],
                         "disposeOnDeletion": True,
                         "instanceTypes": [],
                         "allocStrategy": None,
                         "ec2KeyPair": None,
                         "imageId": None,
                         "securityGroups": [],
-                        "ebsBlockSize": 250,
-                        "fusionEnabled": False,
+                        "ebsBlockSize": 1000,
+                        "fusionEnabled": True,
                         "efsCreate": False,
                         "bidPercentage": None,
                     },
