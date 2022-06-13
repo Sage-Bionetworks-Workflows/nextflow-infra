@@ -132,14 +132,6 @@ Resources:
           IncludeTax: false
       NotificationsWithSubscribers:
         - Notification:
-            NotificationType: ACTUAL
-            ComparisonOperator: GREATER_THAN
-            Threshold: 80
-            ThresholdType: PERCENTAGE
-          Subscribers:
-            - SubscriptionType: SNS
-              Address: !Ref NotificationTopic
-        - Notification:
             NotificationType: FORECASTED
             ComparisonOperator: GREATER_THAN
             Threshold: 100
@@ -151,6 +143,14 @@ Resources:
             NotificationType: ACTUAL
             ComparisonOperator: GREATER_THAN
             Threshold: 100
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref NotificationTopic
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 200
             ThresholdType: PERCENTAGE
           Subscribers:
             - SubscriptionType: SNS
