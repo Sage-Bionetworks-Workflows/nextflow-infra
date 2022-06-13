@@ -20,13 +20,13 @@ services:
     - Amazon Elastic Compute Cloud - Compute
   storage:
     - Amazon Simple Storage Service
+    - Amazon Elastic Block Store
   security:
     - Amazon GuardDuty
     - AWS Config
   other:
     - Amazon API Gateway
     - Amazon DynamoDB
-    - Amazon Elastic Block Store
     - Amazon Elastic Container Service
     - Amazon Elastic File System
     - Amazon Elastic Load Balancing
