@@ -15,7 +15,7 @@ import yaml  # type: ignore
 
 
 # Increment this version when updating compute environments
-CE_VERSION = "v5"
+CE_VERSION = "v6"
 
 REGION = "us-east-1"
 ORG_NAME = "Sage Bionetworks"
@@ -606,11 +606,7 @@ class TowerWorkspace:
                         "maxCpus": 1000,
                         "gpuEnabled": False,
                         "ebsAutoScale": True,
-                        "allowBuckets": [
-                            f"s3://{self.stack['TowerBucket']}",
-                            f"s3://{self.stack['TowerScratch']}",
-                            "s3://sage-igenomes",
-                        ],
+                        "allowBuckets": [],
                         "disposeOnDeletion": True,
                         "instanceTypes": [],
                         "allocStrategy": None,
@@ -618,7 +614,7 @@ class TowerWorkspace:
                         "imageId": None,
                         "securityGroups": [],
                         "ebsBlockSize": 1000,
-                        "fusionEnabled": True,
+                        "fusionEnabled": False,
                         "efsCreate": False,
                         "bidPercentage": None,
                     },
