@@ -19,7 +19,7 @@ parameters:
 
     # (Optional) Step 4: Uncomment and update the following line(s) to grant additional users with read/write access
     # - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/tess.thyer@sagebase.org
-    # - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/william.poehlman@sagebase.org
+    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/william.poehlman@sagebase.org
 
   # (Optional) Step 5: Uncomment and update the following line(s) to grant additional users with read-only access
   # S3ReadOnlyAccessArns:
