@@ -674,6 +674,7 @@ class TowerOrganization:
         tower: TowerClient,
         projects: Projects,
         full_name: str = ORG_NAME,
+        use_teams: bool = False,
     ) -> None:
         """Create Tower organization helper instance
 
@@ -684,6 +685,7 @@ class TowerOrganization:
         """
         self.tower = tower
         self.full_name = full_name
+        self.use_teams = use_teams
         self.name = self.tower.get_valid_name(full_name)
         self.json = self.create()
         self.id = self.json["orgId"]
@@ -837,21 +839,24 @@ class TowerOrganization:
             # Create and populate teams for each user group/role
             self.teamids_per_project[project_name] = dict()
             for users, user_group, role in project_users.list_teams():
-                project_prefix = project_name[:-8]  # Trim '-project' suffix
-                team_name = f"{project_prefix}-{user_group}"
-                team_id = self.create_team(team_name)
-                self.teamids_per_project[project_name][team_id] = role
+                if self.use_teams:
+                    project_prefix = project_name[:-8]  # Trim '-project' suffix
+                    team_name = f"{project_prefix}-{user_group}"
+                    team_id = self.create_team(team_name)
+                    self.teamids_per_project[project_name][team_id] = role
                 # Add expected team members
                 verified_ids = set()
                 for user in users:
                     member = self.add_member(user)
                     member_id = member["memberId"]
                     verified_ids.add(member_id)
-                    self.add_member_to_team(team_id, user)
+                    if self.use_teams:
+                        self.add_member_to_team(team_id, user)
                 # Remove unexpected team members
-                for team_member_id in self.list_team_members(team_id):
-                    if team_member_id not in verified_ids:
-                        self.remove_member_from_team(team_id, team_member_id)
+                if self.use_teams:
+                    for team_member_id in self.list_team_members(team_id):
+                        if team_member_id not in verified_ids:
+                            self.remove_member_from_team(team_id, team_member_id)
 
     def list_projects(self) -> Iterator[Tuple[str, Users]]:
         """Iterate over all projects and their users
@@ -870,9 +875,12 @@ class TowerOrganization:
             Dict[str, TowerWorkspace]:
                 Mapping of project names and their corresponding workspaces
         """
-        for name, _ in self.list_projects():
-            teams = self.teamids_per_project[name]
-            ws = TowerWorkspace(self, name, teams=teams)
+        for name, users in self.list_projects():
+            if self.use_teams:
+                teams = self.teamids_per_project[name]
+                ws = TowerWorkspace(self, name, teams=teams)
+            else:
+                ws = TowerWorkspace(self, name, users=users)
             self.workspaces[name] = ws
             # Adding a short delay between creating each workspace
             # to allow time for compute environments to be deleted
