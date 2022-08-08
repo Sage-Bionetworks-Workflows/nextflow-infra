@@ -7,7 +7,6 @@ dependencies:
 
 parameters:
   S3ReadWriteAccessArns:
-    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/haley.hunterzinck@sagebase.org
     - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/xindi.guo@sagebase.org
     - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/thomas.yu@sagebase.org
   AllowSynapseIndexing: Enabled
@@ -21,5 +20,5 @@ parameters:
 stack_tags:
   Department: SCCE
   Project: GENIE
-  OwnerEmail: haley.hunterzinck@sagebase.org
+  OwnerEmail: thomas.yu@sagebase.org
   CostCenter: Genie-AACR BPC / 312100

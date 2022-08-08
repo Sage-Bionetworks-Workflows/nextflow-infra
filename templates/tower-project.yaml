@@ -220,7 +220,7 @@ Resources:
   EncryptionKeyStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub ${TemplateRootUrl}/aws-infra/v0.3.1/KMS/kms-key.yaml
+      TemplateURL: !Sub ${TemplateRootUrl}/aws-infra/v0.4.6/KMS/kms-key.yaml
       TimeoutInMinutes: 5
       Parameters:
         AliasName: !Sub "alias/${AWS::StackName}-EncryptionKey"
