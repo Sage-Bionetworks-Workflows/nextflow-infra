@@ -20,7 +20,7 @@ parameters:
     
   # (Optional) Step 5: Uncomment and update the following line(s) to grant additional users with read-only access
   # S3ReadOnlyAccessArns:
-     - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/sasha.scott@sagebase.org
+    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/sasha.scott@sagebase.org
   #   - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/jason.hwee@sagebase.org
 
   # (Optional) Step 6: Uncomment the following line to disable the feature allowing Synapse to index files
