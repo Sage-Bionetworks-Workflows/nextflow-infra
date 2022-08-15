@@ -5,7 +5,7 @@ stack_tags:
   Department: SCCE
   Project: Neurofibromatosis
   OwnerEmail: jineta.banerjee@sagebase.org
-  CostCenter: NTAP-JHU / 30110 # Valid values here: https://github.com/Sage-Bionetworks/aws-infra/tree/master/templates/tags
+  CostCenter: NTAP NF Addendum 5 / 301101 # Valid values here: https://github.com/Sage-Bionetworks/aws-infra/tree/master/templates/tags
 
 parameters:
 
