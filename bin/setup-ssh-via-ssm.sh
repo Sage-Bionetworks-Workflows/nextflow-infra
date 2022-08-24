@@ -2,12 +2,22 @@
 
 #
 # This script uploads your public SSH key ('id_ed25519' by default)
-# to a home directory ('ec2-user' by default) on an EC2 instance.
+# to the home directories of 'ec2-user' and 'ssm-user'. While both
+# users are configured, it's recommended to use 'ec2-user' for SSH.
 # Written by Bruno Grande.
 #
-# Usage:    bash setup-ssh-via-ssm.sh INSTANCE_ID
+# Script usage:
 #
-# Example:  bash setup-ssh-via-ssm.sh i-0d3ff331a7b7a7e8b
+#   bash setup-ssh-via-ssm.sh INSTANCE_ID [PUBLIC_SSH_KEY]
+#
+# Example commands:
+#
+#   # Generic usage:
+#   bash setup-ssh-via-ssm.sh i-0d3ff331a7b7a7e8b
+#
+#   # If you have another SSH key that you want to use,
+#   # which should match your SSH config file (see below):
+#   bash setup-ssh-via-ssm.sh i-0d3ff331a7b7a7e8b ~/.ssh/id_rsa.pub
 #
 #
 # This script assumes that:
@@ -43,7 +53,7 @@
 
 # Command-line arguments and optional environment variables
 INSTANCE_ID="${1}"
-SSH_KEY_PUB="${SSH_KEY_PUB:-$HOME/.ssh/id_ed25519.pub}"
+SSH_KEY_PUB="${2:-$HOME/.ssh/id_ed25519.pub}"
 TARGET_USER="${TARGET_USER:-ec2-user}"
 
 # Assemble commands for setting up SSH keys for $TARGET_USER
@@ -52,6 +62,8 @@ COMMANDS=$(cat <<- END
   cd
   mkdir -p .ssh;
   echo $(<$SSH_KEY_PUB) > .ssh/authorized_keys;
+  sudo chmod 700 .ssh;
+  sudo chmod 600 .ssh/authorized_keys;
   sudo cp -r .ssh ${TARGET_HOMEDIR}/;
   sudo chmod 700 ${TARGET_HOMEDIR}/.ssh;
   sudo chmod 600 ${TARGET_HOMEDIR}/.ssh/authorized_keys;
