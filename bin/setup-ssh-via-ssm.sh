@@ -47,13 +47,15 @@ SSH_KEY_PUB="${SSH_KEY_PUB:-$HOME/.ssh/id_ed25519.pub}"
 TARGET_USER="${TARGET_USER:-ec2-user}"
 
 # Assemble commands for setting up SSH keys for $TARGET_USER
+TARGET_HOMEDIR="/home/${TARGET_USER}"
 COMMANDS=$(cat <<- END
   cd
   mkdir -p .ssh;
   echo $(<$SSH_KEY_PUB) > .ssh/authorized_keys;
-  chmod 700 .ssh;
-  chmod 600 .ssh/authorized_keys;
-  sudo rsync -a --chown=${TARGET_USER}:${TARGET_USER} .ssh/ /home/${TARGET_USER}/.ssh/;
+  sudo cp -r .ssh ${TARGET_HOMEDIR}/;
+  sudo chmod 700 ${TARGET_HOMEDIR}/.ssh;
+  sudo chmod 600 ${TARGET_HOMEDIR}/.ssh/authorized_keys;
+  sudo chown -R ${TARGET_USER}:${TARGET_USER} ${TARGET_HOMEDIR}/.ssh;
 END
 )
 
