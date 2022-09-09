@@ -2,20 +2,23 @@
 
 from __future__ import annotations
 import argparse
+from collections import defaultdict
 import json
 import os
 import re
-from typing import List, Tuple, Sequence, Dict, Iterator
+import time
+from typing import List, Tuple, Sequence, Dict, Iterator, Optional
 
 import boto3
 import requests  # type: ignore
 import yaml  # type: ignore
 
 
+# Increment this version when updating compute environments
+CE_VERSION = "v6"
+
 REGION = "us-east-1"
 ORG_NAME = "Sage Bionetworks"
-R53_STACK_NAME = "nextflow-r53-alias-record"
-R53_STACK_OUTPUT = "Route53RecordSet"
 VPC_STACK_NAME = "nextflow-vpc"
 VPC_STACK_OUTPUT_VID = "VPCId"
 VPC_STACK_OUTPUT_SIDS = [
@@ -36,9 +39,8 @@ def main() -> None:
             "\n  - ".join(projects.config_paths),
         )
     else:
-        tower = TowerClient()
-        org = TowerOrganization(tower, projects)
-        org.create_workspaces()
+        tower = TowerClient(debug_mode=args.debug)
+        TowerOrganization(tower, projects)
 
 
 class InvalidTowerProject(Exception):
@@ -90,12 +92,13 @@ class Users:
         self.launchers = launchers
         self.viewers = viewers
 
-    def list_users(self) -> Iterator[Tuple[str, str]]:
+    def list_users(self) -> Iterator[Tuple[str, str, str]]:
         """List all users and their Tower roles
 
         Yields:
-            Iterator[Tuple[str, str]]:
-                Each element is the user email (str) and Tower role (str)
+            Iterator[Tuple[str, str, str]]:
+                Each element is the user email (str), the user group,
+                and Tower role (str)
         """
         role_mapping = {
             "owners": "owner",
@@ -107,7 +110,20 @@ class Users:
         for user_group, role in role_mapping.items():
             users = getattr(self, user_group)
             for user in users:
-                yield user, role
+                yield user, user_group, role
+
+    def list_teams(self) -> Iterator[Tuple[List[str], str, str]]:
+        """List all users grouped by their Tower roles
+
+        Yields:
+            Iterator[Tuple[List[str], str, str]]:
+                Each element is the list of user emails (List[str]),
+                the user group (str), and their Tower role (str)
+        """
+        teams = defaultdict(list)
+        for user, user_group, role in self.list_users():
+            teams[(user_group, role)].append(user)
+        return ((users, ugrp, role) for (ugrp, role), users in teams.items())
 
 
 class Projects:
@@ -262,7 +278,7 @@ class AwsClient:
 
 
 class TowerClient:
-    def __init__(self, tower_token=None) -> None:
+    def __init__(self, tower_token=None, tower_api_url=None, debug_mode=False) -> None:
         """Generate NextflowTower instance
 
         The descriptions below for the user types were copied
@@ -270,17 +286,26 @@ class TowerClient:
 
         Raises:
             KeyError: The 'NXF_TOWER_TOKEN' environment variable isn't defined
+            KeyError: The 'NXF_TOWER_API_URL' environment variable isn't defined
         """
         self.aws = AwsClient()
         self.vpc = self.aws.get_cfn_stack_outputs(VPC_STACK_NAME)
-        self.tower_api_base_url = self.get_tower_api_base_url()
-        # Retrieve Nextflow token from environment
+        self.debug = debug_mode
+        # Retrieve Nextflow Tower token from environment
         try:
             self.tower_token = tower_token or os.environ["NXF_TOWER_TOKEN"]
         except KeyError as e:
             raise KeyError(
                 "The 'NXF_TOWER_TOKEN' environment variable must "
                 "be defined with a Nextflow Tower API token."
+            ) from e
+        # Retrieve Nextflow Tower API URL from environment
+        try:
+            self.tower_api_base_url = tower_api_url or os.environ["NXF_TOWER_API_URL"]
+        except KeyError as e:
+            raise KeyError(
+                "The 'NXF_TOWER_API_URL' environment variable must "
+                "be defined with a Nextflow Tower API URL."
             ) from e
 
     def get_valid_name(self, full_name: str) -> str:
@@ -293,17 +318,6 @@ class TowerClient:
             str: Name with only alphanumeric, dash and underscore characters
         """
         return re.sub(r"[^A-Za-z0-9_-]", "-", full_name)
-
-    def get_tower_api_base_url(self) -> str:
-        """Infer Nextflow Tower API endpoint from CloudFormation
-
-        Returns:
-            str: A full URL for the Tower API endpoint
-        """
-        stack = self.aws.get_cfn_stack_outputs(R53_STACK_NAME)
-        hostname = stack[R53_STACK_OUTPUT]
-        endpoint = f"https://{hostname}/api"
-        return endpoint
 
     def request(self, method: str, endpoint: str, **kwargs) -> dict:
         """Make an authenticated HTTP request to the Nextflow Tower API
@@ -323,7 +337,36 @@ class TowerClient:
             result = response.json()
         except json.decoder.JSONDecodeError:
             result = dict()
+        if self.debug:
+            print(f"\nEndpoint:\t {method} {url}")
+            print(f"Params: \t {kwargs.get('params')}")
+            print(f"Payload:\t {kwargs.get('json')}")
+            print(f"Status Code:\t {response.status_code} / {response.reason}")
+            print(f"Response:\t {result}")
         return result
+
+    def paged_request(self, method: str, endpoint: str, **kwargs) -> Iterator[dict]:
+        """Iterate through pages of results for a given request
+
+        Args:
+            method (str): An HTTP method (GET, PUT, POST, or DELETE)
+            endpoint (str): The API endpoint with the path parameters filled in
+
+        Returns:
+            Iterator[Dict]: An iterator traversing through pages of responses
+        """
+        params = kwargs.pop("params", {})
+        params["max"] = 50
+        num_items = 0
+        total_size = 1  # Artificial value for initiating the while-loop
+        while num_items < total_size:
+            params["offset"] = num_items
+            response = self.request(method, endpoint, params=params, **kwargs)
+            total_size = response.pop("totalSize", 0)
+            _, items = response.popitem()
+            for item in items:
+                num_items += 1
+                yield item
 
 
 class TowerWorkspace:
@@ -331,7 +374,8 @@ class TowerWorkspace:
         self,
         org: TowerOrganization,
         stack_name: str,
-        users: Users,
+        users: Users = None,
+        teams: Dict[int, str] = None,
     ) -> None:
         self.org = org
         self.tower = org.tower
@@ -342,9 +386,32 @@ class TowerWorkspace:
         self.json = self.create()
         self.id = self.json["id"]
         self.users = users
+        self.teams = teams
         self.participants: Dict[str, dict] = dict()
         self.populate()
-        self.create_compute_environment()
+        self.cleanup_compute_environments()
+        if self.has_launchers():
+            self.create_compute_environment()
+
+    def has_launchers(self) -> bool:
+        """Checks whether at least one user is capable of launching a workflow
+
+        Returns:
+            bool: Whether there's at least one launcher
+        """
+        has_launchers = False
+        launcher_roles = set(["owner", "admin", "maintain", "launch"])
+        if self.users:
+            for _, _, role in self.users.list_users():
+                if role in launcher_roles:
+                    has_launchers = True
+                    break
+        if self.teams:
+            for role in self.teams.values():
+                if role in launcher_roles:
+                    has_launchers = True
+                    break
+        return has_launchers
 
     def create(self) -> dict:
         """Create a Tower workspace under an organization
@@ -370,37 +437,53 @@ class TowerWorkspace:
         response = self.tower.request("POST", endpoint, json=data)
         return response["workspace"]
 
-    def add_participant(self, user: str, role: str) -> int:
-        """Add user to the workspace (if need be) and return participant ID
+    def add_participant(self, role: str, user: str = None, team_id: int = None) -> dict:
+        """Add user or team to the workspace (if need be) and return participant ID
 
         Args:
-            user (str): Email address for the user
             role (str): 'owner', 'admin', 'maintain', 'launch', or 'view'
+            user (str): Email address for the user. Mutually exclusive with `team_id`.
+            team_id (int): Team identifier. Mutually exclusive with `user`.
 
         Returns:
-            int: Participant ID for the user in the given workspace
+            dict: Participant info for the user or team in the given workspace
         """
         # Attempt to add the user as a participant of the given workspace
         endpoint = f"/orgs/{self.org.id}/workspaces/{self.id}/participants"
-        member_id = self.org.members[user]["memberId"]
-        data = {
-            "memberId": member_id,
-            "teamId": None,
-            "userNameOrstr": None,
-        }
+        if user and not team_id:
+            member_id = self.org.members[user]["memberId"]
+            identifier = member_id
+            data = {
+                "memberId": member_id,
+                "teamId": None,
+                "userNameOrEmail": None,
+            }
+        elif not user and team_id:
+            identifier = team_id
+            data = {
+                "memberId": None,
+                "teamId": team_id,
+                "userNameOrEmail": None,
+            }
+        else:
+            raise ValueError(
+                "Must provide value for exactly one of `user` or `team_id`."
+            )
         response = self.tower.request("PUT", f"{endpoint}/add", json=data)
-        # If the user is already a member, you get the following message:
+        # If the user is already a participant, you get the following message:
         #   "Already a participant"
         # In this case, look up the participant ID using the member ID
         if "message" in response and response["message"] == "Already a participant":
-            response = self.tower.request("GET", endpoint)
-            for participant in response["participants"]:
-                if participant["memberId"] == member_id:
-                    break
+            participant = dict()
+            participants = self.tower.paged_request("GET", endpoint)
+            for p in participants:
+                if p.get("memberId") == identifier or p.get("teamId") == identifier:
+                    participant = p
+            assert participant, f"Failed to find the given participant ({identifier})"
         # Otherwise, just return their new participant ID for the workspace
         else:
             participant = response["participant"]
-        self.participants[user] = participant
+        self.participants[identifier] = participant
         # Update participant role
         participant_id = participant["participantId"]
         self.set_participant_role(participant_id, role)
@@ -410,7 +493,7 @@ class TowerWorkspace:
         """Update the participant role in the given workspace
 
         Args:
-            part_id (int): Participant ID for the user
+            part_id (int): Participant ID for the user or team
             role (str): 'owner', 'admin', 'maintain', 'launch', or 'view'
         """
         endpoint = (
@@ -421,8 +504,12 @@ class TowerWorkspace:
 
     def populate(self) -> None:
         """Add maintainers and viewers to the organization and workspace"""
-        for user, role in self.users.list_users():
-            self.add_participant(user, role)
+        if self.users:
+            for user, _, role in self.users.list_users():
+                self.add_participant(role, user=user)
+        if self.teams:
+            for team_id, role in self.teams.items():
+                self.add_participant(role, team_id=team_id)
 
     def create_credentials(self) -> int:
         """Create entry for Forge credentials under the given workspace
@@ -457,44 +544,56 @@ class TowerWorkspace:
         response = self.tower.request("POST", endpoint, params=params, json=data)
         return response["credentialsId"]
 
-    def create_compute_environment(self) -> str:
-        """Create default compute environment under the given workspace
+    def cleanup_compute_environments(self):
+        """Delete inactive compute environments in the workspace
 
-        Returns:
-            str: Identifier for the compute environment
+        This step is necessary to avoid running into AWS' hard limit
+        on the number of compute environments, which is 50 per account
         """
-        # Check if compute environment has already been created for this project
         endpoint = "/compute-envs"
-        comp_env_name = f"{self.stack_name} (default)"
         params = {"workspaceId": self.id}
         response = self.tower.request("GET", endpoint, params=params)
         for comp_env in response["computeEnvs"]:
-            if (
-                comp_env["name"] == comp_env_name
-                and comp_env["platform"] == "aws-batch"
-                and (
-                    comp_env["status"] == "AVAILABLE"
-                    or comp_env["status"] == "CREATING"
+            comp_env_id = comp_env["id"]
+            comp_env_name = comp_env["name"]
+            if comp_env_name.endswith(CE_VERSION) and self.has_launchers():
+                continue
+            delete_endpoint = f"{endpoint}/{comp_env_id}"
+            response = self.tower.request("DELETE", delete_endpoint, params=params)
+            if "message" in response and "has active jobs" in response["message"]:
+                print(
+                    f"Skipping the deletion of the '{self.name}/{comp_env_name}' "
+                    f"compute environment due to active jobs..."
                 )
-            ):
-                return comp_env["id"]
-        # Otherwise, create a new compute environment for the project
+
+    def generate_compute_environment(self, name: str, model: str) -> dict:
+        """Generate request object for creating a compute environment.
+
+        Args:
+            name (str): Name of the compute environment
+            type (str): Pricing model, either "EC2" (on-demand) or "SPOT"
+
+        Returns:
+            dict: [description]
+        """
+        assert model in {"SPOT", "EC2"}, "Wrong provisioning model"
         credentials_id = self.create_credentials()
         data = {
             "computeEnv": {
-                "name": comp_env_name,
+                "name": name,
                 "platform": "aws-batch",
                 "credentialsId": credentials_id,
                 "config": {
                     "configMode": "Batch Forge",
                     "region": self.tower.aws.region,
-                    "workDir": f"s3://{self.stack['TowerBucket']}/work",
+                    "workDir": f"s3://{self.stack['TowerScratch']}/work",
                     "credentials": None,
                     "computeJobRole": self.stack["TowerForgeBatchWorkJobRoleArn"],
                     "headJobRole": self.stack["TowerForgeBatchHeadJobRoleArn"],
+                    "executionRole": self.stack["TowerForgeBatchExecutionRoleArn"],
                     "headJobCpus": None,
-                    "headJobMemoryMb": None,
-                    "preRunScript": None,
+                    "headJobMemoryMb": 15360,
+                    "preRunScript": "NXF_OPTS='-Xms4g -Xmx12g'",
                     "postRunScript": None,
                     "cliPath": None,
                     "forge": {
@@ -502,9 +601,9 @@ class TowerWorkspace:
                         "subnets": [self.tower.vpc[o] for o in VPC_STACK_OUTPUT_SIDS],
                         "fsxMode": "None",
                         "efsMode": "None",
-                        "type": "SPOT",
+                        "type": model,
                         "minCpus": 0,
-                        "maxCpus": 500,
+                        "maxCpus": 1000,
                         "gpuEnabled": False,
                         "ebsAutoScale": True,
                         "allowBuckets": [],
@@ -514,7 +613,7 @@ class TowerWorkspace:
                         "ec2KeyPair": None,
                         "imageId": None,
                         "securityGroups": [],
-                        "ebsBlockSize": None,
+                        "ebsBlockSize": 1000,
                         "fusionEnabled": False,
                         "efsCreate": False,
                         "bidPercentage": None,
@@ -522,8 +621,51 @@ class TowerWorkspace:
                 },
             }
         }
-        response = self.tower.request("POST", endpoint, params=params, json=data)
-        return response["computeEnvId"]
+        return data
+
+    def create_compute_environment(self) -> Dict[str, Optional[str]]:
+        """Create default compute environment under the given workspace
+
+        Returns:
+            Dict[str, Optional[str]]: Identifier for the compute environment
+        """
+        compute_env_ids: dict[str, Optional[str]] = {"SPOT": None, "EC2": None}
+        # Create compute environment names}"
+        comp_env_spot = f"{self.stack_name}-spot-{CE_VERSION}"
+        comp_env_ec2 = f"{self.stack_name}-ondemand-{CE_VERSION}"
+        # Check if compute environment has already been created for this project
+        endpoint = "/compute-envs"
+        params = {"workspaceId": self.id}
+        response = self.tower.request("GET", endpoint, params=params)
+        for comp_env in response["computeEnvs"]:
+            if comp_env["platform"] == "aws-batch" and (
+                comp_env["status"] == "AVAILABLE" or comp_env["status"] == "CREATING"
+            ):
+                if comp_env["name"] == comp_env_spot:
+                    compute_env_ids["SPOT"] = comp_env["id"]
+                elif comp_env["name"] == comp_env_ec2:
+                    compute_env_ids["EC2"] = comp_env["id"]
+        # Create any missing compute environments for the project
+        if compute_env_ids["SPOT"] is None:
+            data = self.generate_compute_environment(comp_env_spot, "SPOT")
+            response = self.tower.request("POST", endpoint, params=params, json=data)
+            compute_env_ids["SPOT"] = response["computeEnvId"]
+            self.set_primary_compute_environment(response["computeEnvId"])
+        if compute_env_ids["EC2"] is None:
+            data = self.generate_compute_environment(comp_env_ec2, "EC2")
+            response = self.tower.request("POST", endpoint, params=params, json=data)
+            compute_env_ids["EC2"] = response["computeEnvId"]
+        return compute_env_ids
+
+    def set_primary_compute_environment(self, compute_env_id: str) -> None:
+        """Mark the given compute environment as the primary one (default)
+
+        Args:
+            compute_env_id (str): Compute environment ID
+        """
+        endpoint = f"/compute-envs/{compute_env_id}/primary"
+        params = {"workspaceId": self.id}
+        self.tower.request("POST", endpoint, params=params, json="{}")
 
 
 class TowerOrganization:
@@ -532,6 +674,7 @@ class TowerOrganization:
         tower: TowerClient,
         projects: Projects,
         full_name: str = ORG_NAME,
+        use_teams: bool = False,
     ) -> None:
         """Create Tower organization helper instance
 
@@ -542,14 +685,17 @@ class TowerOrganization:
         """
         self.tower = tower
         self.full_name = full_name
+        self.use_teams = use_teams
         self.name = self.tower.get_valid_name(full_name)
         self.json = self.create()
         self.id = self.json["orgId"]
         self.projects = projects
         self.users_per_project = projects.users_per_project
+        self.teamids_per_project: Dict[str, Dict[int, str]] = dict()
         self.members: Dict[str, dict] = dict()
         self.populate()
         self.workspaces: Dict[str, TowerWorkspace] = dict()
+        self.create_workspaces()
 
     def create(self) -> dict:
         """Get or create Tower organization with the given name
@@ -600,17 +746,88 @@ class TowerOrganization:
         # This hacky approach is necessary because you need to retrieve the
         # member ID using the username (you can't with the email alone)
         if "message" in response and "already a member" in response["message"]:
+            member = dict()
             username = response["message"].split("'")[1]
-            response = self.tower.request("GET", endpoint)
-            members = response["members"]
-            for member in members:
-                if member["userName"] == username:
-                    break
+            params = {"search": username}
+            members = self.tower.paged_request("GET", endpoint, params=params)
+            for m in members:
+                if m["userName"] == username:
+                    member = m
+            assert member, f"Failed to find the given member ({user})"
         # Otherwise, just return their new member ID for the organization
         else:
             member = response["member"]
         self.members[user] = member
         return member
+
+    def add_member_to_team(self, team_id: int, user: str) -> int:
+        """Add user to given team within an organization
+
+        Args:
+            team_id (int): Team identifier
+            user (str): Email address for the user
+
+        Returns:
+            int: Team member identifier, which is the same as the
+                organization member identifier
+        """
+        endpoint = f"/orgs/{self.id}/teams/{team_id}/members"
+        data = {"userNameOrEmail": user}
+        response = self.tower.request("POST", endpoint, json=data)
+        # If the user is already a member, you get the following message:
+        #   "The member is already associated with the team"
+        # If this happens, just retrieve the member ID from the organization
+        if "message" in response and "already" in response["message"]:
+            member = self.add_member(user)
+            member_id = member["memberId"]
+        else:
+            member_id = response["member"]["memberId"]
+        return member_id
+
+    def remove_member_from_team(self, team_id: int, member_id: int) -> Dict:
+        """Remove a member from an organization team
+
+        Args:
+            team_id (int): Team identifier
+            member_id (int): Member identifier
+        """
+        endpoint = f"/orgs/{self.id}/teams/{team_id}/members/{member_id}/delete"
+        response = self.tower.request("DELETE", endpoint)
+        return response
+
+    def create_team(self, team_name: str) -> int:
+        """Create team under organization with the given name
+
+        Args:
+            team_name (str): Team name
+
+        Returns:
+            int: Team identifier
+        """
+        # Check if the team already exists
+        endpoint = f"/orgs/{self.id}/teams"
+        teams = self.tower.paged_request("GET", endpoint)
+        for team in teams:
+            if team["name"] == team_name:
+                return team["teamId"]
+        # If team doesn't exist, create one
+        data = {"team": {"name": team_name, "description": None, "avatar": None}}
+        response = self.tower.request("POST", endpoint, json=data)
+        return response["team"]["teamId"]
+
+    def list_team_members(self, team_id: int) -> List[int]:
+        """Retrieve a list of team member IDs
+
+        Args:
+            team_id (int): Team identifier
+
+        Returns:
+            List[int]: List of team member IDs
+        """
+        endpoint = f"/orgs/{self.id}/teams/{team_id}/members"
+        team_members = self.tower.paged_request("GET", endpoint)
+        team_member_ids = [member["memberId"] for member in team_members]
+        return team_member_ids
 
     def populate(self) -> None:
         """Add all emails from across all projects to the organization
@@ -618,9 +835,28 @@ class TowerOrganization:
         Returns:
             Dict[str, dict]: Same as self.project, but with member IDs
         """
-        for project_users in self.users_per_project.values():
-            for user, _ in project_users.list_users():
-                self.add_member(user)
+        for project_name, project_users in self.users_per_project.items():
+            # Create and populate teams for each user group/role
+            self.teamids_per_project[project_name] = dict()
+            for users, user_group, role in project_users.list_teams():
+                if self.use_teams:
+                    project_prefix = project_name[:-8]  # Trim '-project' suffix
+                    team_name = f"{project_prefix}-{user_group}"
+                    team_id = self.create_team(team_name)
+                    self.teamids_per_project[project_name][team_id] = role
+                # Add expected team members
+                verified_ids = set()
+                for user in users:
+                    member = self.add_member(user)
+                    member_id = member["memberId"]
+                    verified_ids.add(member_id)
+                    if self.use_teams:
+                        self.add_member_to_team(team_id, user)
+                # Remove unexpected team members
+                if self.use_teams:
+                    for team_member_id in self.list_team_members(team_id):
+                        if team_member_id not in verified_ids:
+                            self.remove_member_from_team(team_id, team_member_id)
 
     def list_projects(self) -> Iterator[Tuple[str, Users]]:
         """Iterate over all projects and their users
@@ -640,8 +876,16 @@ class TowerOrganization:
                 Mapping of project names and their corresponding workspaces
         """
         for name, users in self.list_projects():
-            ws = TowerWorkspace(self, name, users)
+            if self.use_teams:
+                teams = self.teamids_per_project[name]
+                ws = TowerWorkspace(self, name, teams=teams)
+            else:
+                ws = TowerWorkspace(self, name, users=users)
             self.workspaces[name] = ws
+            # Adding a short delay between creating each workspace
+            # to allow time for compute environments to be deleted
+            # before creating new ones and running into the limit
+            time.sleep(30)
         return self.workspaces
 
 
@@ -654,6 +898,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("projects_dir")
     parser.add_argument("--dry_run", "-n", action="store_true")
+    parser.add_argument("--debug", "-d", action="store_true")
     args = parser.parse_args()
     return args
 

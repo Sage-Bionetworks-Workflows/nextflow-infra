@@ -5,7 +5,8 @@
 /config/test*/
 
 # Ignore VS Code settings
-.vscode/settings.json
+.vscode/
+*.env
 
 # Virtual environment
 .venv/

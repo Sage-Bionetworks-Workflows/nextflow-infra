@@ -1,0 +1,11 @@
+template:
+  type: http
+  url: "{{stack_group_config.aws_infra_templates_root_url}}/v0.3.0/templates/VPC/vpc-20-private.yaml"
+stack_name: nextflow-vpc
+
+parameters:
+  VpcName: nextflow-vpc
+  VpcSubnetPrefix: "172.22"
+
+stack_tags:
+  {{stack_group_config.default_stack_tags}}

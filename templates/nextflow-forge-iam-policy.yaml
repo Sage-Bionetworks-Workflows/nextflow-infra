@@ -45,6 +45,7 @@ Resources:
             - ec2:DescribeKeyPairs
             - ec2:DescribeVpcs
             - ec2:DescribeInstanceTypeOfferings
+            - ec2:GetEbsEncryptionByDefault
             - elasticfilesystem:DescribeMountTargets
             - elasticfilesystem:CreateMountTarget
             - elasticfilesystem:CreateFileSystem

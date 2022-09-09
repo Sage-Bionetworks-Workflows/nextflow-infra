@@ -1,0 +1,4 @@
+compute_budget: "10000"
+storage_budget: "4000"
+security_budget: "1000"
+other_budget: "500"

@@ -34,6 +34,10 @@ Resources:
             - logs:StopQuery
             - logs:TestMetricFilter
             - logs:FilterLogEvents
+            - secretsmanager:DescribeSecret
+            - secretsmanager:DeleteSecret
+            - secretsmanager:ListSecrets
+            - secretsmanager:CreateSecret
           Resource: "*"
 Outputs:
   NextFlowLaunchPolicyArn:

@@ -7,9 +7,13 @@ dependencies:
 parameters:
   S3ReadWriteAccessArns:
     - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/bruno.grande@sagebase.org
+    - arn:aws:sts::035458030717:assumed-role/AWSReservedSSO_TowerViewer_5919a1dd6875ede2/bruno.grande@sagebase.org
+    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/thomas.yu@sagebase.org
+    - arn:aws:sts::035458030717:assumed-role/AWSReservedSSO_TowerViewer_5919a1dd6875ede2/thomas.yu@sagebase.org
   S3ReadOnlyAccessArns:
     - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/tess.thyer@sagebase.org
-    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/thomas.yu@sagebase.org
+    - arn:aws:sts::035458030717:assumed-role/AWSReservedSSO_TowerViewer_5919a1dd6875ede2/tess.thyer@sagebase.org
+  AllowSynapseIndexing: Enabled
   AccountAdminArns:
     - '{{stack_group_config.sso_admin_role.arn}}'
     - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
@@ -21,3 +25,4 @@ stack_tags:
   Department: IBC
   Project: Infrastructure
   OwnerEmail: nextflow-admins@sagebase.org
+  CostCenter: NO PROGRAM / 000000

@@ -1,0 +1,11 @@
+# {% set stack_name = "nextflow-tower-config" %}
+template_path: nextflow-tower-config-bucket.yaml
+stack_name: {{ stack_name }}
+
+parameters:
+  BucketName: {{ stack_name }}
+  GitHubUsername: !aws_secrets_manager nextflow/github_service_acct::SecretString::username
+  GitHubPassword: !aws_secrets_manager nextflow/github_service_acct::SecretString::password
+
+stack_tags:
+  {{stack_group_config.default_stack_tags}}

@@ -19,6 +19,6 @@ for prefix in ${prefixes[*]}; do
     echo "Syncing $prefix..."
     mkdir -p "./$prefix/" \
     && aws s3 --no-sign-request --region eu-west-1 sync "s3://ngi-igenomes/igenomes/$prefix/" "./$prefix/" \
-    && aws s3 --region us-east-1 sync "./$prefix/" "s3://sage-igenomes/igenomes/$prefix/" \
+    && aws s3 --region us-east-1 sync "./$prefix/" "s3://sage-igenomes/igenomes/$prefix/" --acl public-read \
     && rm -r "./$prefix/"
 done

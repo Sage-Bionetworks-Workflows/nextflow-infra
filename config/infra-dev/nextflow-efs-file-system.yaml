@@ -1,0 +1,16 @@
+template_path: nextflow-efs-file-system.yaml
+stack_name: nextflow-efs-file-system
+dependencies:
+  - infra-dev/nextflow-vpc.yaml
+  - infra-dev/nextflow-ecs-security-group.yaml
+  - infra-dev/nextflow-tower-config-bucket.yaml
+  - infra-dev/nextflow-ecs-cluster.yaml
+
+parameters:
+  VpcId: !stack_output_external nextflow-vpc::VPCId
+  SubnetId: !stack_output_external nextflow-ecs-cluster::EcsAutoScalingGroupSubnetId
+  EcsSecurityGroupId: !stack_output_external nextflow-ecs-security-group::SecurityGroupId
+  NextflowTowerConfigBucketArn: !stack_output_external nextflow-tower-config-dev::BucketArn
+
+stack_tags:
+  {{stack_group_config.default_stack_tags}}
