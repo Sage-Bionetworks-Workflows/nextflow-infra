@@ -591,9 +591,9 @@ class TowerWorkspace:
                     "computeJobRole": self.stack["TowerForgeBatchWorkJobRoleArn"],
                     "headJobRole": self.stack["TowerForgeBatchHeadJobRoleArn"],
                     "executionRole": self.stack["TowerForgeBatchExecutionRoleArn"],
-                    "headJobCpus": None,
-                    "headJobMemoryMb": 15360,
-                    "preRunScript": "NXF_OPTS='-Xms4g -Xmx12g'",
+                    "headJobCpus": 8,
+                    "headJobMemoryMb": 15000,
+                    "preRunScript": "NXF_OPTS='-Xms7g -Xmx14g'",
                     "postRunScript": None,
                     "cliPath": None,
                     "forge": {
