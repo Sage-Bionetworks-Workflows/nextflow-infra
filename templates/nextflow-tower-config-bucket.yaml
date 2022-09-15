@@ -69,6 +69,8 @@ Resources:
               allow-list:
                 - "*@sagebase.org"
                 - "*@sagebionetworks.org"
+                - "artem.sokolov@gmail.com"
+                - "clarenceyapp111@gmail.com"
           scm:
             providers:
               github:
