@@ -71,6 +71,7 @@ Resources:
                 - "*@sagebionetworks.org"
                 - "artem.sokolov@gmail.com"
                 - "clarenceyapp111@gmail.com"
+                - "jmuhlich@gmail.com"
           scm:
             providers:
               github:
