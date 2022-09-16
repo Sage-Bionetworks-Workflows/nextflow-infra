@@ -215,7 +215,7 @@ class Projects:
                 email = match.group("session_name")
                 emails.append(email)
             else:
-                raise ValueError(
+                print(
                     f"Listed ARN ({arn}) doesn't follow expected format: "
                     "'arn:aws:sts::<account_id>:<role_name>:<email>'"
                 )
