@@ -1,0 +1,11 @@
+template:
+  type: http
+  url: "https://bootstrap-awss3cloudformationbucket-19qromfd235z9.s3.amazonaws.com/lambda-ebs-cleanup/master/lambda-ebs-cleanup.yaml"
+stack_name: "lambda-ebs-cleanup"
+
+parameters:
+  Schedule: "cron(0/15 * * * ? *)"
+  MinimumAge: "15m"
+
+stack_tags:
+  {{stack_group_config.default_stack_tags}}
