@@ -8,7 +8,7 @@ parameters:
   S3ReadWriteAccessArns:
     - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/adam.taylor@sagebase.org
     - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/adam.taylor@sagebase.org
-    - arn:aws:iam::292075781285:user/as937
+    - arn:aws:iam::292075781285:user/sokolov
     - arn:aws:iam::292075781285:user/cy101
     - arn:aws:iam::292075781285:user/jmuhlich
   AllowSynapseIndexing: Enabled
