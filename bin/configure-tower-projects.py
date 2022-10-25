@@ -10,7 +10,7 @@ import time
 from typing import List, Tuple, Sequence, Dict, Iterator, Optional
 
 import boto3
-import requests  # type: ignore
+from sagetasks.nextflowtower.client import TowerClient
 import yaml  # type: ignore
 
 
@@ -277,98 +277,6 @@ class AwsClient:
         return secret_value
 
 
-class TowerClient:
-    def __init__(self, tower_token=None, tower_api_url=None, debug_mode=False) -> None:
-        """Generate NextflowTower instance
-
-        The descriptions below for the user types were copied
-        from the Nextflow Tower interface.
-
-        Raises:
-            KeyError: The 'NXF_TOWER_TOKEN' environment variable isn't defined
-            KeyError: The 'NXF_TOWER_API_URL' environment variable isn't defined
-        """
-        self.aws = AwsClient()
-        self.vpc = self.aws.get_cfn_stack_outputs(VPC_STACK_NAME)
-        self.debug = debug_mode
-        # Retrieve Nextflow Tower token from environment
-        try:
-            self.tower_token = tower_token or os.environ["NXF_TOWER_TOKEN"]
-        except KeyError as e:
-            raise KeyError(
-                "The 'NXF_TOWER_TOKEN' environment variable must "
-                "be defined with a Nextflow Tower API token."
-            ) from e
-        # Retrieve Nextflow Tower API URL from environment
-        try:
-            self.tower_api_base_url = tower_api_url or os.environ["NXF_TOWER_API_URL"]
-        except KeyError as e:
-            raise KeyError(
-                "The 'NXF_TOWER_API_URL' environment variable must "
-                "be defined with a Nextflow Tower API URL."
-            ) from e
-
-    def get_valid_name(self, full_name: str) -> str:
-        """Generate Tower-friendly name from full name
-
-        Args:
-            full_name (str): Full name (with spaces/punctuation)
-
-        Returns:
-            str: Name with only alphanumeric, dash and underscore characters
-        """
-        return re.sub(r"[^A-Za-z0-9_-]", "-", full_name)
-
-    def request(self, method: str, endpoint: str, **kwargs) -> dict:
-        """Make an authenticated HTTP request to the Nextflow Tower API
-
-        Args:
-            method (str): An HTTP method (GET, PUT, POST, or DELETE)
-            endpoint (str): The API endpoint with the path parameters filled in
-
-        Returns:
-            Response: The raw Response object to allow for special handling
-        """
-        assert method in {"GET", "PUT", "POST", "DELETE"}
-        url = self.tower_api_base_url + endpoint
-        kwargs["headers"] = {"Authorization": f"Bearer {self.tower_token}"}
-        response = requests.request(method, url, **kwargs)
-        try:
-            result = response.json()
-        except json.decoder.JSONDecodeError:
-            result = dict()
-        if self.debug:
-            print(f"\nEndpoint:\t {method} {url}")
-            print(f"Params: \t {kwargs.get('params')}")
-            print(f"Payload:\t {kwargs.get('json')}")
-            print(f"Status Code:\t {response.status_code} / {response.reason}")
-            print(f"Response:\t {result}")
-        return result
-
-    def paged_request(self, method: str, endpoint: str, **kwargs) -> Iterator[dict]:
-        """Iterate through pages of results for a given request
-
-        Args:
-            method (str): An HTTP method (GET, PUT, POST, or DELETE)
-            endpoint (str): The API endpoint with the path parameters filled in
-
-        Returns:
-            Iterator[Dict]: An iterator traversing through pages of responses
-        """
-        params = kwargs.pop("params", {})
-        params["max"] = 50
-        num_items = 0
-        total_size = 1  # Artificial value for initiating the while-loop
-        while num_items < total_size:
-            params["offset"] = num_items
-            response = self.request(method, endpoint, params=params, **kwargs)
-            total_size = response.pop("totalSize", 0)
-            _, items = response.popitem()
-            for item in items:
-                num_items += 1
-                yield item
-
-
 class TowerWorkspace:
     def __init__(
         self,
@@ -380,7 +288,7 @@ class TowerWorkspace:
         self.org = org
         self.tower = org.tower
         self.stack_name = stack_name
-        self.stack = self.tower.aws.get_cfn_stack_outputs(stack_name)
+        self.stack = self.org.aws.get_cfn_stack_outputs(stack_name)
         self.full_name = stack_name
         self.name = self.tower.get_valid_name(stack_name)
         self.json = self.create()
@@ -528,7 +436,7 @@ class TowerWorkspace:
                 return cred["id"]
         # Otherwise, create a new credentials entry for the project
         secret_arn = self.stack["TowerForgeServiceUserAccessKeySecretArn"]
-        credentials = self.tower.aws.get_secret_value(secret_arn)
+        credentials = self.org.aws.get_secret_value(secret_arn)
         data = {
             "credentials": {
                 "name": self.stack_name,
@@ -585,7 +493,7 @@ class TowerWorkspace:
                 "credentialsId": credentials_id,
                 "config": {
                     "configMode": "Batch Forge",
-                    "region": self.tower.aws.region,
+                    "region": self.org.aws.region,
                     "workDir": f"s3://{self.stack['TowerScratch']}/work",
                     "credentials": None,
                     "computeJobRole": self.stack["TowerForgeBatchWorkJobRoleArn"],
@@ -597,8 +505,8 @@ class TowerWorkspace:
                     "postRunScript": None,
                     "cliPath": None,
                     "forge": {
-                        "vpcId": self.tower.vpc[VPC_STACK_OUTPUT_VID],
-                        "subnets": [self.tower.vpc[o] for o in VPC_STACK_OUTPUT_SIDS],
+                        "vpcId": self.org.vpc[VPC_STACK_OUTPUT_VID],
+                        "subnets": [self.org.vpc[o] for o in VPC_STACK_OUTPUT_SIDS],
                         "fsxMode": "None",
                         "efsMode": "None",
                         "type": model,
@@ -683,6 +591,8 @@ class TowerOrganization:
             projects (Projects): List of projects and their users
             full_name (str): (Optional) Full name of organization
         """
+        self.aws = AwsClient()
+        self.vpc = self.aws.get_cfn_stack_outputs(VPC_STACK_NAME)
         self.tower = tower
         self.full_name = full_name
         self.use_teams = use_teams
