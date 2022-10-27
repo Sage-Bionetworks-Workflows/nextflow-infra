@@ -3,27 +3,21 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 name = "pypi"
 
-[dev-packages]
-sceptre = "~=2.7"
-sceptre-cmd-resolver = "1.1.2"
-pre-commit = "*"
-sceptre-resolver-aws-secrets-manager = {file = "https://github.com/iAnomaly/sceptre-resolver-aws-secrets-manager/archive/v1.0.0.tar.gz"}
-sceptre-ssm-resolver = "1.2.1"
-
 [requires]
-python_version = "3.8"
+python_version = "3.10"
 
 [packages]
 boto3 = "*"
 requests = "*"
 types-requests = "*"
-pyyaml = "<6"
+pyyaml = "*"
 types-pyyaml = "*"
 cfn-lint = "*"
-networkx = "==2.5"
-click = "==8.0.2"
-markupsafe = "==2.0.1"
-sagetasks = "==0.1.0"
+sagetasks = "*"
 
-[pipenv]
-allow_prereleases = true
+[dev-packages]
+pre-commit = "*"
+sceptre = "*"
+sceptre-cmd-resolver = "*"
+sceptre-ssm-resolver = "*"
+sceptre-resolver-aws-secrets-manager = {file = "https://github.com/iAnomaly/sceptre-resolver-aws-secrets-manager/archive/v1.0.0.tar.gz"}
