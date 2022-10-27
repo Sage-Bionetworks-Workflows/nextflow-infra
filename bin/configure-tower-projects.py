@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 
 from __future__ import annotations
+
 import argparse
-from collections import defaultdict
 import json
 import os
 import re
 import time
-from typing import List, Tuple, Sequence, Dict, Iterator, Optional
+from collections import defaultdict
+from typing import Dict, Iterator, List, Optional, Sequence, Tuple
 
 import boto3
-from sagetasks.nextflowtower.client import TowerClient
 import yaml  # type: ignore
-
+from sagetasks.nextflowtower.client import TowerClient
 
 # Increment this version when updating compute environments
 CE_VERSION = "v6"
