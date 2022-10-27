@@ -23,6 +23,7 @@ cfn-lint = "*"
 networkx = "==2.5"
 click = "==8.0.2"
 markupsafe = "==2.0.1"
+sagetasks = "==0.1.0"
 
 [pipenv]
 allow_prereleases = true
