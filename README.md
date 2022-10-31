@@ -78,11 +78,7 @@ Before you can use Nextflow Tower, you need to first deploy a Tower project, whi
 
 5. Log into Nextflow Tower using the [link](#access-tower) at the top of this README and open your project workspace. If you were listed under `S3ReadWriteAccessArns`, then you'll be able to add pipelines to your workspace and launch them on your data.
 
-6. Make sure that this [Confluence wiki page](https://sagebionetworks.jira.com/l/c/1hm4NP7a) is watched by everyone who will be running workflows on Tower. This generally doesn't need to include individuals listed as view-only in the `<stack_name>.yaml` file.
-
-   **N.B.** To obtain a list of current watchers and to add new watchers, click the "Manage watchers" button under the 👁 (eye) icon at the top right of the Confluence page.
-
-7. Read through the "Usage Details" and "Scheduled Downtime" sections on the wiki page. Any important updates to this page will be shared with watchers.
+6. Check out the [Getting Started with Nextflow and Tower](https://sagebionetworks.jira.com/wiki/spaces/WF/pages/2191556616/Getting+Started+with+Nextflow+and+Tower) wiki page for additional instructions on how to develop workflows in Nextflow and deploy/launch them in Tower.
 
 ## License
 
