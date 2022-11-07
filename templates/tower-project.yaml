@@ -125,8 +125,6 @@ Resources:
   TowerForgeBatchHeadJobRole:
     Type: AWS::IAM::Role
     Properties:
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -139,8 +137,6 @@ Resources:
   TowerForgeBatchWorkJobRole:
     Type: AWS::IAM::Role
     Properties:
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -187,6 +183,25 @@ Resources:
               - !GetAtt TowerForgeBatchExecutionRole.Arn
       Roles:
         - !Ref TowerForgeBatchHeadJobRole
+
+  TowerForgeExternalS3AccessPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: TowerForgeExternalS3AccessPolicy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: GrantExternalS3Access
+            Effect: Allow
+            Action: "*"
+            Resource: "*"
+            Condition:
+              StringNotEquals:
+                s3:ResourceAccount:
+                  - !Sub "${AWS::AccountId}"
+      Roles:
+        - !Ref TowerForgeBatchHeadJobRole
+        - !Ref TowerForgeBatchWorkJobRole
 
   TowerForgeBatchExecutionRole:
     Type: AWS::IAM::Role
@@ -303,6 +318,18 @@ Resources:
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
+          - Sid: DenyCrossProjectAccess
+            Effect: Deny
+            Principal:
+              AWS: "*"
+            Action:
+              - "s3:*"
+            Condition:
+              ArnLike:
+                aws:PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/TowerForge-*"
+            Resource:
+              - !Sub "arn:aws:s3:::${TowerBucket}"
+              - !Sub "arn:aws:s3:::${TowerBucket}/*"
           - Sid: TowerForgeRoleS3Access
             Effect: Allow
             Principal:
@@ -411,6 +438,18 @@ Resources:
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
+          - Sid: DenyCrossProjectAccess
+            Effect: Deny
+            Principal:
+              AWS: "*"
+            Action:
+              - "s3:*"
+            Condition:
+              ArnLike:
+                aws:PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/TowerForge-*"
+            Resource:
+              - !Sub "arn:aws:s3:::${TowerScratch}"
+              - !Sub "arn:aws:s3:::${TowerScratch}/*"
           - Sid: TowerForgeRoleS3Access
             Effect: Allow
             Principal:
