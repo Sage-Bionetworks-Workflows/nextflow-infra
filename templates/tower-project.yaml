@@ -193,7 +193,7 @@ Resources:
         Statement:
           - Sid: GrantExternalS3Access
             Effect: Allow
-            Action: "*"
+            Action: "s3:*"
             Resource: "*"
             Condition:
               StringNotEquals:
