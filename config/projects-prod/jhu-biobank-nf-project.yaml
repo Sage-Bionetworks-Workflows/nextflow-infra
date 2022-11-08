@@ -6,9 +6,7 @@ dependencies:
 
 parameters:
   S3ReadOnlyAccessArns:
-    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/bruno.grande@sagebase.org
     - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/bruno.grande@sagebase.org
-    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/jineta.banerjee@sagebase.org
     - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/jineta.banerjee@sagebase.org
   AllowSynapseIndexing: Enabled
   AccountAdminArns:

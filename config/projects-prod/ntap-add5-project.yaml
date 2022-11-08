@@ -6,11 +6,8 @@ dependencies:
 
 parameters:
   S3ReadWriteAccessArns:
-    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/bruno.grande@sagebase.org
     - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/bruno.grande@sagebase.org
-    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/jineta.banerjee@sagebase.org
     - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/jineta.banerjee@sagebase.org
-    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/robert.allaway@sagebase.org
     - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/robert.allaway@sagebase.org
     - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/sasha.scott@sagebase.org
   AccountAdminArns:
