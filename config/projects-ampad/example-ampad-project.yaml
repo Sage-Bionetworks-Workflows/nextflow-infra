@@ -8,7 +8,6 @@ parameters:
   S3ReadWriteAccessArns:
     - arn:aws:sts::751556145034:assumed-role/strides-ampad-workflows-towerviewer/bruno.grande@sagebase.org
   S3ReadOnlyAccessArns:
-    - arn:aws:sts::751556145034:assumed-role/strides-ampad-workflows-towerviewer/tess.thyer@sagebase.org
     - arn:aws:sts::751556145034:assumed-role/strides-ampad-workflows-towerviewer/thomas.yu@sagebase.org
   AllowSynapseIndexing: Enabled
   AccountAdminArns:

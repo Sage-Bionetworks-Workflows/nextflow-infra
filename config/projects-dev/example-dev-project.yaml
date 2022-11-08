@@ -9,7 +9,7 @@ parameters:
     - arn:aws:sts::035458030717:assumed-role/AWSReservedSSO_TowerViewer_5919a1dd6875ede2/bruno.grande@sagebase.org
     - arn:aws:sts::035458030717:assumed-role/AWSReservedSSO_TowerViewer_5919a1dd6875ede2/thomas.yu@sagebase.org
   S3ReadOnlyAccessArns:
-    - arn:aws:sts::035458030717:assumed-role/AWSReservedSSO_TowerViewer_5919a1dd6875ede2/tess.thyer@sagebase.org
+    - arn:aws:sts::035458030717:assumed-role/AWSReservedSSO_TowerViewer_5919a1dd6875ede2/brad.macdonald@sagebase.org
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
     - '{{stack_group_config.sso_admin_role.arn}}'
