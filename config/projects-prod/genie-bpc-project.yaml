@@ -7,11 +7,8 @@ dependencies:
 
 parameters:
   S3ReadWriteAccessArns:
-    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/xindi.guo@sagebase.org
     - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/xindi.guo@sagebase.org
-    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/thomas.yu@sagebase.org
     - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/thomas.yu@sagebase.org
-    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/chelsea.nayan@sagebase.org
     - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/chelsea.nayan@sagebase.org
   AllowSynapseIndexing: Enabled
   AccountAdminArns:

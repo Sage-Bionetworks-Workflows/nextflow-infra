@@ -13,20 +13,9 @@ stack_tags:
 
 parameters:
 
-  S3ReadWriteAccessArns:
-    # (REQUIRED) Step 3: Replace the email below with your '@sagebase.org' address
-    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/sophia.jobe@sagebase.org
+  S3ReadOnlyAccessArns:
     - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/sophia.jobe@sagebase.org
-
-    # (Optional) Step 4: Uncomment and update the following line(s) to grant additional users with read/write access
-    # - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/tess.thyer@sagebase.org
-    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/william.poehlman@sagebase.org
     - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/william.poehlman@sagebase.org
-
-  # (Optional) Step 5: Uncomment and update the following line(s) to grant additional users with read-only access
-  # S3ReadOnlyAccessArns:
-  #   - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/thomas.yu@sagebase.org
-  #   - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/jason.hwee@sagebase.org
 
   # (Optional) Step 6: Uncomment the following line to disable the feature allowing Synapse to index files
   #                    in the long-term (archival) S3 bucket (by default, this feature is enabled)
