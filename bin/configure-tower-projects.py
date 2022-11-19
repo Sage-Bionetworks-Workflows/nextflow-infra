@@ -445,11 +445,11 @@ class TowerWorkspace:
                 part = self.add_participant(role, user=user)
                 part_id = part["participantId"]
                 verified_ids.add(part_id)
-                # Remove unexpected team members
-                for part in self.list_participants():
-                    part_id = part["participantId"]
-                    if part_id not in verified_ids:
-                        self.remove_participant(part_id)
+            # Remove unexpected team members
+            for part in self.list_participants():
+                part_id = part["participantId"]
+                if part_id not in verified_ids:
+                    self.remove_participant(part_id)
         if self.teams:
             for team_id, role in self.teams.items():
                 self.add_participant(role, team_id=team_id)
