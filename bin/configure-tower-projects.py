@@ -205,8 +205,7 @@ class Projects:
             List[str]: List of email from the role session names
         """
         role_arn_regex = re.compile(
-            r"arn:aws:sts::(?P<account_id>[0-9]+):assumed-role/(?P<role_name>[^/]+)"
-            r"/(?P<session_name>[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,})"
+            r".*/(?P<session_name>[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,})"
         )
         emails = list()
         for arn in arns:
@@ -410,11 +409,47 @@ class TowerWorkspace:
         data = {"role": role}
         self.tower.request("PUT", endpoint, json=data)
 
+    def remove_participant(self, part_id: int) -> Dict:
+        """Remove a member from an organization team
+
+        Args:
+            part_id (int): Participant ID for the user or team
+        """
+        endpoint = f"/orgs/{self.org.id}/workspaces/{self.id}/participants/{part_id}"
+        response = self.tower.request("DELETE", endpoint)
+        return response
+
+    def list_participants(self) -> Dict:
+        """Remove a member from an organization team
+
+        Args:
+            part_id (int): Participant ID for the user or team
+        """
+        endpoint = f"/orgs/{self.org.id}/workspaces/{self.id}/participants"
+        participants = self.tower.paged_request("GET", endpoint)
+        return participants
+
+    def get_owner_participant_ids(self) -> List[int]:
+        participants = self.list_participants()
+        owners = [part for part in participants if part["wspRole"] == "owner"]
+        owner_ids = [owner["participantId"] for owner in owners]
+        return owner_ids
+
     def populate(self) -> None:
         """Add maintainers and viewers to the organization and workspace"""
         if self.users:
+            owner_ids = self.get_owner_participant_ids()
+            verified_ids = set(owner_ids)
             for user, _, role in self.users.list_users():
-                self.add_participant(role, user=user)
+                # Add expected participants
+                part = self.add_participant(role, user=user)
+                part_id = part["participantId"]
+                verified_ids.add(part_id)
+                # Remove unexpected team members
+                for part in self.list_participants():
+                    part_id = part["participantId"]
+                    if part_id not in verified_ids:
+                        self.remove_participant(part_id)
         if self.teams:
             for team_id, role in self.teams.items():
                 self.add_participant(role, team_id=team_id)
