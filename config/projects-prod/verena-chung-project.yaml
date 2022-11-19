@@ -14,8 +14,8 @@ stack_tags:
 parameters:
 
   S3ReadOnlyAccessArns:
-    - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/verena.chung@sagebase.org
-    - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/william.poehlman@sagebase.org
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/verena.chung@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/william.poehlman@sagebase.org'
 
   # (Optional) Step 6: Uncomment the following line to disable the feature allowing Synapse to index files
   #                    in the long-term (archival) S3 bucket (by default, this feature is enabled)

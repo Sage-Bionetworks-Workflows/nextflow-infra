@@ -7,9 +7,9 @@ dependencies:
 
 parameters:
   S3ReadWriteAccessArns:
-    - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/xindi.guo@sagebase.org
-    - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/thomas.yu@sagebase.org
-    - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/chelsea.nayan@sagebase.org
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/xindi.guo@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/chelsea.nayan@sagebase.org'
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
     - '{{stack_group_config.sso_admin_role.arn}}'
