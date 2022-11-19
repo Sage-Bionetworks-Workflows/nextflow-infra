@@ -410,7 +410,7 @@ class TowerWorkspace:
         self.tower.request("PUT", endpoint, json=data)
 
     def remove_participant(self, part_id: int) -> Dict:
-        """Remove a member from an organization team
+        """Remove a participant from a workspace
 
         Args:
             part_id (int): Participant ID for the user or team
@@ -419,17 +419,17 @@ class TowerWorkspace:
         response = self.tower.request("DELETE", endpoint)
         return response
 
-    def list_participants(self) -> Dict:
-        """Remove a member from an organization team
-
-        Args:
-            part_id (int): Participant ID for the user or team
-        """
+    def list_participants(self) -> Iterator:
+        """List the participants in a workspace"""
         endpoint = f"/orgs/{self.org.id}/workspaces/{self.id}/participants"
         participants = self.tower.paged_request("GET", endpoint)
         return participants
 
-    def get_owner_participant_ids(self) -> List[int]:
+    def list_owner_participant_ids(self) -> List[int]:
+        """List the participant IDs of any workspace owners
+
+        This will include the workspace creator.
+        """
         participants = self.list_participants()
         owners = [part for part in participants if part["wspRole"] == "owner"]
         owner_ids = [owner["participantId"] for owner in owners]
@@ -438,7 +438,7 @@ class TowerWorkspace:
     def populate(self) -> None:
         """Add maintainers and viewers to the organization and workspace"""
         if self.users:
-            owner_ids = self.get_owner_participant_ids()
+            owner_ids = self.list_owner_participant_ids()
             verified_ids = set(owner_ids)
             for user, _, role in self.users.list_users():
                 # Add expected participants
