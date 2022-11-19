@@ -9,10 +9,10 @@ stack_tags:
 parameters:
 
   S3ReadOnlyAccessArns:
-    - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/robert.allaway@sagebase.org
-    - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/sasha.scott@sagebase.org
-    - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/jineta.banerjee@sagebase.org
-    - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/bruno.grande@sagebase.org
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/robert.allaway@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/sasha.scott@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/jineta.banerjee@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org'
 
   # (Optional) Step 6: Uncomment and update the following lines to change the S3 bucket lifecycle configuration,
   #                    which cannot be changed as long as 'AllowSynapseIndexing' is enabled (default)

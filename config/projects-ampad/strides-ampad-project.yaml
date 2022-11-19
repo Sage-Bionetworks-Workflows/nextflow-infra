@@ -6,8 +6,8 @@ dependencies:
 
 parameters:
   S3ReadWriteAccessArns:
-    - arn:aws:sts::751556145034:assumed-role/strides-ampad-workflows-towerviewer/william.poehlman@sagebase.org
-    - arn:aws:sts::751556145034:assumed-role/strides-ampad-workflows-towerviewer/bruno.grande@sagebase.org
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/william.poehlman@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org'
   S3ReadOnlyAccessArns:
     - arn:aws:iam::751556145034:role/jared-hendrickson-project-TowerForgeBatchHeadJobRo-1XYQQ76D6E75Z
     - arn:aws:iam::751556145034:role/jared-hendrickson-project-TowerForgeBatchWorkJobRo-1V2DBC9NYIPOB

@@ -6,7 +6,7 @@ dependencies:
 
 parameters:
   S3ReadWriteAccessArns:
-    - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/adam.taylor@sagebase.org
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/adam.taylor@sagebase.org'
     - arn:aws:iam::292075781285:user/sokolov
     - arn:aws:iam::292075781285:user/cy101
     - arn:aws:iam::292075781285:user/jmuhlich
