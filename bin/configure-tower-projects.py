@@ -8,7 +8,7 @@ import os
 import re
 import time
 from collections import defaultdict
-from typing import Dict, Iterator, List, Optional, Sequence, Tuple
+from typing import Dict, Iterator, List, Optional, Sequence, Tuple, Set
 
 import boto3
 import yaml  # type: ignore
@@ -425,14 +425,14 @@ class TowerWorkspace:
         participants = self.tower.paged_request("GET", endpoint)
         return participants
 
-    def list_owner_participant_ids(self) -> List[int]:
+    def list_owner_participant_ids(self) -> Set[int]:
         """List the participant IDs of any workspace owners
 
         This will include the workspace creator.
         """
         participants = self.list_participants()
         owners = [part for part in participants if part["wspRole"] == "owner"]
-        owner_ids = [owner["participantId"] for owner in owners]
+        owner_ids = {owner["participantId"] for owner in owners}
         return owner_ids
 
     def populate(self) -> None:
