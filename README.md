@@ -22,7 +22,7 @@ Read through the [contribution guidelines](CONTRIBUTING.md) for more information
 
 ### Getting Help
 
-Message us in the [`#workflow_users`](https://sagebionetworks.slack.com/archives/C8SJHFCKT) Slack channel or email us at `nextflow-admins[at]sagebase[dot]org`.
+Instructions on how to get help are described on the [Getting Started with Nextflow and Tower](https://sagebionetworks.jira.com/wiki/spaces/WF/pages/2191556616/Getting+Started+with+Nextflow+and+Tower#Getting-Help) page. This page is only accessible to Sage employees.
 
 ## Tower User Onboarding
 
@@ -34,31 +34,42 @@ Before you can use Nextflow Tower, you need to first deploy a Tower project, whi
 
 2. [Create an IT JIRA ticket](https://sagebionetworks.jira.com/jira/secure/CreateIssue.jspa?issuetype=3&pid=10083) requesting membership to the following JumpCloud groups for anyone who needs read/write or read-only access to the S3 bucket:
 
-   - `aws-sandbox-developers`
-   - `aws-workflow-nextflow-tower-viewer`
+   - **For AMP-AD projects:** `strides-ampad-workflows-towerviewer`
+   - **For all other projects:** `aws-workflow-nextflow-tower-viewer`
 
-   To confirm whether you're already a member of these JumpCloud groups, you can expand the AWS Account list on [this page](https://d-906769aa66.awsapps.com/start#/) (after logging in with JumpCloud) and check if you have `Developer` listed under `org-sagebase-sandbox` and `TowerViewer` under `workflows-nextflow-dev` and `workflows-nextflow-prod`.
+   To confirm whether you're already a member of these JumpCloud groups, you can expand the AWS Account list on [this page](https://d-906769aa66.awsapps.com/start#/) (after logging in with JumpCloud) and check if you have `TowerViewer` under `workflows-nextflow-prod`.
 
    ![AWS SSO Screenshot](assets/img/aws_sso.png)
 
-3. Open a pull request on this repository in which you duplicate [`config/projects/example-project.yaml`](config/projects-prod/example-project.yaml) as `<stack_name>.yaml` in the `projects/` subdirectory and then follow the numbered steps listed in the file. Note that some steps are required whereas others are optional.
+3. Copy-paste the contents of [`config/projects-prod/example-project.yaml`](config/projects-prod/example-project.yaml) into a file called `<stack_name>.yaml`, which must be added to one of the following subdirectories:
+
+   - **For AMP-AD projects:** `config/projects-ampad/`
+   - **For all other projects:** `config/projects-prod/`
+
+4. Follow the numbered steps listed in your new file. Note that some steps are required whereas others are optional.
 
    **N.B.** Here, read/write vs read-only access refers to the level of access granted to users for the encrypted S3 bucket and to the Tower workspace (more details below). **Given that access is granted to the entire bucket, you might want to create more specific Tower projects that provide more granular access control.**
 
+5. Open a pull request (PR) on this repository with your new file. Once that's done, wait until someone reviews your PR. They will either request changes or merge the PR.
+
    **Getting Help:** If you are unfamiliar with Git/GitHub or don't know how to open a pull request, see [above](#getting-help) for how to get help.
 
-4. Once the pull request is approved and merged, [confirm](https://github.com/Sage-Bionetworks-Workflows/aws-workflows-nextflow-infra/actions?query=event%3Apush+branch%3Amain) that your PR was deployed successfully. If so, the following happened on your behalf:
+6. Once the PR is merged, make sure that it was deployed successfully by reviewing the latest build on the [GitHub Actions](https://github.com/Sage-Bionetworks-Workflows/aws-workflows-nextflow-infra/actions?query=event%3Apush+branch%3Amain) page. This may take up to 20-30 minutes.
 
-   - Two S3 buckets were created (listed below), and users listed under `S3ReadWriteAccessArns` and `S3ReadOnlyAccessArns` have read/write and read-only access, respectively. They each serve different purposes:
+7. A successful deployment will result in the following changes:
+
+   - Two S3 buckets were created or updated, each serving different purposes:
 
      - `s3://<stack_name>-tower-bucket/`: This bucket is intended for archival purposes, _i.e._ to store files in the long term. It can also be indexed by Synapse by default. Whenever you specify the `outdir` or `publishDir` parameters for a workflow, they should generally point to an S3 prefix in this bucket.
      - `s3://<stack_name>-tower-scratch/`: This bucket is intended to be used as scratch storage, _i.e._ to store files in the short term. The important difference with this bucket is that **files will automatically be deleted after 6 months.** This delay can be adjusted with the `ScratchLifecycleExpiration` parameter. This is intended as a convenience feature so users don't have to worry about cleaning up after themselves while benefitting from caching if the need arises (presumed here to be generally within 6 months). This bucket cannot be indexed by Synapse. It's ideal for storing the Nextflow work directories (configured on each compute environment by default) and for staging files from Synapse since they already exist somewhere else.
+
+   - Users listed under `S3ReadWriteAccessArns` and `S3ReadOnlyAccessArns` in the YAML file were granted read/write and read-only access, respectively.
 
    - All users listed under `S3ReadWriteAccessArns` and `S3ReadOnlyAccessArns` were added to the Sage Bionetworks organization in Tower.
 
    - A new Tower workspace called `<stack_name>` was created under this organization.
 
-   - Users listed under `S3ReadWriteAccessArns` were added to a workspace team with the `Maintain` role, which grants the following permissions:
+   - Users listed under `S3ReadWriteAccessArns` were added to the workspace with the `Maintain` role, which grants the following permissions:
 
      > The users can launch pipeline and modify pipeline executions
        (e.g. can change the pipeline launch compute env, parameters,
@@ -66,7 +77,7 @@ Before you can use Nextflow Tower, you need to first deploy a Tower project, whi
        configuration in the Launchpad. The users cannot modify Compute
        env settings and Credentials
 
-   - Users listed under `S3ReadOnlyAccessArns` were added to a workspace team with the `View` role, which grants the following permissions:
+   - Users listed under `S3ReadOnlyAccessArns` were added to the workspace with the `View` role, which grants the following permissions:
 
      > The users can access to the team resources in read-only mode
 
@@ -74,14 +85,14 @@ Before you can use Nextflow Tower, you need to first deploy a Tower project, whi
 
    - An AWS Batch compute environment called `<stack_name> (default)` was created using these credentials with a default configuration that should satisfy most use cases.
 
-   **N.B.** If you need have special needs (_e.g._ more CPUs, on-demand EC2 instances, FSx for Lustre), see [above](#getting-help) for how to contact the administrators, who can create additional compute environments in your workspace.
+   **N.B.** If you need have special needs (_e.g._ higher vCPU limit, GPU-enabled instance types, NVMe storage), see [above](#getting-help) for how to contact the Tower administrators, who can create additional compute environments in your workspace.
 
-5. Log into Nextflow Tower using the [link](#access-tower) at the top of this README and open your project workspace. If you were listed under `S3ReadWriteAccessArns`, then you'll be able to add pipelines to your workspace and launch them on your data.
+8. Log into Nextflow Tower using the [link](#access-tower) at the top of this README and open your project workspace. As long as you were listed under `S3ReadWriteAccessArns`, then you'll be able to add pipelines to your workspace and launch them on your data.
 
-6. Check out the [Getting Started with Nextflow and Tower](https://sagebionetworks.jira.com/wiki/spaces/WF/pages/2191556616/Getting+Started+with+Nextflow+and+Tower) wiki page for additional instructions on how to develop workflows in Nextflow and deploy/launch them in Tower.
+9.  Check out the [Getting Started with Nextflow and Tower](https://sagebionetworks.jira.com/wiki/spaces/WF/pages/2191556616/Getting+Started+with+Nextflow+and+Tower) docs for additional instructions on how to launch workflows on Tower.
 
 ## License
 
 This repository is licensed under the [Apache License 2.0](LICENSE).
 
-Copyright 2021 Sage Bionetworks
+Copyright 2022 Sage Bionetworks
