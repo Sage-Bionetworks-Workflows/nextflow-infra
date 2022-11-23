@@ -91,6 +91,8 @@ Before you can use Nextflow Tower, you need to first deploy a Tower project, whi
 
 9.  Check out the [Getting Started with Nextflow and Tower](https://sagebionetworks.jira.com/wiki/spaces/WF/pages/2191556616/Getting+Started+with+Nextflow+and+Tower) docs for additional instructions on how to launch workflows on Tower.
 
+10. Join the [`#tower-news`](https://sagebionetworks.slack.com/archives/C04BEBKRWLV) Slack channel to stay tuned on any relevant announcements. This can incude new features as well as scheduled or unexpected downtime.
+
 ## License
 
 This repository is licensed under the [Apache License 2.0](LICENSE).
