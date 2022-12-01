@@ -10,6 +10,7 @@ parameters:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/xindi.guo@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/chelsea.nayan@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/rixing.xu@sagebase.org'
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
     - '{{stack_group_config.sso_admin_role.arn}}'
