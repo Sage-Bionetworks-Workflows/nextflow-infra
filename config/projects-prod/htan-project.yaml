@@ -9,6 +9,7 @@ parameters:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/adam.taylor@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/milen.nikolov@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/brad.macdonald@sagebase.org'
+    - 'arn:aws:iam::888810830951:role/AmazonS3FullAccess' # Provides for htan-dev cross-account access
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
     - '{{stack_group_config.sso_admin_role.arn}}'
