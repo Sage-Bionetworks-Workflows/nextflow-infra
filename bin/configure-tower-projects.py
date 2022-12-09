@@ -207,18 +207,18 @@ class Projects:
         role_arn_regex = re.compile(
             r".*/(?P<session_name>[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,})"
         )
-        emails = list()
+        emails = set()
         for arn in arns:
             match = role_arn_regex.fullmatch(arn)
             if match:
                 email = match.group("session_name")
-                emails.append(email)
+                emails.add(email)
             else:
                 print(
                     f"Listed ARN ({arn}) doesn't follow expected format: "
                     "'arn:aws:sts::<account_id>:<role_name>:<email>'"
                 )
-        return emails
+        return list(emails)
 
     def extract_users(self) -> Dict[str, Users]:
         """Extract users from a series of config files
