@@ -528,6 +528,7 @@ Resources:
                 - "s3:PutObject*"
                 - "s3:*MultipartUpload*"
               Resource:
+                - !Sub "arn:aws:s3:::${TowerScratch}"
                 - !Sub "arn:aws:s3:::${TowerScratch}/work/*"
                 - !Sub "arn:aws:s3:::${TowerScratch}/07_days/*"
                 - !Sub "arn:aws:s3:::${TowerScratch}/14_days/*"
