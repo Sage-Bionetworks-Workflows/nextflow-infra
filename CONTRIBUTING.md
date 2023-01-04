@@ -35,10 +35,10 @@ If your text editor (_e.g._ Visual Studio Code) or shell (_e.g._ using [`direnv`
 export AWS_PROFILE="<profile-name>"
 
 # Test the deployment of a specific 'develop' stack
-pipenv run sceptre launch --yes infra-dev/some-stack.yaml
+pipenv run sceptre --var-file ./src/sceptre/variables/dev.yaml launch --yes infra-dev/some-stack.yaml
 
 # Delete the test deployment of the specific 'develop' stack
-pipenv run sceptre delete --yes infra-dev/some-stack.yaml
+pipenv run sceptre --var-file ./src/sceptre/variables/dev.yaml delete --yes infra-dev/some-stack.yaml
 ```
 
 ## AWS Accounts
