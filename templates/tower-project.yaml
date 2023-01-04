@@ -144,7 +144,7 @@ Resources:
     Properties:
       PolicyName: TowerForgeBucketAccessPolicy
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Sid: NextflowConfig
             Effect: Allow
@@ -182,7 +182,7 @@ Resources:
     Properties:
       PolicyName: TowerForgeExternalS3AccessPolicy
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Sid: ConditionalAmazonS3ReadOnlyAccess
             Effect: Allow
@@ -219,7 +219,7 @@ Resources:
     Properties:
       PolicyName: TowerForgeBatchExecutionSecretAccess
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Sid: TowerForgeBatchExecutionSecretAccess
             Effect: Allow
@@ -295,18 +295,18 @@ Resources:
                 StorageClass: INTELLIGENT_TIERING
       CorsConfiguration:
         CorsRules:
-        - !If
-          - SynapseIndexingEnabled
-          - Id: SynapseCORSRule
-            AllowedHeaders: ["*"]
-            AllowedOrigins: ["*"]
-            AllowedMethods: [GET, POST, PUT, HEAD]
-            MaxAge: 3000
-          - Id: NullCorsRule
-            AllowedHeaders: [""]
-            AllowedOrigins: [""]
-            AllowedMethods: ["GET"]
-            MaxAge: 0
+          - !If
+            - SynapseIndexingEnabled
+            - Id: SynapseCORSRule
+              AllowedHeaders: ["*"]
+              AllowedOrigins: ["*"]
+              AllowedMethods: [GET, POST, PUT, HEAD]
+              MaxAge: 3000
+            - Id: NullCorsRule
+              AllowedHeaders: [""]
+              AllowedOrigins: [""]
+              AllowedMethods: ["GET"]
+              MaxAge: 0
 
   TowerBucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -382,7 +382,7 @@ Resources:
             - Sid: GrantBucketReadAccessToSynapse
               Effect: Allow
               Principal:
-                AWS: "arn:aws:iam::325565585839:root"  # Synapse Account
+                AWS: "arn:aws:iam::325565585839:root" # Synapse Account
               Action:
                 - "s3:ListBucket"
                 - "s3:GetBucketLocation"
@@ -394,7 +394,7 @@ Resources:
             - Sid: GrantObjectReadAccessToSynapse
               Effect: Allow
               Principal:
-                AWS: "arn:aws:iam::325565585839:root"  # Synapse Account
+                AWS: "arn:aws:iam::325565585839:root" # Synapse Account
               Action:
                 - "s3:GetObject"
               Resource:
@@ -422,6 +422,7 @@ Resources:
       LifecycleConfiguration:
         Rules:
           - Id: LifecycleStorageClassTransition
+            Status: Enabled
             Transitions:
               - TransitionInDays: !Ref ScratchLifecycleTransition
                 StorageClass: !Ref ScratchLifecycleStorageClass
