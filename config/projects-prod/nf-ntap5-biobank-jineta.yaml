@@ -8,12 +8,11 @@ stack_tags:
   CostCenter: NTAP NF Addendum 5 / 301101 # Valid values here: https://github.com/Sage-Bionetworks/aws-infra/tree/master/templates/tags
 
 parameters:
-
   S3ReadOnlyAccessArns:
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/jineta.banerjee@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/robert.allaway@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/sasha.scott@sagebase.org'
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/jineta.banerjee@sagebase.org"
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org"
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/robert.allaway@sagebase.org"
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/sasha.scott@sagebase.org"
 
   # (Optional) Step 6: Uncomment the following line to disable the feature allowing Synapse to index files
   #                    in the long-term (archival) S3 bucket (by default, this feature is enabled)
@@ -21,7 +20,7 @@ parameters:
 
   # (Optional) Step 7: Uncomment and update the following lines to change the data lifecycle configuration
   #                    on the files in the short-term (scratch) S3 bucket (by default, this is enabled)
-  # EnableScratchLifeCycle: Enabled
+  # EnableScratchDataExpiration: Enabled
   # ScratchLifecycleTransition: '30'  # In days
   # ScratchLifecycleStorageClass: INTELLIGENT_TIERING
 
@@ -32,9 +31,9 @@ parameters:
   # DO NOT EDIT ANYTHING BELOW THIS LINE ------------------------------------------------------------------------
 
   AccountAdminArns:
-    - '{{stack_group_config.sso_admin_role.arn}}'
+    - "{{stack_group_config.sso_admin_role.arn}}"
     - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
-  TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
+  TemplateRootUrl: "https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com"
   TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
   TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
 

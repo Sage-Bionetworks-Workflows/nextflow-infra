@@ -32,11 +32,11 @@ Parameters:
       - Disabled
     Default: Enabled
 
-  EnableScratchLifeCycle:
+  EnableScratchDataExpiration:
     Type: String
     Description: >-
-      'Enabled' to add a lifecycle rule to the short-term (scratch) bucket.
-      Default is 'Enabled'.
+      'Enabled' to auto-delete objects/files in the short-term (scratch) bucket
+      based on the top-level folder (e.g., `14_days`). Default is 'Enabled'.
     AllowedValues:
       - Enabled
       - Disabled
@@ -46,8 +46,8 @@ Parameters:
     Type: Number
     Description: >-
       Number of days until S3 objects in the short-term (scratch) bucket are
-      moved to ScratchLifecycleStorageClass. Default is 30 days.
-    Default: 30
+      moved to ScratchLifecycleStorageClass. Default is 14 days.
+    Default: 14
 
   ScratchLifecycleStorageClass:
     Type: String
@@ -61,13 +61,6 @@ Parameters:
       - ONEZONE_IA
       - GLACIER
     Default: INTELLIGENT_TIERING
-
-  ScratchLifecycleExpiration:
-    Type: Number
-    Description: >-
-      Number of days (from creation) when objects in the short-term (scratch) bucket
-      are deleted from S3. Default is 183 days (i.e., 6 months).
-    Default: 183
 
   AccountAdminArns:
     Type: List<String>
@@ -428,12 +421,33 @@ Resources:
               KMSMasterKeyID: !GetAtt EncryptionKeyStack.Outputs.KeyArn
       LifecycleConfiguration:
         Rules:
-          - Id: UserDefinedDataLifecycleRule
-            Status: !Ref EnableScratchLifeCycle
-            ExpirationInDays: !Ref ScratchLifecycleExpiration
+          - Id: LifecycleStorageClassTransition
             Transitions:
               - TransitionInDays: !Ref ScratchLifecycleTransition
                 StorageClass: !Ref ScratchLifecycleStorageClass
+          - Id: DataExpirationForWorkDirectory
+            Status: !Ref EnableScratchDataExpiration
+            ExpirationInDays: 30
+            Prefix: work/
+          - Id: DataExpirationIn07Days
+            Status: !Ref EnableScratchDataExpiration
+            ExpirationInDays: 7
+            Prefix: 07_days/
+          - Id: DataExpirationIn14Days
+            Status: !Ref EnableScratchDataExpiration
+            ExpirationInDays: 14
+            Prefix: 14_days/
+          - Id: DataExpirationIn30Days
+            Status: !Ref EnableScratchDataExpiration
+            ExpirationInDays: 30
+            Prefix: 30_days/
+          - Id: DataExpirationIn60Days
+            Status: !Ref EnableScratchDataExpiration
+            ExpirationInDays: 60
+            Prefix: 60_days/
+          - Id: DataExpirationIn90Days
+            Status: !Ref EnableScratchDataExpiration
+            ExpirationInDays: 90
 
   TowerScratchPolicy:
     Type: AWS::S3::BucketPolicy
@@ -454,7 +468,7 @@ Resources:
             Resource:
               - !Sub "arn:aws:s3:::${TowerScratch}"
               - !Sub "arn:aws:s3:::${TowerScratch}/*"
-          - Sid: TowerForgeRoleS3Access
+          - Sid: TowerForgeRoleS3ReadDeleteAccess
             Effect: Allow
             Principal:
               AWS:
@@ -465,29 +479,59 @@ Resources:
               - "s3:GetBucketLocation"
               - "s3:ListBucket"
               - "s3:GetObject"
-              - "s3:PutObject"
-              - "s3:PutObjectTagging"
               - "s3:DeleteObject"
-              - "s3:*MultipartUpload*"
             Resource:
               - !Sub "arn:aws:s3:::${TowerScratch}"
               - !Sub "arn:aws:s3:::${TowerScratch}/*"
+          - Sid: TowerForgeRoleS3WriteAccess
+            Effect: Allow
+            Principal:
+              AWS:
+                - !GetAtt TowerForgeServiceRole.Arn
+                - !GetAtt TowerForgeBatchHeadJobRole.Arn
+                - !GetAtt TowerForgeBatchWorkJobRole.Arn
+            Action:
+              - "s3:PutObject"
+              - "s3:PutObjectTagging"
+              - "s3:*MultipartUpload*"
+            Resource:
+              - !Sub "arn:aws:s3:::${TowerScratch}/work/*"
+              - !Sub "arn:aws:s3:::${TowerScratch}/07_days/*"
+              - !Sub "arn:aws:s3:::${TowerScratch}/14_days/*"
+              - !Sub "arn:aws:s3:::${TowerScratch}/30_days/*"
+              - !Sub "arn:aws:s3:::${TowerScratch}/60_days/*"
+              - !Sub "arn:aws:s3:::${TowerScratch}/90_days/*"
           - !If
             - HasS3ReadWriteAccessArns
-            - Sid: GrantReadWriteAccessToS3ReadWriteAccessArns
+            - Sid: GrantReadDeleteAccessToS3ReadWriteAccessArns
               Effect: Allow
               Principal:
                 AWS: !Ref S3ReadWriteAccessArns
               Action:
                 - "s3:GetObject*"
-                - "s3:PutObject*"
-                - "s3:DeleteObject*"
-                - "s3:*MultipartUpload*"
                 - "s3:ListBucket*"
                 - "s3:GetBucketLocation"
+                - "s3:DeleteObject*"
               Resource:
                 - !Sub "arn:aws:s3:::${TowerScratch}"
                 - !Sub "arn:aws:s3:::${TowerScratch}/*"
+            - !Ref AWS::NoValue
+          - !If
+            - HasS3ReadWriteAccessArns
+            - Sid: GrantWriteAccessToS3ReadWriteAccessArns
+              Effect: Allow
+              Principal:
+                AWS: !Ref S3ReadWriteAccessArns
+              Action:
+                - "s3:PutObject*"
+                - "s3:*MultipartUpload*"
+              Resource:
+                - !Sub "arn:aws:s3:::${TowerScratch}/work/*"
+                - !Sub "arn:aws:s3:::${TowerScratch}/07_days/*"
+                - !Sub "arn:aws:s3:::${TowerScratch}/14_days/*"
+                - !Sub "arn:aws:s3:::${TowerScratch}/30_days/*"
+                - !Sub "arn:aws:s3:::${TowerScratch}/60_days/*"
+                - !Sub "arn:aws:s3:::${TowerScratch}/90_days/*"
             - !Ref AWS::NoValue
           - !If
             - HasS3ReadOnlyAccessArns
@@ -519,13 +563,13 @@ Resources:
 Outputs:
   S3ReadWriteAccessArns:
     Condition: HasS3ReadWriteAccessArns
-    Value: !Join [ ",", !Ref S3ReadWriteAccessArns ]
+    Value: !Join [",", !Ref S3ReadWriteAccessArns]
     Export:
       Name: !Sub "${AWS::Region}-${AWS::StackName}-S3ReadWriteAccessArns"
 
   S3ReadOnlyAccessArns:
     Condition: HasS3ReadOnlyAccessArns
-    Value: !Join [ ",", !Ref S3ReadOnlyAccessArns ]
+    Value: !Join [",", !Ref S3ReadOnlyAccessArns]
     Export:
       Name: !Sub "${AWS::Region}-${AWS::StackName}-S3ReadOnlyAccessArns"
 

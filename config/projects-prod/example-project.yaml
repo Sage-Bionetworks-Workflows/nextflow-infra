@@ -9,13 +9,12 @@ stack_tags:
   Department: IBC
   Project: Infrastructure
   OwnerEmail: nextflow-admins@sagebase.org
-  CostCenter: NO PROGRAM / 000000  # Valid values here: https://github.com/Sage-Bionetworks/aws-infra/tree/master/templates/tags
+  CostCenter: NO PROGRAM / 000000 # Valid values here: https://github.com/Sage-Bionetworks/aws-infra/tree/master/templates/tags
 
 parameters:
-
   S3ReadWriteAccessArns:
     # (REQUIRED) Step 3: Replace the email below with your '@sagebase.org' address
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org'
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org"
 
     # (Optional) Step 4: Uncomment and update the following line(s) to grant additional users with read/write access
     # - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
@@ -30,7 +29,7 @@ parameters:
 
   # (Optional) Step 7: Uncomment and update the following lines to change the data lifecycle configuration
   #                    on the files in the short-term (scratch) S3 bucket (by default, this is enabled)
-  # EnableScratchLifeCycle: Enabled
+  # EnableScratchDataExpiration: Enabled
   # ScratchLifecycleTransition: '30'  # In days
   # ScratchLifecycleStorageClass: INTELLIGENT_TIERING
 
@@ -41,9 +40,9 @@ parameters:
   # DO NOT EDIT ANYTHING BELOW THIS LINE ------------------------------------------------------------------------
 
   AccountAdminArns:
-    - '{{stack_group_config.sso_admin_role.arn}}'
+    - "{{stack_group_config.sso_admin_role.arn}}"
     - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
-  TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
+  TemplateRootUrl: "https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com"
   TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
   TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
 
