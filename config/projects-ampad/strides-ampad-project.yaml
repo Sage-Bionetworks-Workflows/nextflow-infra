@@ -6,18 +6,19 @@ dependencies:
 
 parameters:
   S3ReadWriteAccessArns:
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/william.poehlman@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org'
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/william.poehlman@sagebase.org"
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org"
   S3ReadOnlyAccessArns:
     - arn:aws:iam::751556145034:role/jared-hendrickson-project-TowerForgeBatchHeadJobRo-1XYQQ76D6E75Z
     - arn:aws:iam::751556145034:role/jared-hendrickson-project-TowerForgeBatchWorkJobRo-1V2DBC9NYIPOB
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
-    - '{{stack_group_config.sso_admin_role.arn}}'
+    - "{{stack_group_config.sso_admin_role.arn}}"
     - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
-  TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
+  TemplateRootUrl: "https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com"
   TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
   TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
+  EnableScratchDataExpiration: Disabled
 
 stack_tags:
   Department: NDR
