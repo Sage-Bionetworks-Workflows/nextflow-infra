@@ -432,12 +432,12 @@ Resources:
             Prefix: work/
           - Id: DataExpirationIn07Days
             Status: !Ref EnableScratchDataExpiration
-            ExpirationInDays: 7
-            Prefix: 07_days/
+            ExpirationInDays: 10
+            Prefix: 10days/
           - Id: DataExpirationIn14Days
             Status: !Ref EnableScratchDataExpiration
-            ExpirationInDays: 14
-            Prefix: 14_days/
+            ExpirationInDays: 20
+            Prefix: 20days/
           - Id: DataExpirationIn30Days
             Status: !Ref EnableScratchDataExpiration
             ExpirationInDays: 30
