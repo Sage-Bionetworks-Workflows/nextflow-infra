@@ -36,7 +36,7 @@ Parameters:
     Type: String
     Description: >-
       'Enabled' to auto-delete objects/files in the short-term (scratch) bucket
-      based on the top-level folder (e.g., `14_days`). Default is 'Enabled'.
+      based on the top-level folder (e.g., `10days`). Default is 'Enabled'.
     AllowedValues:
       - Enabled
       - Disabled
@@ -441,14 +441,15 @@ Resources:
           - Id: DataExpirationIn30Days
             Status: !Ref EnableScratchDataExpiration
             ExpirationInDays: 30
-            Prefix: 30_days/
+            Prefix: 30days/
           - Id: DataExpirationIn60Days
             Status: !Ref EnableScratchDataExpiration
             ExpirationInDays: 60
-            Prefix: 60_days/
+            Prefix: 60days/
           - Id: DataExpirationIn90Days
             Status: !Ref EnableScratchDataExpiration
             ExpirationInDays: 90
+            Prefix: 90days/
 
   TowerScratchPolicy:
     Type: AWS::S3::BucketPolicy
@@ -503,11 +504,11 @@ Resources:
             Resource:
               - !Sub "arn:aws:s3:::${TowerScratch}"
               - !Sub "arn:aws:s3:::${TowerScratch}/work/*"
-              - !Sub "arn:aws:s3:::${TowerScratch}/07_days/*"
-              - !Sub "arn:aws:s3:::${TowerScratch}/14_days/*"
-              - !Sub "arn:aws:s3:::${TowerScratch}/30_days/*"
-              - !Sub "arn:aws:s3:::${TowerScratch}/60_days/*"
-              - !Sub "arn:aws:s3:::${TowerScratch}/90_days/*"
+              - !Sub "arn:aws:s3:::${TowerScratch}/10days/*"
+              - !Sub "arn:aws:s3:::${TowerScratch}/20days/*"
+              - !Sub "arn:aws:s3:::${TowerScratch}/30days/*"
+              - !Sub "arn:aws:s3:::${TowerScratch}/60days/*"
+              - !Sub "arn:aws:s3:::${TowerScratch}/90days/*"
           - !If
             - HasS3ReadWriteAccessArns
             - Sid: GrantReadDeleteAccessToS3ReadWriteAccessArns
@@ -535,11 +536,11 @@ Resources:
               Resource:
                 - !Sub "arn:aws:s3:::${TowerScratch}"
                 - !Sub "arn:aws:s3:::${TowerScratch}/work/*"
-                - !Sub "arn:aws:s3:::${TowerScratch}/07_days/*"
-                - !Sub "arn:aws:s3:::${TowerScratch}/14_days/*"
-                - !Sub "arn:aws:s3:::${TowerScratch}/30_days/*"
-                - !Sub "arn:aws:s3:::${TowerScratch}/60_days/*"
-                - !Sub "arn:aws:s3:::${TowerScratch}/90_days/*"
+                - !Sub "arn:aws:s3:::${TowerScratch}/10days/*"
+                - !Sub "arn:aws:s3:::${TowerScratch}/20days/*"
+                - !Sub "arn:aws:s3:::${TowerScratch}/30days/*"
+                - !Sub "arn:aws:s3:::${TowerScratch}/60days/*"
+                - !Sub "arn:aws:s3:::${TowerScratch}/90days/*"
             - !Ref AWS::NoValue
           - !If
             - HasS3ReadOnlyAccessArns
