@@ -430,11 +430,11 @@ Resources:
             Status: !Ref EnableScratchDataExpiration
             ExpirationInDays: 30
             Prefix: work/
-          - Id: DataExpirationIn07Days
+          - Id: DataExpirationIn10Days
             Status: !Ref EnableScratchDataExpiration
             ExpirationInDays: 10
             Prefix: 10days/
-          - Id: DataExpirationIn14Days
+          - Id: DataExpirationIn20Days
             Status: !Ref EnableScratchDataExpiration
             ExpirationInDays: 20
             Prefix: 20days/
