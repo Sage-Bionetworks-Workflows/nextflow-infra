@@ -468,7 +468,12 @@ Resources:
                 aws:PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/TowerForge-*"
             Resource:
               - !Sub "arn:aws:s3:::${TowerScratch}"
-              - !Sub "arn:aws:s3:::${TowerScratch}/*"
+              - !Sub "arn:aws:s3:::${TowerScratch}/work/*"
+              - !Sub "arn:aws:s3:::${TowerScratch}/10days/*"
+              - !Sub "arn:aws:s3:::${TowerScratch}/20days/*"
+              - !Sub "arn:aws:s3:::${TowerScratch}/30days/*"
+              - !Sub "arn:aws:s3:::${TowerScratch}/60days/*"
+              - !Sub "arn:aws:s3:::${TowerScratch}/90days/*"
           - Sid: TowerForgeRoleS3ReadDeleteAccess
             Effect: Allow
             Principal:
