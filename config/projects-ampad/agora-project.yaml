@@ -1,4 +1,4 @@
-template_path: tower-project.yaml
+template_path: tower-project.j2
 stack_name: agora-project
 
 stack_tags:

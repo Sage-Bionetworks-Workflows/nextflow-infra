@@ -8,7 +8,7 @@ import os
 import re
 import time
 from collections import defaultdict
-from typing import Dict, Iterator, List, Optional, Sequence, Tuple, Set
+from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
 
 import boto3
 import yaml  # type: ignore
@@ -165,7 +165,7 @@ class Projects:
         is_valid = (
             has_stack_name
             and "template_path" in config
-            and config["template_path"] == "tower-project.yaml"
+            and config["template_path"] == "tower-project.j2"
             and "parameters" in config
             and (
                 "S3ReadWriteAccessArns" in config["parameters"]
@@ -188,7 +188,7 @@ class Projects:
         """
         # Ignore all Sceptre resolvers
         yaml.add_multi_constructor("!", lambda loader, suffix, node: None)
-        # Load the tower-project.yaml config files into a list
+        # Load the tower-project.j2 config files into a list
         for config_path in self.list_projects():
             with open(config_path) as config_file:
                 config = yaml.load(config_file, Loader=yaml.Loader)

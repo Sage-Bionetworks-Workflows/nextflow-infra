@@ -46,7 +46,7 @@ Two AWS accounts are managed by this repository, both of which were [bootstrappe
 - `workflows-nextflow-dev` (or `nextflow-dev`) for testing purposes
 - `org-sagebase-strides-ampad-workflows` (or `strides-ampad`) for production use within the AMP-AD project (AWS bills directly to the NIH) and should be treated like `nextflow-prod`
 
-In general, we use the `nextflow-dev` account for testing templates before deploying them into the `nextflow-prod` account. New [template configurations](#configuration) don't necessarily need to go through `nextflow-dev` first. For example, new instances of the `tower-project.yaml` template don't need to be deployed in `nextflow-dev` first.
+In general, we use the `nextflow-dev` account for testing templates before deploying them into the `nextflow-prod` account. New [template configurations](#configuration) don't necessarily need to go through `nextflow-dev` first. For example, new instances of the `tower-project.j2` template don't need to be deployed in `nextflow-dev` first.
 
 ### Role-Based Access
 

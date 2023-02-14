@@ -32,22 +32,24 @@ Parameters:
       - Disabled
     Default: Enabled
 
-  EnableScratchLifeCycle:
+  EnableScratchDataExpiration:
     Type: String
     Description: >-
-      'Enabled' to add a lifecycle rule to the short-term (scratch) bucket.
-      Default is 'Enabled'.
+      'Enabled' to auto-delete objects/files in the short-term (scratch) bucket
+      based on the top-level folder (e.g., `10days`). Default is 'Enabled'.
     AllowedValues:
       - Enabled
       - Disabled
     Default: Enabled
 
+  # TODO: Remove lifecycle transition params
   ScratchLifecycleTransition:
     Type: Number
     Description: >-
       Number of days until S3 objects in the short-term (scratch) bucket are
-      moved to ScratchLifecycleStorageClass. Default is 30 days.
-    Default: 30
+      moved to ScratchLifecycleStorageClass. This is not related to data
+      expiration (i.e., auto-deletion of files). Default is 10 days.
+    Default: 10
 
   ScratchLifecycleStorageClass:
     Type: String
@@ -61,13 +63,6 @@ Parameters:
       - ONEZONE_IA
       - GLACIER
     Default: INTELLIGENT_TIERING
-
-  ScratchLifecycleExpiration:
-    Type: Number
-    Description: >-
-      Number of days (from creation) when objects in the short-term (scratch) bucket
-      are deleted from S3. Default is 183 days (i.e., 6 months).
-    Default: 183
 
   AccountAdminArns:
     Type: List<String>
@@ -151,7 +146,7 @@ Resources:
     Properties:
       PolicyName: TowerForgeBucketAccessPolicy
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Sid: NextflowConfig
             Effect: Allow
@@ -189,7 +184,7 @@ Resources:
     Properties:
       PolicyName: TowerForgeExternalS3AccessPolicy
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Sid: ConditionalAmazonS3ReadOnlyAccess
             Effect: Allow
@@ -226,7 +221,7 @@ Resources:
     Properties:
       PolicyName: TowerForgeBatchExecutionSecretAccess
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Sid: TowerForgeBatchExecutionSecretAccess
             Effect: Allow
@@ -302,18 +297,18 @@ Resources:
                 StorageClass: INTELLIGENT_TIERING
       CorsConfiguration:
         CorsRules:
-        - !If
-          - SynapseIndexingEnabled
-          - Id: SynapseCORSRule
-            AllowedHeaders: ["*"]
-            AllowedOrigins: ["*"]
-            AllowedMethods: [GET, POST, PUT, HEAD]
-            MaxAge: 3000
-          - Id: NullCorsRule
-            AllowedHeaders: [""]
-            AllowedOrigins: [""]
-            AllowedMethods: ["GET"]
-            MaxAge: 0
+          - !If
+            - SynapseIndexingEnabled
+            - Id: SynapseCORSRule
+              AllowedHeaders: ["*"]
+              AllowedOrigins: ["*"]
+              AllowedMethods: [GET, POST, PUT, HEAD]
+              MaxAge: 3000
+            - Id: NullCorsRule
+              AllowedHeaders: [""]
+              AllowedOrigins: [""]
+              AllowedMethods: ["GET"]
+              MaxAge: 0
 
   TowerBucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -389,7 +384,7 @@ Resources:
             - Sid: GrantBucketReadAccessToSynapse
               Effect: Allow
               Principal:
-                AWS: "arn:aws:iam::325565585839:root"  # Synapse Account
+                AWS: "arn:aws:iam::325565585839:root" # Synapse Account
               Action:
                 - "s3:ListBucket"
                 - "s3:GetBucketLocation"
@@ -401,7 +396,7 @@ Resources:
             - Sid: GrantObjectReadAccessToSynapse
               Effect: Allow
               Principal:
-                AWS: "arn:aws:iam::325565585839:root"  # Synapse Account
+                AWS: "arn:aws:iam::325565585839:root" # Synapse Account
               Action:
                 - "s3:GetObject"
               Resource:
@@ -428,12 +423,29 @@ Resources:
               KMSMasterKeyID: !GetAtt EncryptionKeyStack.Outputs.KeyArn
       LifecycleConfiguration:
         Rules:
-          - Id: UserDefinedDataLifecycleRule
-            Status: !Ref EnableScratchLifeCycle
-            ExpirationInDays: !Ref ScratchLifecycleExpiration
+          - Id: LifecycleStorageClassTransition
+            Status: Enabled
             Transitions:
               - TransitionInDays: !Ref ScratchLifecycleTransition
                 StorageClass: !Ref ScratchLifecycleStorageClass
+          - Id: DataExpirationForWorkDirectory
+            Status: !Ref EnableScratchDataExpiration
+            ExpirationInDays: 30
+            Prefix: work/
+          {%- set default_scratch_data_expirations = [10, 20, 30, 60, 90] %}
+          {%- set scratch_data_expirations = sceptre_user_data.scratch_data_expirations | default( default_scratch_data_expirations ) %}
+          {%- for num in scratch_data_expirations %}
+          - Id: DataExpirationFor{{ num }}DaysDirectory
+            Status: !Ref EnableScratchDataExpiration
+            ExpirationInDays: {{ num }}
+            Prefix: {{ num }}days/
+          {%- endfor %}
+          # max(scratch_data_expirations) (e.g., 90 days) will appear twice. This doesn't
+          # change the end result. This decision was made to avoid writing the logic to
+          # exclude the max duration from the above for-loop.
+          - Id: DataExpirationForEntireBucket
+            Status: !Ref EnableScratchDataExpiration
+            ExpirationInDays: {{ scratch_data_expirations | max }}
 
   TowerScratchPolicy:
     Type: AWS::S3::BucketPolicy
@@ -465,9 +477,9 @@ Resources:
               - "s3:GetBucketLocation"
               - "s3:ListBucket"
               - "s3:GetObject"
+              - "s3:DeleteObject"
               - "s3:PutObject"
               - "s3:PutObjectTagging"
-              - "s3:DeleteObject"
               - "s3:*MultipartUpload*"
             Resource:
               - !Sub "arn:aws:s3:::${TowerScratch}"
@@ -480,11 +492,11 @@ Resources:
                 AWS: !Ref S3ReadWriteAccessArns
               Action:
                 - "s3:GetObject*"
-                - "s3:PutObject*"
-                - "s3:DeleteObject*"
-                - "s3:*MultipartUpload*"
                 - "s3:ListBucket*"
                 - "s3:GetBucketLocation"
+                - "s3:DeleteObject*"
+                - "s3:PutObject*"
+                - "s3:*MultipartUpload*"
               Resource:
                 - !Sub "arn:aws:s3:::${TowerScratch}"
                 - !Sub "arn:aws:s3:::${TowerScratch}/*"
@@ -519,13 +531,13 @@ Resources:
 Outputs:
   S3ReadWriteAccessArns:
     Condition: HasS3ReadWriteAccessArns
-    Value: !Join [ ",", !Ref S3ReadWriteAccessArns ]
+    Value: !Join [",", !Ref S3ReadWriteAccessArns]
     Export:
       Name: !Sub "${AWS::Region}-${AWS::StackName}-S3ReadWriteAccessArns"
 
   S3ReadOnlyAccessArns:
     Condition: HasS3ReadOnlyAccessArns
-    Value: !Join [ ",", !Ref S3ReadOnlyAccessArns ]
+    Value: !Join [",", !Ref S3ReadOnlyAccessArns]
     Export:
       Name: !Sub "${AWS::Region}-${AWS::StackName}-S3ReadOnlyAccessArns"
 
