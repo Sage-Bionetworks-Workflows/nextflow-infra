@@ -486,7 +486,7 @@ Resources:
               - !Sub "arn:aws:s3:::${TowerScratch}/*"
           - !If
             - HasS3ReadWriteAccessArns
-            - Sid: GrantAccessToS3ReadWriteAccessArns
+            - Sid: GrantReadWriteAccessToS3ReadWriteAccessArns
               Effect: Allow
               Principal:
                 AWS: !Ref S3ReadWriteAccessArns
