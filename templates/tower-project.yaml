@@ -46,8 +46,9 @@ Parameters:
     Type: Number
     Description: >-
       Number of days until S3 objects in the short-term (scratch) bucket are
-      moved to ScratchLifecycleStorageClass. Default is 30 days.
-    Default: 30
+      moved to ScratchLifecycleStorageClass. This is not related to data
+      expiration (i.e., auto-deletion of files). Default is 10 days.
+    Default: 10
 
   ScratchLifecycleStorageClass:
     Type: String

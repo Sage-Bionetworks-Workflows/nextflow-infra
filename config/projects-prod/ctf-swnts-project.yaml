@@ -40,7 +40,7 @@ parameters:
   TemplateRootUrl: "https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com"
   TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
   TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
-  EnableScratchDataExpiration: Disabled
+  EnableScratchDataExpiration: Enabled
 
 template_path: tower-project.yaml
 
