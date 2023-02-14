@@ -42,6 +42,7 @@ Parameters:
       - Disabled
     Default: Enabled
 
+  # TODO: Remove lifecycle transition params
   ScratchLifecycleTransition:
     Type: Number
     Description: >-
@@ -431,26 +432,20 @@ Resources:
             Status: !Ref EnableScratchDataExpiration
             ExpirationInDays: 30
             Prefix: work/
-          - Id: DataExpirationIn10Days
+          {%- set default_scratch_data_expirations = [10, 20, 30, 60, 90] %}
+          {%- set scratch_data_expirations = sceptre_user_data.scratch_data_expirations | default( default_scratch_data_expirations ) %}
+          {%- for num in scratch_data_expirations %}
+          - Id: DataExpirationFor{{ num }}DaysDirectory
             Status: !Ref EnableScratchDataExpiration
-            ExpirationInDays: 10
-            Prefix: 10days/
-          - Id: DataExpirationIn20Days
+            ExpirationInDays: {{ num }}
+            Prefix: {{ num }}days/
+          {%- endfor %}
+          # max(scratch_data_expirations) (e.g., 90 days) will appear twice. This doesn't
+          # change the end result. This decision was made to avoid writing the logic to
+          # exclude the max duration from the above for-loop.
+          - Id: DataExpirationForEntireBucket
             Status: !Ref EnableScratchDataExpiration
-            ExpirationInDays: 20
-            Prefix: 20days/
-          - Id: DataExpirationIn30Days
-            Status: !Ref EnableScratchDataExpiration
-            ExpirationInDays: 30
-            Prefix: 30days/
-          - Id: DataExpirationIn60Days
-            Status: !Ref EnableScratchDataExpiration
-            ExpirationInDays: 60
-            Prefix: 60days/
-          - Id: DataExpirationIn90Days
-            Status: !Ref EnableScratchDataExpiration
-            ExpirationInDays: 90
-            Prefix: 90days/
+            ExpirationInDays: {{ scratch_data_expirations | max }}
 
   TowerScratchPolicy:
     Type: AWS::S3::BucketPolicy
@@ -470,12 +465,7 @@ Resources:
                 aws:PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/TowerForge-*"
             Resource:
               - !Sub "arn:aws:s3:::${TowerScratch}"
-              - !Sub "arn:aws:s3:::${TowerScratch}/work/*"
-              - !Sub "arn:aws:s3:::${TowerScratch}/10days/*"
-              - !Sub "arn:aws:s3:::${TowerScratch}/20days/*"
-              - !Sub "arn:aws:s3:::${TowerScratch}/30days/*"
-              - !Sub "arn:aws:s3:::${TowerScratch}/60days/*"
-              - !Sub "arn:aws:s3:::${TowerScratch}/90days/*"
+              - !Sub "arn:aws:s3:::${TowerScratch}/*"
           - Sid: TowerForgeRoleS3ReadDeleteAccess
             Effect: Allow
             Principal:
@@ -504,12 +494,7 @@ Resources:
               - "s3:*MultipartUpload*"
             Resource:
               - !Sub "arn:aws:s3:::${TowerScratch}"
-              - !Sub "arn:aws:s3:::${TowerScratch}/work/*"
-              - !Sub "arn:aws:s3:::${TowerScratch}/10days/*"
-              - !Sub "arn:aws:s3:::${TowerScratch}/20days/*"
-              - !Sub "arn:aws:s3:::${TowerScratch}/30days/*"
-              - !Sub "arn:aws:s3:::${TowerScratch}/60days/*"
-              - !Sub "arn:aws:s3:::${TowerScratch}/90days/*"
+              - !Sub "arn:aws:s3:::${TowerScratch}/*"
           - !If
             - HasS3ReadWriteAccessArns
             - Sid: GrantReadDeleteAccessToS3ReadWriteAccessArns
@@ -536,12 +521,7 @@ Resources:
                 - "s3:*MultipartUpload*"
               Resource:
                 - !Sub "arn:aws:s3:::${TowerScratch}"
-                - !Sub "arn:aws:s3:::${TowerScratch}/work/*"
-                - !Sub "arn:aws:s3:::${TowerScratch}/10days/*"
-                - !Sub "arn:aws:s3:::${TowerScratch}/20days/*"
-                - !Sub "arn:aws:s3:::${TowerScratch}/30days/*"
-                - !Sub "arn:aws:s3:::${TowerScratch}/60days/*"
-                - !Sub "arn:aws:s3:::${TowerScratch}/90days/*"
+                - !Sub "arn:aws:s3:::${TowerScratch}/*"
             - !Ref AWS::NoValue
           - !If
             - HasS3ReadOnlyAccessArns
