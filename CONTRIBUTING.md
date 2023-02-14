@@ -10,7 +10,7 @@ There are important details on how the infrastructure is set up and how this rep
 
 You must first install [`pipenv`](https://pipenv.pypa.io/en/latest/install/#installing-pipenv) and the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html).
 
-For testing, you can use the `workflows-nextflow-dev` AWS account that was set up [here](https://github.com/Sage-Bionetworks-IT/organizations-infra/blob/3dfe3fe2db327bd07cf31610cd77f02c3bacc130/org-formation/organization.yaml#L316-L326). You can [open an issue](https://github.com/Sage-Bionetworks-Workflows/aws-workflows-nextflow-infra/issues/new/choose) to request for access to the AWS account. One of the project admins will create an IAM user in this AWS account and share the credentials in a secure way.
+For testing, you can use the Administrator IAM role on the `nextflow-dev` AWS account. If you don't have access to this role, ask a Tower admin to request that you be granted permission. While using the `nextflow-dev` admin role, you should only deploy the stacks within the `common` and `*-dev` folders (see [Configuration](#configuration)). The instructions below assume that you have already configured your IAM role with the AWS CLI.
 
 ```console
 # Create directory for remote sceptre templates
@@ -21,9 +21,6 @@ pipenv install --dev
 
 # Install pre-commit hooks into Git
 pipenv run pre-commit install
-
-# Set up an AWS CLI profile with admin access for a test account
-aws configure --profile "<profile-name>"
 ```
 
 ### Testing sceptre deployment
@@ -35,10 +32,10 @@ If your text editor (_e.g._ Visual Studio Code) or shell (_e.g._ using [`direnv`
 export AWS_PROFILE="<profile-name>"
 
 # Test the deployment of a specific 'develop' stack
-pipenv run sceptre launch --yes infra-dev/some-stack.yaml
+pipenv run sceptre --var-file ./src/sceptre/variables/dev.yaml launch --yes infra-dev/some-stack.yaml
 
 # Delete the test deployment of the specific 'develop' stack
-pipenv run sceptre delete --yes infra-dev/some-stack.yaml
+pipenv run sceptre --var-file ./src/sceptre/variables/dev.yaml delete --yes infra-dev/some-stack.yaml
 ```
 
 ## AWS Accounts

@@ -14,7 +14,8 @@ stack_tags:
 parameters:
   S3ReadWriteAccessArns:
     # (REQUIRED) Step 3: Replace the email below with your '@sagebase.org' address
-    - "{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org"
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/brad.macdonald@sagebase.org'
 
     # (Optional) Step 4: Uncomment and update the following line(s) to grant additional users with read/write access
     # - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
