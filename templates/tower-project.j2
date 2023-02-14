@@ -466,7 +466,7 @@ Resources:
             Resource:
               - !Sub "arn:aws:s3:::${TowerScratch}"
               - !Sub "arn:aws:s3:::${TowerScratch}/*"
-          - Sid: TowerForgeRoleS3ReadDeleteAccess
+          - Sid: TowerForgeRoleS3Access
             Effect: Allow
             Principal:
               AWS:
@@ -478,17 +478,6 @@ Resources:
               - "s3:ListBucket"
               - "s3:GetObject"
               - "s3:DeleteObject"
-            Resource:
-              - !Sub "arn:aws:s3:::${TowerScratch}"
-              - !Sub "arn:aws:s3:::${TowerScratch}/*"
-          - Sid: TowerForgeRoleS3WriteAccess
-            Effect: Allow
-            Principal:
-              AWS:
-                - !GetAtt TowerForgeServiceRole.Arn
-                - !GetAtt TowerForgeBatchHeadJobRole.Arn
-                - !GetAtt TowerForgeBatchWorkJobRole.Arn
-            Action:
               - "s3:PutObject"
               - "s3:PutObjectTagging"
               - "s3:*MultipartUpload*"
@@ -497,7 +486,7 @@ Resources:
               - !Sub "arn:aws:s3:::${TowerScratch}/*"
           - !If
             - HasS3ReadWriteAccessArns
-            - Sid: GrantReadDeleteAccessToS3ReadWriteAccessArns
+            - Sid: GrantAccessToS3ReadWriteAccessArns
               Effect: Allow
               Principal:
                 AWS: !Ref S3ReadWriteAccessArns
@@ -506,17 +495,6 @@ Resources:
                 - "s3:ListBucket*"
                 - "s3:GetBucketLocation"
                 - "s3:DeleteObject*"
-              Resource:
-                - !Sub "arn:aws:s3:::${TowerScratch}"
-                - !Sub "arn:aws:s3:::${TowerScratch}/*"
-            - !Ref AWS::NoValue
-          - !If
-            - HasS3ReadWriteAccessArns
-            - Sid: GrantWriteAccessToS3ReadWriteAccessArns
-              Effect: Allow
-              Principal:
-                AWS: !Ref S3ReadWriteAccessArns
-              Action:
                 - "s3:PutObject*"
                 - "s3:*MultipartUpload*"
               Resource:
