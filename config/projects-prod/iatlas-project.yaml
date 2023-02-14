@@ -2,9 +2,9 @@ template_path: tower-project.yaml
 stack_name: iatlas-project
 
 stack_tags:
-  Department: SCCE
+  Department: DNT
   Project: iAtlas
-  OwnerEmail: brad.macdonald@sagebase.org
+  OwnerEmail: thomas.yu@sagebase.org
   CostCenter: iAtlas 3 / 314900
 
 parameters:
