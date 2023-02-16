@@ -259,7 +259,8 @@ class Projects:
 
             # Eliminate any invalid characters
             invalid_chars = re.compile(r"[^A-z0-9_-]+")
-            for key in stack_tags.keys():
+            original_keys = list(stack_tags)
+            for key in original_keys:
                 val = stack_tags.pop(key)
                 new_key = invalid_chars.sub("_", key)
                 new_val = invalid_chars.sub("_", val)
