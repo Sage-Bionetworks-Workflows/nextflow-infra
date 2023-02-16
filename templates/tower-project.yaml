@@ -176,6 +176,7 @@ Resources:
               - ec2:DescribeInstanceTypes
               - ec2:DescribeInstanceStatus
               - secretsmanager:ListSecrets
+              - logs:GetLogEvents
             Resource: "*"
           - Sid: IAMConfig
             Effect: Allow

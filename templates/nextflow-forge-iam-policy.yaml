@@ -24,6 +24,8 @@ Resources:
             - iam:ListAttachedRolePolicies
             - iam:DeleteRolePolicy
             - iam:ListRolePolicies
+            - iam:TagRole
+            - iam:TagInstanceProfile
             - batch:CreateComputeEnvironment
             - batch:DescribeComputeEnvironments
             - batch:CreateJobQueue
@@ -32,9 +34,11 @@ Resources:
             - batch:DeleteComputeEnvironment
             - batch:UpdateJobQueue
             - batch:DeleteJobQueue
+            - batch:TagResource
             - fsx:DeleteFileSystem
             - fsx:DescribeFileSystems
             - fsx:CreateFileSystem
+            - fsx:TagResource
             - ec2:DescribeSecurityGroups
             - ec2:DescribeAccountAttributes
             - ec2:DescribeSubnets
@@ -54,6 +58,7 @@ Resources:
             - elasticfilesystem:DeleteFileSystem
             - elasticfilesystem:UpdateFileSystem
             - elasticfilesystem:PutLifecycleConfiguration
+            - elasticfilesystem:TagResource
           Resource: "*"
 Outputs:
   NextFlowForgePolicyArn:

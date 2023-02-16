@@ -15,7 +15,7 @@ import yaml  # type: ignore
 
 
 # Increment this version when updating compute environments
-CE_VERSION = "v6"
+CE_VERSION = "v7"
 
 REGION = "us-east-1"
 ORG_NAME = "Sage Bionetworks"
