@@ -1,0 +1,26 @@
+template_path: tower-project.yaml
+stack_name: iatlas-project
+
+stack_tags:
+  Department: DNT
+  Project: iAtlas
+  OwnerEmail: thomas.yu@sagebase.org
+  CostCenter: iAtlas 3 / 314900
+
+parameters:
+  S3ReadWriteAccessArns:
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/brad.macdonald@sagebase.org"
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org"
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org"
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/adam.taylor@sagebase.org"
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/james.eddy@sagebase.org"
+  AccountAdminArns:
+    - "{{stack_group_config.sso_admin_role.arn}}"
+    - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
+  TemplateRootUrl: "https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com"
+  TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
+  TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
+
+dependencies:
+  - common/nextflow-forge-iam-policy.yaml
+  - common/nextflow-launch-iam-policy.yaml
