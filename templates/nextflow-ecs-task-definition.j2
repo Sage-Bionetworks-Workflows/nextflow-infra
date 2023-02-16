@@ -183,6 +183,9 @@ Resources:
               HostPort: 6379
           Command:
             - --appendonly yes
+          MountPoints:
+            - ContainerPath: /data
+              SourceVolume: !Ref EfsVolumeName
           LogConfiguration:
             LogDriver: awslogs
             Options:
