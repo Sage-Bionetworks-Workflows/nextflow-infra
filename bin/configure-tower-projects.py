@@ -256,7 +256,6 @@ class Projects:
             if "CostCenter" in stack_tags:
                 _, _, program_id = stack_tags["CostCenter"].rpartition("/")
                 stack_tags["CostCenter"] = program_id.strip()
-            print(stack_tags)
             pattern = re.compile(r"[A-z0-9_-]{1,39}")
             assert all(pattern.fullmatch(key) for key in stack_tags.keys())
             assert all(pattern.fullmatch(val) for val in stack_tags.values())
