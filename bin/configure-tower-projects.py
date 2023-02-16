@@ -251,13 +251,20 @@ class Projects:
             stack_name = config["stack_name"]
             stack_tags = config.get("stack_tags", {})
             stack_tags["TowerProject"] = stack_name
-            stack_tags.pop("OwnerEmail", None)
+
+            # Only keep the program code for the cost center
             if "CostCenter" in stack_tags:
-                _, _, program_id = stack_tags["CostCenter"].rpartition("/")
-                stack_tags["CostCenter"] = program_id.strip()
-            pattern = re.compile(r"[A-z0-9_-]{1,39}")
-            assert all(pattern.fullmatch(key) for key in stack_tags.keys())
-            assert all(pattern.fullmatch(val) for val in stack_tags.values())
+                _, _, program_code = stack_tags["CostCenter"].rpartition("/")
+                stack_tags["CostCenter"] = program_code.strip()
+
+            # Eliminate any invalid characters
+            invalid_chars = re.compile(r"[^A-z0-9_-]+")
+            for key in stack_tags.keys():
+                val = stack_tags.pop(key)
+                new_key = invalid_chars.sub("_", key)
+                new_val = invalid_chars.sub("_", val)
+                stack_tags[new_key] = new_val
+
             tags_per_project[stack_name] = stack_tags
         return tags_per_project
 
