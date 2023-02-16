@@ -531,7 +531,11 @@ class TowerWorkspace:
         """
         endpoint = "/labels"
         params = {"workspaceId": self.id, "max": 1000, "type": "resource"}
-        labels = self.tower.paged_request("GET", endpoint, params=params)
+        paged = self.tower.paged_request("GET", endpoint, params=params)
+        labels = list(paged)
+        if not all(isinstance(label, dict) for label in labels):
+            message = f"Labels ({labels}) aren't dictionaries as expected."
+            raise ValueError(message)
         matches = [label for label in labels if label["name"] == name]
         matches = [label for label in matches if label["value"] == value]
         if len(matches) == 1:
