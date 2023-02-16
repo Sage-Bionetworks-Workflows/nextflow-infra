@@ -135,6 +135,7 @@ class Projects:
         """
         self.config_directory = config_directory
         self.users_per_project = self.extract_users()
+        self.tags_per_project = self.extract_tags()
 
     def list_projects(self) -> Iterator[str]:
         """List all project YAML configuration files
@@ -239,6 +240,28 @@ class Projects:
                 maintainers=maintainers, viewers=viewers
             )
         return users_per_project
+
+    def extract_tags(self) -> Dict[str, Dict[str, str]]:
+        """Extract AWS tags for each stack.
+
+        Returns:
+            Mapping of projects/stacks and key-value tag pairs.
+        """
+        tags_per_project = dict()
+        for config in self.load_projects():
+            stack_name = config["stack_name"]
+            stack_tags = config.get("stack_tags", {})
+            stack_tags["TowerProject"] = stack_name
+            stack_tags.pop("OwnerEmail", None)
+            if "CostCenter" in stack_tags:
+                _, _, program_id = stack_tags["CostCenter"].rpartition("/")
+                stack_tags["CostCenter"] = program_id.strip()
+            print(stack_tags)
+            pattern = re.compile(r"[A-z0-9_-]{1,39}")
+            assert all(pattern.fullmatch(key) for key in stack_tags.keys())
+            assert all(pattern.fullmatch(val) for val in stack_tags.values())
+            tags_per_project[stack_name] = stack_tags
+        return tags_per_project
 
 
 class AwsClient:
@@ -376,6 +399,7 @@ class TowerWorkspace:
         stack_name: str,
         users: Users = None,
         teams: Dict[int, str] = None,
+        tags: Dict[str, str] = None,
     ) -> None:
         self.org = org
         self.tower = org.tower
@@ -387,6 +411,7 @@ class TowerWorkspace:
         self.id = self.json["id"]
         self.users = users
         self.teams = teams
+        self.tags = tags or {}
         self.participants: Dict[str, dict] = dict()
         self.populate()
         self.cleanup_compute_environments()
@@ -544,6 +569,47 @@ class TowerWorkspace:
         response = self.tower.request("POST", endpoint, params=params, json=data)
         return response["credentialsId"]
 
+    def get_resource_label(self, name: str, value: str) -> Optional[int]:
+        """Get ID for resource label (if existing).
+
+        Args:
+            name: Resource label name.
+            value: Resource label value.
+
+        Returns:
+            Resource label ID.
+        """
+        endpoint = "/labels"
+        params = {"workspaceId": self.id, "max": 1000, "type": "resource"}
+        labels = self.tower.paged_request("GET", endpoint, params=params)
+        matches = [label for label in labels if label["name"] == name]
+        matches = [label for label in matches if label["value"] == value]
+        if len(matches) == 1:
+            return matches[0]["id"]
+        else:
+            return None
+
+    def create_resource_label(self, name: str, value: str) -> int:
+        """Create a resource label (name and value pair).
+
+        Args:
+            name: Resource label name.
+            value: Resource label value.
+
+        Returns:
+            Resource label ID.
+        """
+        # Check for existing resource label
+        label_id = self.get_resource_label(name, value)
+        if label_id is not None:
+            return label_id
+
+        endpoint = "/labels"
+        params = {"workspaceId": self.id}
+        data = {"name": name, "value": value, "resource": True}
+        response = self.tower.request("POST", endpoint, params=params, json=data)
+        return response["id"]
+
     def cleanup_compute_environments(self):
         """Delete inactive compute environments in the workspace
 
@@ -578,9 +644,16 @@ class TowerWorkspace:
         """
         assert model in {"SPOT", "EC2"}, "Wrong provisioning model"
         credentials_id = self.create_credentials()
+
+        # Retrieve (or create) resource label IDs
+        label_ids = []
+        for key, value in self.tags.items():
+            label_id = self.create_resource_label(key, value)
+            label_ids.append(label_id)
+
         # This is modeled after a request made in the Tower web client
         data = {
-            "labelIds": [],
+            "labelIds": label_ids,
             "computeEnv": {
                 "name": name,
                 "platform": "aws-batch",
@@ -601,7 +674,7 @@ class TowerWorkspace:
                     "postRunScript": None,
                     "preRunScript": "NXF_OPTS='-Xms7g -Xmx14g'",
                     "region": self.tower.aws.region,
-                    "resourceLabelIds": [],
+                    "resourceLabelIds": label_ids,
                     "waveEnabled": False,
                     "workDir": f"s3://{self.stack['TowerScratch']}/work",
                     "forge": {
@@ -699,6 +772,7 @@ class TowerOrganization:
         self.id = self.json["orgId"]
         self.projects = projects
         self.users_per_project = projects.users_per_project
+        self.tags_per_project = projects.tags_per_project
         self.teamids_per_project: Dict[str, Dict[int, str]] = dict()
         self.members: Dict[str, dict] = dict()
         self.populate()
@@ -884,11 +958,12 @@ class TowerOrganization:
                 Mapping of project names and their corresponding workspaces
         """
         for name, users in self.list_projects():
+            tags = self.tags_per_project[name]
             if self.use_teams:
                 teams = self.teamids_per_project[name]
-                ws = TowerWorkspace(self, name, teams=teams)
+                ws = TowerWorkspace(self, name, teams=teams, tags=tags)
             else:
-                ws = TowerWorkspace(self, name, users=users)
+                ws = TowerWorkspace(self, name, users=users, tags=tags)
             self.workspaces[name] = ws
             # Adding a short delay between creating each workspace
             # to allow time for compute environments to be deleted
