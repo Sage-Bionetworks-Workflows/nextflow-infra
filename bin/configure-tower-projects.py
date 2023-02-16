@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 
 from __future__ import annotations
+
 import argparse
-from collections import defaultdict
 import json
 import os
 import re
 import time
-from typing import List, Tuple, Sequence, Dict, Iterator, Optional
+from collections import defaultdict
+from typing import Dict, Iterator, List, Optional, Sequence, Tuple
 
 import boto3
 import requests  # type: ignore
 import yaml  # type: ignore
-
 
 # Increment this version when updating compute environments
 CE_VERSION = "v7"
@@ -578,48 +578,56 @@ class TowerWorkspace:
         """
         assert model in {"SPOT", "EC2"}, "Wrong provisioning model"
         credentials_id = self.create_credentials()
+        # This is modeled after a request made in the Tower web client
         data = {
+            "labelIds": [],
             "computeEnv": {
                 "name": name,
                 "platform": "aws-batch",
                 "credentialsId": credentials_id,
                 "config": {
-                    "configMode": "Batch Forge",
-                    "region": self.tower.aws.region,
-                    "workDir": f"s3://{self.stack['TowerScratch']}/work",
-                    "credentials": None,
+                    "cliPath": "/home/ec2-user/miniconda/bin/aws",
                     "computeJobRole": self.stack["TowerForgeBatchWorkJobRoleArn"],
-                    "headJobRole": self.stack["TowerForgeBatchHeadJobRoleArn"],
+                    "configMode": "Batch Forge",
+                    "credentials": None,
+                    "environment": None,
                     "executionRole": self.stack["TowerForgeBatchExecutionRoleArn"],
+                    "fusion2Enabled": False,
                     "headJobCpus": 8,
                     "headJobMemoryMb": 15000,
-                    "preRunScript": "NXF_OPTS='-Xms7g -Xmx14g'",
+                    "headJobRole": self.stack["TowerForgeBatchHeadJobRoleArn"],
+                    "logGroup": None,
+                    "nvnmeStorageEnabled": False,
                     "postRunScript": None,
-                    "cliPath": None,
+                    "preRunScript": "NXF_OPTS='-Xms7g -Xmx14g'",
+                    "region": self.tower.aws.region,
+                    "resourceLabelIds": [],
+                    "waveEnabled": False,
+                    "workDir": f"s3://{self.stack['TowerScratch']}/work",
                     "forge": {
-                        "vpcId": self.tower.vpc[VPC_STACK_OUTPUT_VID],
-                        "subnets": [self.tower.vpc[o] for o in VPC_STACK_OUTPUT_SIDS],
-                        "fsxMode": "None",
-                        "efsMode": "None",
-                        "type": model,
-                        "minCpus": 0,
-                        "maxCpus": 1000,
-                        "gpuEnabled": False,
-                        "ebsAutoScale": True,
-                        "allowBuckets": [],
-                        "disposeOnDeletion": True,
-                        "instanceTypes": [],
                         "allocStrategy": None,
-                        "ec2KeyPair": None,
-                        "imageId": None,
-                        "securityGroups": [],
+                        "allowBuckets": [],
+                        "containerRegIds": None,
+                        "disposeOnDeletion": True,
+                        "dragenEnabled": None,
+                        "ebsAutoScale": True,
                         "ebsBlockSize": 1000,
-                        "fusionEnabled": False,
+                        "ebsBootSize": 1000,
+                        "ec2KeyPair": None,
+                        "ecsConfig": None,
                         "efsCreate": False,
-                        "bidPercentage": None,
+                        "gpuEnabled": False,
+                        "imageId": None,
+                        "instanceTypes": ["m5", "c5", "r5"],
+                        "maxCpus": 1000,
+                        "minCpus": 0,
+                        "securityGroups": [],
+                        "subnets": [self.tower.vpc[o] for o in VPC_STACK_OUTPUT_SIDS],
+                        "type": model,
+                        "vpcId": self.tower.vpc[VPC_STACK_OUTPUT_VID],
                     },
                 },
-            }
+            },
         }
         return data
 
