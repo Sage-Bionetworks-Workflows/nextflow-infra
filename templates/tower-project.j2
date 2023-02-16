@@ -167,6 +167,8 @@ Resources:
               - ec2:DescribeInstanceTypes
               - ec2:DescribeInstanceStatus
               - secretsmanager:ListSecrets
+              - logs:GetLogEvents
+              - batch:TagResource
             Resource: "*"
           - Sid: IAMConfig
             Effect: Allow

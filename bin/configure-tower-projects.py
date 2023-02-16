@@ -15,7 +15,7 @@ import yaml  # type: ignore
 from sagetasks.nextflowtower.client import TowerClient
 
 # Increment this version when updating compute environments
-CE_VERSION = "v6"
+CE_VERSION = "v7"
 
 REGION = "us-east-1"
 ORG_NAME = "Sage Bionetworks"
@@ -135,6 +135,7 @@ class Projects:
         """
         self.config_directory = config_directory
         self.users_per_project = self.extract_users()
+        self.tags_per_project = self.extract_tags()
 
     def list_projects(self) -> Iterator[str]:
         """List all project YAML configuration files
@@ -239,6 +240,35 @@ class Projects:
             )
         return users_per_project
 
+    def extract_tags(self) -> Dict[str, Dict[str, str]]:
+        """Extract AWS tags for each stack.
+
+        Returns:
+            Mapping of projects/stacks and key-value tag pairs.
+        """
+        tags_per_project = dict()
+        for config in self.load_projects():
+            stack_name = config["stack_name"]
+            stack_tags = config.get("stack_tags", {})
+            stack_tags["TowerProject"] = stack_name
+
+            # Only keep the program code for the cost center
+            if "CostCenter" in stack_tags:
+                _, _, program_code = stack_tags["CostCenter"].rpartition("/")
+                stack_tags["CostCenter"] = program_code.strip()
+
+            # Eliminate any invalid characters
+            invalid_chars = re.compile(r"[^A-z0-9_-]+")
+            original_keys = list(stack_tags)
+            for key in original_keys:
+                val = stack_tags.pop(key)
+                new_key = invalid_chars.sub("_", key)
+                new_val = invalid_chars.sub("_", val)
+                stack_tags[new_key] = new_val
+
+            tags_per_project[stack_name] = stack_tags
+        return tags_per_project
+
 
 class AwsClient:
     def __init__(self) -> None:
@@ -283,6 +313,7 @@ class TowerWorkspace:
         stack_name: str,
         users: Users = None,
         teams: Dict[int, str] = None,
+        tags: Dict[str, str] = None,
     ) -> None:
         self.org = org
         self.tower = org.tower
@@ -294,6 +325,7 @@ class TowerWorkspace:
         self.id = self.json["id"]
         self.users = users
         self.teams = teams
+        self.tags = tags or {}
         self.participants: Dict[str, dict] = dict()
         self.populate()
         self.cleanup_compute_environments()
@@ -487,6 +519,47 @@ class TowerWorkspace:
         response = self.tower.request("POST", endpoint, params=params, json=data)
         return response["credentialsId"]
 
+    def get_resource_label(self, name: str, value: str) -> Optional[int]:
+        """Get ID for resource label (if existing).
+
+        Args:
+            name: Resource label name.
+            value: Resource label value.
+
+        Returns:
+            Resource label ID.
+        """
+        endpoint = "/labels"
+        params = {"workspaceId": self.id, "max": 1000, "type": "resource"}
+        labels = self.tower.paged_request("GET", endpoint, params=params)
+        matches = [label for label in labels if label["name"] == name]
+        matches = [label for label in matches if label["value"] == value]
+        if len(matches) == 1:
+            return matches[0]["id"]
+        else:
+            return None
+
+    def create_resource_label(self, name: str, value: str) -> int:
+        """Create a resource label (name and value pair).
+
+        Args:
+            name: Resource label name.
+            value: Resource label value.
+
+        Returns:
+            Resource label ID.
+        """
+        # Check for existing resource label
+        label_id = self.get_resource_label(name, value)
+        if label_id is not None:
+            return label_id
+
+        endpoint = "/labels"
+        params = {"workspaceId": self.id}
+        data = {"name": name, "value": value, "resource": True}
+        response = self.tower.request("POST", endpoint, params=params, json=data)
+        return response["id"]
+
     def cleanup_compute_environments(self):
         """Delete inactive compute environments in the workspace
 
@@ -521,48 +594,63 @@ class TowerWorkspace:
         """
         assert model in {"SPOT", "EC2"}, "Wrong provisioning model"
         credentials_id = self.create_credentials()
+
+        # Retrieve (or create) resource label IDs
+        label_ids = []
+        for key, value in self.tags.items():
+            label_id = self.create_resource_label(key, value)
+            label_ids.append(label_id)
+
+        # This is modeled after a request made in the Tower web client
         data = {
+            "labelIds": label_ids,
             "computeEnv": {
                 "name": name,
                 "platform": "aws-batch",
                 "credentialsId": credentials_id,
                 "config": {
-                    "configMode": "Batch Forge",
-                    "region": self.org.aws.region,
-                    "workDir": f"s3://{self.stack['TowerScratch']}/work",
-                    "credentials": None,
+                    "cliPath": "/home/ec2-user/miniconda/bin/aws",
                     "computeJobRole": self.stack["TowerForgeBatchWorkJobRoleArn"],
-                    "headJobRole": self.stack["TowerForgeBatchHeadJobRoleArn"],
+                    "configMode": "Batch Forge",
+                    "credentials": None,
+                    "environment": None,
                     "executionRole": self.stack["TowerForgeBatchExecutionRoleArn"],
-                    "headJobCpus": None,
-                    "headJobMemoryMb": 15360,
-                    "preRunScript": "NXF_OPTS='-Xms4g -Xmx12g'",
+                    "fusion2Enabled": False,
+                    "headJobCpus": 8,
+                    "headJobMemoryMb": 15000,
+                    "headJobRole": self.stack["TowerForgeBatchHeadJobRoleArn"],
+                    "logGroup": None,
+                    "nvnmeStorageEnabled": False,
                     "postRunScript": None,
-                    "cliPath": None,
+                    "preRunScript": "NXF_OPTS='-Xms7g -Xmx14g'",
+                    "region": self.org.aws.region,
+                    "resourceLabelIds": label_ids,
+                    "waveEnabled": False,
+                    "workDir": f"s3://{self.stack['TowerScratch']}/work",
                     "forge": {
-                        "vpcId": self.org.vpc[VPC_STACK_OUTPUT_VID],
-                        "subnets": [self.org.vpc[o] for o in VPC_STACK_OUTPUT_SIDS],
-                        "fsxMode": "None",
-                        "efsMode": "None",
-                        "type": model,
-                        "minCpus": 0,
-                        "maxCpus": 1000,
-                        "gpuEnabled": False,
-                        "ebsAutoScale": True,
-                        "allowBuckets": [],
-                        "disposeOnDeletion": True,
-                        "instanceTypes": [],
                         "allocStrategy": None,
-                        "ec2KeyPair": None,
-                        "imageId": None,
-                        "securityGroups": [],
+                        "allowBuckets": [],
+                        "containerRegIds": None,
+                        "disposeOnDeletion": True,
+                        "dragenEnabled": None,
+                        "ebsAutoScale": True,
                         "ebsBlockSize": 1000,
-                        "fusionEnabled": False,
+                        "ebsBootSize": 1000,
+                        "ec2KeyPair": None,
+                        "ecsConfig": None,
                         "efsCreate": False,
-                        "bidPercentage": None,
+                        "gpuEnabled": False,
+                        "imageId": None,
+                        "instanceTypes": ["m5", "c5", "r5"],
+                        "maxCpus": 1000,
+                        "minCpus": 0,
+                        "securityGroups": [],
+                        "subnets": [self.org.vpc[o] for o in VPC_STACK_OUTPUT_SIDS],
+                        "type": model,
+                        "vpcId": self.org.vpc[VPC_STACK_OUTPUT_VID],
                     },
                 },
-            }
+            },
         }
         return data
 
@@ -636,6 +724,7 @@ class TowerOrganization:
         self.id = self.json["orgId"]
         self.projects = projects
         self.users_per_project = projects.users_per_project
+        self.tags_per_project = projects.tags_per_project
         self.teamids_per_project: Dict[str, Dict[int, str]] = dict()
         self.members: Dict[str, dict] = dict()
         self.populate()
@@ -821,11 +910,12 @@ class TowerOrganization:
                 Mapping of project names and their corresponding workspaces
         """
         for name, users in self.list_projects():
+            tags = self.tags_per_project[name]
             if self.use_teams:
                 teams = self.teamids_per_project[name]
-                ws = TowerWorkspace(self, name, teams=teams)
+                ws = TowerWorkspace(self, name, teams=teams, tags=tags)
             else:
-                ws = TowerWorkspace(self, name, users=users)
+                ws = TowerWorkspace(self, name, users=users, tags=tags)
             self.workspaces[name] = ws
             # Adding a short delay between creating each workspace
             # to allow time for compute environments to be deleted

@@ -20,6 +20,7 @@ Resources:
             - batch:DescribeJobs
             - batch:RegisterJobDefinition
             - batch:DescribeJobDefinitions
+            - batch:TagResource
             - ecs:DescribeTasks
             - ec2:DescribeInstances
             - ec2:DescribeInstanceTypes
