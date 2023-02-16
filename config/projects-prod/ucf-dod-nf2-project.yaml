@@ -8,23 +8,11 @@ stack_tags:
 
 parameters:
 
-  S3ReadWriteAccessArns:
-    # (REQUIRED) Step 3: Replace the email below with your '@sagebase.org' address
-    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/robert.allaway@sagebase.org
-    - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/robert.allaway@sagebase.org
-
-    # (Optional) Step 4: Uncomment and update the following line(s) to grant additional users with read/write access
-    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/sasha.scott@sagebase.org
-    - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/sasha.scott@sagebase.org
-    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/jineta.banerjee@sagebase.org
-    - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/jineta.banerjee@sagebase.org
-    - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/bruno.grande@sagebase.org
-    - arn:aws:sts::728882028485:assumed-role/AWSReservedSSO_TowerViewer_fd6aee98ec127705/bruno.grande@sagebase.org
-
-  # (Optional) Step 5: Uncomment and update the following line(s) to grant additional users with read-only access
-  # S3ReadOnlyAccessArns:
-  #   - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/thomas.yu@sagebase.org
-  #   - arn:aws:sts::563295687221:assumed-role/AWSReservedSSO_Developer_baa6fed639faf5e7/jason.hwee@sagebase.org
+  S3ReadOnlyAccessArns:
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/robert.allaway@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/sasha.scott@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/jineta.banerjee@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org'
 
   # (Optional) Step 6: Uncomment and update the following lines to change the S3 bucket lifecycle configuration,
   #                    which cannot be changed as long as 'AllowSynapseIndexing' is enabled (default)
@@ -45,7 +33,7 @@ parameters:
   TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
   TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
 
-template_path: tower-project.yaml
+template_path: tower-project.j2
 
 dependencies:
   - common/nextflow-forge-iam-policy.yaml

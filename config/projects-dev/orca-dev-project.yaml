@@ -1,12 +1,14 @@
 template_path: tower-project.j2
-stack_name: amp-ad-project
+stack_name: orca-dev-project
 dependencies:
   - common/nextflow-forge-iam-policy.yaml
   - common/nextflow-launch-iam-policy.yaml
 
 parameters:
-  S3ReadOnlyAccessArns:
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/william.poehlman@sagebase.org'
+  S3ReadWriteAccessArns:
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/brad.macdonald@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
     - '{{stack_group_config.sso_admin_role.arn}}'
@@ -16,7 +18,7 @@ parameters:
   TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
 
 stack_tags:
-  Department: NDR
-  Project: amp-ad
-  OwnerEmail: william.poehlman@sagebase.org
-  CostCenter: NIA AMP-AD CC / 101500
+  Department: IBC
+  Project: Infrastructure
+  OwnerEmail: nextflow-admins@sagebase.org
+  CostCenter: NO PROGRAM / 000000

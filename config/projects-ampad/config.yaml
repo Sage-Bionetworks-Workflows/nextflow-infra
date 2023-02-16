@@ -1,3 +1,4 @@
+tower_viewer_arn_prefix: arn:aws:sts::751556145034:assumed-role/strides-ampad-workflows-towerviewer
 # Technically, this AWS account isn't set up through SSO since
 # it sits outside of our AWS Organization fo STRIDES billing
 sso_admin_role:

@@ -8,11 +8,11 @@ import os
 import re
 import time
 from collections import defaultdict
-from typing import Dict, Iterator, List, Optional, Sequence, Tuple
+from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
 
 import boto3
-import requests  # type: ignore
 import yaml  # type: ignore
+from sagetasks.nextflowtower.client import TowerClient
 
 # Increment this version when updating compute environments
 CE_VERSION = "v7"
@@ -166,7 +166,7 @@ class Projects:
         is_valid = (
             has_stack_name
             and "template_path" in config
-            and config["template_path"] == "tower-project.yaml"
+            and config["template_path"] == "tower-project.j2"
             and "parameters" in config
             and (
                 "S3ReadWriteAccessArns" in config["parameters"]
@@ -189,7 +189,7 @@ class Projects:
         """
         # Ignore all Sceptre resolvers
         yaml.add_multi_constructor("!", lambda loader, suffix, node: None)
-        # Load the tower-project.yaml config files into a list
+        # Load the tower-project.j2 config files into a list
         for config_path in self.list_projects():
             with open(config_path) as config_file:
                 config = yaml.load(config_file, Loader=yaml.Loader)
@@ -206,21 +206,20 @@ class Projects:
             List[str]: List of email from the role session names
         """
         role_arn_regex = re.compile(
-            r"arn:aws:sts::(?P<account_id>[0-9]+):assumed-role/(?P<role_name>[^/]+)"
-            r"/(?P<session_name>[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,})"
+            r".*/(?P<session_name>[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,})"
         )
-        emails = list()
+        emails = set()
         for arn in arns:
             match = role_arn_regex.fullmatch(arn)
             if match:
                 email = match.group("session_name")
-                emails.append(email)
+                emails.add(email)
             else:
-                raise ValueError(
+                print(
                     f"Listed ARN ({arn}) doesn't follow expected format: "
                     "'arn:aws:sts::<account_id>:<role_name>:<email>'"
                 )
-        return emails
+        return list(emails)
 
     def extract_users(self) -> Dict[str, Users]:
         """Extract users from a series of config files
@@ -299,98 +298,6 @@ class AwsClient:
         return secret_value
 
 
-class TowerClient:
-    def __init__(self, tower_token=None, tower_api_url=None, debug_mode=False) -> None:
-        """Generate NextflowTower instance
-
-        The descriptions below for the user types were copied
-        from the Nextflow Tower interface.
-
-        Raises:
-            KeyError: The 'NXF_TOWER_TOKEN' environment variable isn't defined
-            KeyError: The 'NXF_TOWER_API_URL' environment variable isn't defined
-        """
-        self.aws = AwsClient()
-        self.vpc = self.aws.get_cfn_stack_outputs(VPC_STACK_NAME)
-        self.debug = debug_mode
-        # Retrieve Nextflow Tower token from environment
-        try:
-            self.tower_token = tower_token or os.environ["NXF_TOWER_TOKEN"]
-        except KeyError as e:
-            raise KeyError(
-                "The 'NXF_TOWER_TOKEN' environment variable must "
-                "be defined with a Nextflow Tower API token."
-            ) from e
-        # Retrieve Nextflow Tower API URL from environment
-        try:
-            self.tower_api_base_url = tower_api_url or os.environ["NXF_TOWER_API_URL"]
-        except KeyError as e:
-            raise KeyError(
-                "The 'NXF_TOWER_API_URL' environment variable must "
-                "be defined with a Nextflow Tower API URL."
-            ) from e
-
-    def get_valid_name(self, full_name: str) -> str:
-        """Generate Tower-friendly name from full name
-
-        Args:
-            full_name (str): Full name (with spaces/punctuation)
-
-        Returns:
-            str: Name with only alphanumeric, dash and underscore characters
-        """
-        return re.sub(r"[^A-Za-z0-9_-]", "-", full_name)
-
-    def request(self, method: str, endpoint: str, **kwargs) -> dict:
-        """Make an authenticated HTTP request to the Nextflow Tower API
-
-        Args:
-            method (str): An HTTP method (GET, PUT, POST, or DELETE)
-            endpoint (str): The API endpoint with the path parameters filled in
-
-        Returns:
-            Response: The raw Response object to allow for special handling
-        """
-        assert method in {"GET", "PUT", "POST", "DELETE"}
-        url = self.tower_api_base_url + endpoint
-        kwargs["headers"] = {"Authorization": f"Bearer {self.tower_token}"}
-        response = requests.request(method, url, **kwargs)
-        try:
-            result = response.json()
-        except json.decoder.JSONDecodeError:
-            result = dict()
-        if self.debug:
-            print(f"\nEndpoint:\t {method} {url}")
-            print(f"Params: \t {kwargs.get('params')}")
-            print(f"Payload:\t {kwargs.get('json')}")
-            print(f"Status Code:\t {response.status_code} / {response.reason}")
-            print(f"Response:\t {result}")
-        return result
-
-    def paged_request(self, method: str, endpoint: str, **kwargs) -> Iterator[dict]:
-        """Iterate through pages of results for a given request
-
-        Args:
-            method (str): An HTTP method (GET, PUT, POST, or DELETE)
-            endpoint (str): The API endpoint with the path parameters filled in
-
-        Returns:
-            Iterator[Dict]: An iterator traversing through pages of responses
-        """
-        params = kwargs.pop("params", {})
-        params["max"] = 50
-        num_items = 0
-        total_size = 1  # Artificial value for initiating the while-loop
-        while num_items < total_size:
-            params["offset"] = num_items
-            response = self.request(method, endpoint, params=params, **kwargs)
-            total_size = response.pop("totalSize", 0)
-            _, items = response.popitem()
-            for item in items:
-                num_items += 1
-                yield item
-
-
 class TowerWorkspace:
     def __init__(
         self,
@@ -403,7 +310,7 @@ class TowerWorkspace:
         self.org = org
         self.tower = org.tower
         self.stack_name = stack_name
-        self.stack = self.tower.aws.get_cfn_stack_outputs(stack_name)
+        self.stack = self.org.aws.get_cfn_stack_outputs(stack_name)
         self.full_name = stack_name
         self.name = self.tower.get_valid_name(stack_name)
         self.json = self.create()
@@ -526,11 +433,47 @@ class TowerWorkspace:
         data = {"role": role}
         self.tower.request("PUT", endpoint, json=data)
 
+    def remove_participant(self, part_id: int) -> Dict:
+        """Remove a participant from a workspace
+
+        Args:
+            part_id (int): Participant ID for the user or team
+        """
+        endpoint = f"/orgs/{self.org.id}/workspaces/{self.id}/participants/{part_id}"
+        response = self.tower.request("DELETE", endpoint)
+        return response
+
+    def list_participants(self) -> Iterator:
+        """List the participants in a workspace"""
+        endpoint = f"/orgs/{self.org.id}/workspaces/{self.id}/participants"
+        participants = self.tower.paged_request("GET", endpoint)
+        return participants
+
+    def list_owner_participant_ids(self) -> Set[int]:
+        """List the participant IDs of any workspace owners
+
+        This will include the workspace creator.
+        """
+        participants = self.list_participants()
+        owners = [part for part in participants if part["wspRole"] == "owner"]
+        owner_ids = {owner["participantId"] for owner in owners}
+        return owner_ids
+
     def populate(self) -> None:
         """Add maintainers and viewers to the organization and workspace"""
         if self.users:
+            owner_ids = self.list_owner_participant_ids()
+            verified_ids = set(owner_ids)
             for user, _, role in self.users.list_users():
-                self.add_participant(role, user=user)
+                # Add expected participants
+                part = self.add_participant(role, user=user)
+                part_id = part["participantId"]
+                verified_ids.add(part_id)
+            # Remove unexpected team members
+            for part in self.list_participants():
+                part_id = part["participantId"]
+                if part_id not in verified_ids:
+                    self.remove_participant(part_id)
         if self.teams:
             for team_id, role in self.teams.items():
                 self.add_participant(role, team_id=team_id)
@@ -552,7 +495,7 @@ class TowerWorkspace:
                 return cred["id"]
         # Otherwise, create a new credentials entry for the project
         secret_arn = self.stack["TowerForgeServiceUserAccessKeySecretArn"]
-        credentials = self.tower.aws.get_secret_value(secret_arn)
+        credentials = self.org.aws.get_secret_value(secret_arn)
         data = {
             "credentials": {
                 "name": self.stack_name,
@@ -672,7 +615,7 @@ class TowerWorkspace:
                     "nvnmeStorageEnabled": False,
                     "postRunScript": None,
                     "preRunScript": "NXF_OPTS='-Xms7g -Xmx14g'",
-                    "region": self.tower.aws.region,
+                    "region": self.org.aws.region,
                     "resourceLabelIds": label_ids,
                     "waveEnabled": False,
                     "workDir": f"s3://{self.stack['TowerScratch']}/work",
@@ -763,6 +706,8 @@ class TowerOrganization:
             projects (Projects): List of projects and their users
             full_name (str): (Optional) Full name of organization
         """
+        self.aws = AwsClient()
+        self.vpc = self.aws.get_cfn_stack_outputs(VPC_STACK_NAME)
         self.tower = tower
         self.full_name = full_name
         self.use_teams = use_teams

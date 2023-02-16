@@ -1,5 +1,5 @@
 template_path: tower-project.j2
-stack_name: htan-project
+stack_name: mc2-mcmicro-project
 dependencies:
   - common/nextflow-forge-iam-policy.yaml
   - common/nextflow-launch-iam-policy.yaml
@@ -7,9 +7,15 @@ dependencies:
 parameters:
   S3ReadWriteAccessArns:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/adam.taylor@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/milen.nikolov@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/brad.macdonald@sagebase.org'
-    - 'arn:aws:sts::888810830951:assumed-role/AWSReservedSSO_Administrator_bf3b4691e22cc3c6/adam.taylor@sagebase.org' # Provides for htan-dev cross-account access
+    - arn:aws:iam::292075781285:user/sokolov
+    - arn:aws:iam::292075781285:user/cy101
+    - arn:aws:iam::292075781285:user/jmuhlich
+    # The following roles don't exist since the users are not Sage employees.
+    # However, this will ensure that they are added to the Tower workspace
+    # until we find a permanent solution for listing external users.
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/artem.sokolov@gmail.com'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/clarenceyapp111@gmail.com'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/jmuhlich@gmail.com'
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
     - '{{stack_group_config.sso_admin_role.arn}}'
@@ -20,6 +26,6 @@ parameters:
 
 stack_tags:
   Department: SCCE
-  Project: Human Tumor Atlas Network
+  Project: MC2
   OwnerEmail: adam.taylor@sagebase.org
-  CostCenter: HTAN-DFCI / 120100
+  CostCenter: CSBC - NCI / 101300

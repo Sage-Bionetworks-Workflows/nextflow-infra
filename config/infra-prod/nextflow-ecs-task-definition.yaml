@@ -28,7 +28,6 @@ parameters:
   TowerUserWorkspace: 'false'
   TowerRootUsers:
     - bruno.grande@sagebase.org
-    - tess.thyer@sagebase.org
     - thomas.yu@sagebase.org
   TowerConfigFileName: 'tower.yaml'
 

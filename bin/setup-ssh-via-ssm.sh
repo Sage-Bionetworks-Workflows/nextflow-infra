@@ -61,7 +61,7 @@ TARGET_HOMEDIR="/home/${TARGET_USER}"
 COMMANDS=$(cat <<- END
   cd
   mkdir -p .ssh;
-  echo $(<$SSH_KEY_PUB) > .ssh/authorized_keys;
+  echo $(<"$SSH_KEY_PUB") >> .ssh/authorized_keys;
   sudo chmod 700 .ssh;
   sudo chmod 600 .ssh/authorized_keys;
   sudo cp -r .ssh ${TARGET_HOMEDIR}/;
@@ -85,4 +85,4 @@ echo "You should now be able to connect using 'ssh $INSTANCE_ID'."
 echo "You can just use the SSH command for this instance going forward."
 echo "Connecting now..."
 echo
-ssh $INSTANCE_ID
+ssh "$INSTANCE_ID"
