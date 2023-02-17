@@ -15,7 +15,7 @@ import yaml  # type: ignore
 from sagetasks.nextflowtower.client import TowerClient
 
 # Increment this version when updating compute environments
-CE_VERSION = "v7"
+CE_VERSION = "v8"
 
 REGION = "us-east-1"
 ORG_NAME = "Sage Bionetworks"
@@ -27,6 +27,21 @@ VPC_STACK_OUTPUT_SIDS = [
     "PrivateSubnet2",
     "PrivateSubnet3",
 ]
+
+# Instruct black code formatter to not list one instance type per line
+# fmt: off
+
+# All non-GPU, x86-64 (no Graviton), C/M/R-family instance types
+NONGPU_EC2_INSTANCE_TYPES = (
+    "r5a", "r6a", "r6i", "r5ad", "r5d", "r5b", "r5n", "r6id", "r5dn", "m5a", "m6a",
+    "r6in", "m6i", "r6idn", "m5ad", "m5d", "m6id", "m5n", "m5dn", "m6in", "c6a",
+    "c5a", "m6idn", "c5n", "m5zn", "c6i", "c5ad", "c5d", "c6id", "c6in"
+)
+# All GPU-enabled (NVIDIA-only), x86-64 (Intel-only) instance types
+# Excluding 'p3dn' and 'p4*' due to costs
+GPU_EC2_INSTANCE_TYPES = ("g4dn", "g2", "g3s", "p2", "g3", "p3")
+
+# fmt: on
 
 
 def main() -> None:
@@ -605,6 +620,22 @@ class TowerWorkspace:
             label_id = self.create_resource_label(key, value)
             label_ids.append(label_id)
 
+        # Determine allocation strategy
+        alloc_strategy = "BEST_FIT_PROGRESSIVE"
+        if model == "SPOT":
+            # With this strategy, "instance types that are less likely
+            # to be interrupted are preferred" according to the AWS docs
+            alloc_strategy = "SPOT_CAPACITY_OPTIMIZED"
+
+        # Including recent generations (compared to default of m4/c4/r4) will result
+        # in lower compute costs (e.g., $0.038/vCPU/hour vs $0.050/vCPU/hour).
+        # Including multiple families will grant CEs with access to a greater pool
+        # of instances when provisioning spot instances.
+        instance_types = list(NONGPU_EC2_INSTANCE_TYPES)
+        # TODO: Consider always including GPU-enabled instance for simplicity
+        #       Is there a drawback to always setting gpuEnabled=True?
+        # instance_types.extend(GPU_EC2_INSTANCE_TYPES)
+
         # This is modeled after a request made in the Tower web client
         data = {
             "labelIds": label_ids,
@@ -632,7 +663,7 @@ class TowerWorkspace:
                     "waveEnabled": False,
                     "workDir": f"s3://{self.stack['TowerScratch']}/work",
                     "forge": {
-                        "allocStrategy": None,
+                        "allocStrategy": alloc_strategy,
                         "allowBuckets": [],
                         "containerRegIds": None,
                         "disposeOnDeletion": True,
@@ -645,7 +676,7 @@ class TowerWorkspace:
                         "efsCreate": False,
                         "gpuEnabled": False,
                         "imageId": None,
-                        "instanceTypes": ["m5", "c5", "r5"],
+                        "instanceTypes": instance_types,
                         "maxCpus": 1000,
                         "minCpus": 0,
                         "securityGroups": [],
