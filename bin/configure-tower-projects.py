@@ -632,9 +632,7 @@ class TowerWorkspace:
         # Including multiple families will grant CEs with access to a greater pool
         # of instances when provisioning spot instances.
         instance_types = list(NONGPU_EC2_INSTANCE_TYPES)
-        # TODO: Consider always including GPU-enabled instance for simplicity
-        #       Is there a drawback to always setting gpuEnabled=True?
-        # instance_types.extend(GPU_EC2_INSTANCE_TYPES)
+        instance_types.extend(GPU_EC2_INSTANCE_TYPES)
 
         # This is modeled after a request made in the Tower web client
         data = {
@@ -674,7 +672,7 @@ class TowerWorkspace:
                         "ec2KeyPair": None,
                         "ecsConfig": None,
                         "efsCreate": False,
-                        "gpuEnabled": False,
+                        "gpuEnabled": True,
                         "imageId": None,
                         "instanceTypes": instance_types,
                         "maxCpus": 1000,
