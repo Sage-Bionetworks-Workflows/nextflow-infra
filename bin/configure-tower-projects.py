@@ -15,7 +15,7 @@ import yaml  # type: ignore
 from sagetasks.nextflowtower.client import TowerClient
 
 # Increment this version when updating compute environments
-CE_VERSION = "v8"
+CE_VERSION = "v9"
 
 REGION = "us-east-1"
 ORG_NAME = "Sage Bionetworks"
@@ -31,15 +31,26 @@ VPC_STACK_OUTPUT_SIDS = [
 # Instruct black code formatter to not list one instance type per line
 # fmt: off
 
-# All non-GPU, x86-64 (no Graviton), C/M/R-family instance types
+# Listing all x86-64 (no Graviton) C/M/R-family (no GPU) instance types
+# Limiting to 32 vCPUs (8xlarge) for incremental scaling (max $2/hr)
+# Avoiding costly subtypes (e.g., r5b, r5n, r5d) until we benchmark them
 NONGPU_EC2_INSTANCE_TYPES = (
-    "r5a", "r6a", "r6i", "r5ad", "r5d", "r5b", "r5n", "r6id", "r5dn", "m5a", "m6a",
-    "r6in", "m6i", "r6idn", "m5ad", "m5d", "m6id", "m5n", "m5dn", "m6in", "c6a",
-    "c5a", "m6idn", "c5n", "m5zn", "c6i", "c5ad", "c5d", "c6id", "c6in"
+    # large instance (2 vCPUs)
+    "c6a.large", "c5a.large", "c6i.large", "m5a.large", "m6a.large",
+    "m6i.large", "r5a.large", "r6a.large", "r6i.large",
+    # xlarge instance (4 vCPUs)
+    "c6a.xlarge", "c5a.xlarge", "c6i.xlarge", "m5a.xlarge", "m6a.xlarge",
+    "m6i.xlarge", "r5a.xlarge", "r6a.xlarge", "r6i.xlarge",
+    # 2xlarge instance (8 vCPUs)
+    "c6a.2xlarge", "c5a.2xlarge", "c6i.2xlarge", "m5a.2xlarge", "m6a.2xlarge",
+    "m6i.2xlarge", "r5a.2xlarge", "r6a.2xlarge", "r6i.2xlarge",
+    # 4xlarge instance (16 vCPUs)
+    "c6a.4xlarge", "c5a.4xlarge", "c6i.4xlarge", "m5a.4xlarge", "m6a.4xlarge",
+    "m6i.4xlarge", "r5a.4xlarge", "r6a.4xlarge", "r6i.4xlarge",
+    # 8xlarge instance (32 vCPUs)
+    "c6a.8xlarge", "c5a.8xlarge", "c6i.8xlarge", "m5a.8xlarge", "m6a.8xlarge",
+    "m6i.8xlarge", "r5a.8xlarge", "r6a.8xlarge", "r6i.8xlarge"
 )
-# All GPU-enabled (NVIDIA-only), x86-64 (Intel-only) instance types
-# Excluding 'p3dn' and 'p4*' due to costs
-GPU_EC2_INSTANCE_TYPES = ("g4dn", "g2", "g3s", "p2", "g3", "p3")
 
 # fmt: on
 
