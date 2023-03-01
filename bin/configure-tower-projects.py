@@ -15,7 +15,7 @@ import yaml  # type: ignore
 from sagetasks.nextflowtower.client import TowerClient
 
 # Increment this version when updating compute environments
-CE_VERSION = "v9"
+CE_VERSION = "v10"
 
 REGION = "us-east-1"
 ORG_NAME = "Sage Bionetworks"
@@ -631,8 +631,9 @@ class TowerWorkspace:
             label_id = self.create_resource_label(key, value)
             label_ids.append(label_id)
 
-        # Determine allocation strategy
-        alloc_strategy = "BEST_FIT_PROGRESSIVE"
+        # 'BEST_FIT' ensures that smaller instances are used, which limits the number
+        # of jobs per instance. It also ensures that the head job is isolated.
+        alloc_strategy = "BEST_FIT"
         if model == "SPOT":
             # With this strategy, "instance types that are less likely
             # to be interrupted are preferred" according to the AWS docs
