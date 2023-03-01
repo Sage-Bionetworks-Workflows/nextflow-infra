@@ -15,7 +15,7 @@ import yaml  # type: ignore
 from sagetasks.nextflowtower.client import TowerClient
 
 # Increment this version when updating compute environments
-CE_VERSION = "v10"
+CE_VERSION = "v11"
 
 REGION = "us-east-1"
 ORG_NAME = "Sage Bionetworks"
@@ -51,6 +51,12 @@ NONGPU_EC2_INSTANCE_TYPES = (
     "c6a.8xlarge", "c5a.8xlarge", "c6i.8xlarge", "m5a.8xlarge", "m6a.8xlarge",
     "m6i.8xlarge", "r5a.8xlarge", "r6a.8xlarge", "r6i.8xlarge"
 )
+
+ECS_CONFIG = """
+ECS_CONTAINER_STOP_TIMEOUT=10m
+ECS_CONTAINER_START_TIMEOUT=10m
+ECS_CONTAINER_CREATE_TIMEOUT=10m
+"""
 
 # fmt: on
 
@@ -413,45 +419,39 @@ class TowerWorkspace:
         Returns:
             dict: Participant info for the user or team in the given workspace
         """
-        # Attempt to add the user as a participant of the given workspace
         endpoint = f"/orgs/{self.org.id}/workspaces/{self.id}/participants"
-        if user and not team_id:
+        data = {"memberId": None, "teamId": None, "userNameOrEmail": None}
+
+        if user:
             member_id = self.org.members[user]["memberId"]
             identifier = member_id
-            data = {
-                "memberId": member_id,
-                "teamId": None,
-                "userNameOrEmail": None,
-            }
-        elif not user and team_id:
+            data["memberId"] = identifier
+        elif team_id:
             identifier = team_id
-            data = {
-                "memberId": None,
-                "teamId": team_id,
-                "userNameOrEmail": None,
-            }
+            data["teamId"] = identifier
         else:
-            raise ValueError(
-                "Must provide value for exactly one of `user` or `team_id`."
-            )
-        response = self.tower.request("PUT", f"{endpoint}/add", json=data)
-        # If the user is already a participant, you get the following message:
-        #   "Already a participant"
-        # In this case, look up the participant ID using the member ID
-        if "message" in response and response["message"] == "Already a participant":
-            participant = dict()
-            participants = self.tower.paged_request("GET", endpoint)
-            for p in participants:
-                if p.get("memberId") == identifier or p.get("teamId") == identifier:
-                    participant = p
-            assert participant, f"Failed to find the given participant ({identifier})"
-        # Otherwise, just return their new participant ID for the workspace
+            message = "Must provide value for exactly one of `user` or `team_id`."
+            raise ValueError(message)
+
+        response = self.tower.paged_request("GET", f"{endpoint}")
+        matches = [
+            participant
+            for participant in response
+            if participant["teamId"] == identifier
+            or participant["memberId"] == identifier
+        ]
+
+        if len(matches) == 1:
+            participant = matches[0]
         else:
+            response = self.tower.request("PUT", f"{endpoint}/add", json=data)
             participant = response["participant"]
-        self.participants[identifier] = participant
+
         # Update participant role
         participant_id = participant["participantId"]
         self.set_participant_role(participant_id, role)
+
+        self.participants[identifier] = participant
         return participant
 
     def set_participant_role(self, part_id: int, role: str) -> None:
@@ -683,7 +683,7 @@ class TowerWorkspace:
                         "ebsBlockSize": 1000,
                         "ebsBootSize": 1000,
                         "ec2KeyPair": None,
-                        "ecsConfig": None,
+                        "ecsConfig": ECS_CONFIG.strip(),
                         "efsCreate": False,
                         "gpuEnabled": False,
                         "imageId": None,
@@ -813,30 +813,18 @@ class TowerOrganization:
         Returns:
             dict: Tower definition of a organization member
         """
-        # Attempt to add the user as a member of the given organization
         endpoint = f"/orgs/{self.id}/members"
-        data = {"user": user}
-        response = self.tower.request(
-            "PUT",
-            f"{endpoint}/add",
-            json=data,
-        )
-        # If the user is already a member, you get the following message:
-        #   "User '<username>' is already a member"
-        # This hacky approach is necessary because you need to retrieve the
-        # member ID using the username (you can't with the email alone)
-        if "message" in response and "already a member" in response["message"]:
-            member = dict()
-            username = response["message"].split("'")[1]
-            params = {"search": username}
-            members = self.tower.paged_request("GET", endpoint, params=params)
-            for m in members:
-                if m["userName"] == username:
-                    member = m
-            assert member, f"Failed to find the given member ({user})"
-        # Otherwise, just return their new member ID for the organization
+        params = {"search": user}
+        response = self.tower.paged_request("GET", f"{endpoint}", params=params)
+        matches = list(response)
+
+        if len(matches) == 1 and matches[0]["email"] == user:
+            member = matches[0]
         else:
+            data = {"user": user}
+            response = self.tower.request("PUT", f"{endpoint}/add", json=data)
             member = response["member"]
+
         self.members[user] = member
         return member
 
