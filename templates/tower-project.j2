@@ -434,7 +434,7 @@ Resources:
             Status: !Ref EnableScratchDataExpiration
             ExpirationInDays: 30
             Prefix: work/
-          {%- set default_scratch_data_expirations = [10, 20, 30, 60, 90] %}
+          {%- set default_scratch_data_expirations = [1, 3, 5, 7, 10, 20, 30, 60, 90] %}
           {%- set scratch_data_expirations = sceptre_user_data.scratch_data_expirations | default( default_scratch_data_expirations ) %}
           {%- for num in scratch_data_expirations %}
           - Id: DataExpirationFor{{ num }}DaysDirectory
