@@ -24,3 +24,4 @@ TOWER_OIDC_TOKEN_IMPORT: "!If [ HasTowerOidcClient, !Ref TowerOidcTokenImport, !
 TOWER_ROOT_USERS: "!If [ HasTowerRootUsers, !Join [',', !Ref TowerRootUsers], !Ref AWS::NoValue]"
 TOWER_USER_WORKSPACE_ENABLED: "!Ref 'TowerUserWorkspace'"
 TOWER_CONFIG_FILE: "!Sub '${EfsVolumeMountPath}/${TowerConfigFileName}'"
+WAVE_SERVER_URL: "https://wave.seqera.io"
