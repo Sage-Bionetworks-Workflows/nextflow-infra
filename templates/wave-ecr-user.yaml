@@ -1,0 +1,83 @@
+Description: Policy and IAM user for Wave service to access ECR
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  KmsKeyAlias:
+    Description: Optional. KMS key alias used to encrypt secrets stored in Secrets Manager.
+    Type: String
+    Default: 'alias/workflows-infra'
+
+Resources:
+  WaveEcrPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Sid: EcrRepositoryActions
+          Effect: Allow
+          Action:
+          - ecr:UntagResource
+          - ecr:GetDownloadUrlForLayer
+          - ecr:CompleteLayerUpload
+          - ecr:DescribeImages
+          - ecr:TagResource
+          - ecr:DescribeRepositories
+          - ecr:ListTagsForResource
+          - ecr:UploadLayerPart
+          - ecr:ListImages
+          - ecr:InitiateLayerUpload
+          - ecr:PutImage
+          Resource: !Sub "arn:aws:ecr:*:${AWS::AccountId}:repository/*"
+        - Sid: EcrGeneralActions
+          Effect: Allow
+          Action:
+          - ecr:CreateRepository
+          - ecr:DescribeRegistry
+          - ecr:GetAuthorizationToken
+          Resource: "*"
+
+  WaveServiceUser:
+    Type: 'AWS::IAM::User'
+    Properties:
+      ManagedPolicyArns:
+        - !Ref WaveEcrPolicy
+
+  WaveServiceUserAccessKey:
+    Type: 'AWS::IAM::AccessKey'
+    Properties:
+      UserName: !Ref WaveServiceUser
+
+  WaveServiceUserAccessKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: "nextflow/ecr_service_acct"
+      Description: !Sub "The ECR service account credentials for the Wave service (${WaveServiceUser} IAM user)"
+      SecretString: !Sub >-
+        {
+          "username": "${WaveServiceUserAccessKey}",
+          "password": "${WaveServiceUserAccessKey.SecretAccessKey}"
+        }
+      KmsKeyId: !Ref KmsKeyAlias
+
+Outputs:
+  WaveEcrPolicyArn:
+    Value: !Ref WaveEcrPolicy
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-WaveEcrPolicyArn'
+  WaveServiceUser:
+    Value: !Ref WaveServiceUser
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-WaveServiceUser'
+  WaveServiceUserArn:
+    Value: !GetAtt WaveServiceUser.Arn
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-WaveServiceUserArn'
+  WaveServiceUserAccessKeySecret:
+    Value: !Sub "${AWS::StackName}-TowerProjectConfiguration"
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-WaveServiceUserAccessKeySecret"
+  WaveServiceUserAccessKeySecretArn:
+    Value: !Ref WaveServiceUserAccessKeySecret
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-WaveServiceUserAccessKeySecretArn"

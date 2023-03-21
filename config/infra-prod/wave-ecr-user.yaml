@@ -1,0 +1,9 @@
+template:
+  path: wave-ecr-user.yaml
+stack_name: wave-ecr-user
+
+dependencies:
+  - infra-prod/workflows-kms-key.yaml
+
+stack_tags:
+  {{stack_group_config.default_stack_tags}}

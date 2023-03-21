@@ -117,12 +117,18 @@ The Nextflow Tower credentials (_i.e._ access tokens) were created manually usin
 
 ### AWS Secrets
 
-The following secrets were manually created in AWS Secrets Manager. They are used in some [Sceptre configurations](#configuration) and are retrieved using a [Sceptre resolver](https://github.com/iAnomaly/sceptre-resolver-aws-secrets-manager). We also create secrets during deployment and store them in Secrets Manager ([example](https://github.com/Sage-Bionetworks-Workflows/aws-workflows-nextflow-infra/blob/db37741e53fa5276b33b24d1af247d8d29bc0e56/templates/nextflow-tower-secret.yaml#L14-L34)), but these aren't listed here.
+The following secrets were manually created in AWS Secrets Manager. They are used in some [Sceptre configurations](#configuration) and are retrieved using a [Sceptre resolver](https://github.com/iAnomaly/sceptre-resolver-aws-secrets-manager). We also create secrets during deployment and store them in Secrets Manager ([example](https://github.com/Sage-Bionetworks-Workflows/aws-workflows-nextflow-infra/blob/db37741e53fa5276b33b24d1af247d8d29bc0e56/templates/nextflow-tower-secret.yaml#L14-L34)), but these aren't listed here. These are encrypted using the `workflows-infra` KMS key.
 
 - `nextflow/license`: The paid license key for Nextflow Tower
 - `nextflow/google_oauth_app`: The Google OAuth client credentials
 - `nextflow/github_service_acct`: The GitHub service account credentials
 - `nextflow/synapse_oauth_client`: The Synapse OAuth client ID and secret
+
+The following secrets were created in all AWS accounts (including `strides-ampad`). Note that personal access tokens were used as password where possible (see notes in LastPass). Each of these secrets were created with two key-value pairs (`username` and `password`). Another service account (`nextflow/ecr_service_acct`) is created using CloudFormation (see `wave-ecr-user` stack).
+
+- `nextflow/dockerhub_service_acct`: The Docker Hub service account credentials for the Wave service
+- `nextflow/ghcr_service_acct`: The GHCR service account credentials for the Wave service
+- `nextflow/quayio_service_acct`: The Quay.io service account credentials for the Wave service
 
 ## Additional Notes
 
