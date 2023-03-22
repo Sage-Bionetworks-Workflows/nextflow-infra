@@ -103,6 +103,12 @@ Resources:
         PasswordLength: 16
       KmsKeyId: !Sub ${AuroraKeyStack.Outputs.Key}
 
+  AuroraMasterSecretRotationSchedule:
+    Type: AWS::SecretsManager::RotationSchedule
+    Properties:
+      # By default, SM will rotate secrets every 30 days
+      SecretId: !Ref AuroraMasterSecret
+
   AuroraNextflowTowerDatabaseUserSecret:
     Condition: UseSnapshotFalse
     Type: AWS::SecretsManager::Secret
