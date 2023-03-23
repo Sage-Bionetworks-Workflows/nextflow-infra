@@ -1,4 +1,7 @@
 AWSTemplateFormatVersion: 2010-09-09
+# transform is to enable secrets manager rotation schedule
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-secretsmanager-rotationschedule-hostedrotationlambda.html
+Transform: AWS::SecretsManager-2020-07-23
 Description: Serverless Aurora MySQL DB for NextFlow Tower
 
 Parameters:
@@ -106,8 +109,11 @@ Resources:
   AuroraMasterSecretRotationSchedule:
     Type: AWS::SecretsManager::RotationSchedule
     Properties:
-      # By default, SM will rotate secrets every 30 days
       SecretId: !Ref AuroraMasterSecret
+      HostedRotationLambda:
+        RotationType: MySQLSingleUser
+      RotationRules:
+        AutomaticallyAfterDays: 30
 
   AuroraNextflowTowerDatabaseUserSecret:
     Condition: UseSnapshotFalse
