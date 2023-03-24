@@ -116,41 +116,6 @@ Resources:
       LogGroupName: !Join ['-', [ECSLogGroup, !Ref 'AWS::StackName']]
       RetentionInDays: 14
 
-  EcsLaunchConfiguration:
-    Type: AWS::AutoScaling::LaunchConfiguration
-    Properties:
-      ImageId: !Ref EcsAmiId
-      InstanceType: !Ref EcsInstanceType
-      AssociatePublicIpAddress: false
-      IamInstanceProfile: !Ref EcsInstanceProfile
-      SecurityGroups:
-        - !Ref EcsSecurityGroupId
-      BlockDeviceMappings:
-        - DeviceName: !Ref RootDeviceName
-          Ebs:
-            VolumeSize: !Ref RootEbsVolumeSize
-            VolumeType: !Ref EbsVolumeType
-      UserData:
-        Fn::Base64: !Sub |
-          MIME-Version: 1.0
-          Content-Type: multipart/mixed; boundary="==BOUNDARY=="
-
-          --==BOUNDARY==
-          Content-Type: text/cloud-config; charset="us-ascii"
-
-          #cloud-config
-          repo_update: true
-          repo_upgrade: security
-
-          write_files:
-          - path: /etc/ecs/ecs.config
-            content: |
-              ECS_CLUSTER=${EcsClusterName}
-              ECS_IMAGE_PULL_BEHAVIOR=prefer-cached
-            append: true
-
-          --==BOUNDARY==--
-
   EcsAutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
@@ -187,11 +152,6 @@ Outputs:
     Value: !GetAtt EcsRole.Arn
     Export:
       Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsRoleArn'
-
-  EcsLaunchConfigurationName:
-    Value: !Ref EcsLaunchConfiguration
-    Export:
-      Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsLaunchConfiguration'
 
   EcsAutoScalingGroupName:
     Value: !Ref EcsAutoScalingGroup
