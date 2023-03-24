@@ -40,7 +40,8 @@ parameters:
   TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
   TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
 
-template_path: tower-project.j2
+template:
+  path: tower-project.j2
 
 dependencies:
   - common/nextflow-forge-iam-policy.yaml

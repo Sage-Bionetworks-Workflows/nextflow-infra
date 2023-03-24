@@ -1,4 +1,5 @@
-template_path: nextflow-aurora-mysql.yaml
+template:
+  path: nextflow-aurora-mysql.yaml
 stack_name: nextflow-aurora-mysql
 dependencies:
   - infra-prod/nextflow-vpc.yaml

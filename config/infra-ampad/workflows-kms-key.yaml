@@ -1,4 +1,5 @@
-template_path: workflows-kms-key.yaml
+template:
+  path: workflows-kms-key.yaml
 stack_name: workflows-infra-kms-key
 
 parameters:

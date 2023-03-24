@@ -1,4 +1,5 @@
-template_path: public-bucket.yaml
+template:
+  path: public-bucket.yaml
 stack_name: igenomes-bucket
 
 parameters:

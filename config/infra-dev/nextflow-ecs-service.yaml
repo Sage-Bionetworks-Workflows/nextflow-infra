@@ -1,4 +1,5 @@
-template_path: nextflow-ecs-service.yaml
+template:
+  path: nextflow-ecs-service.yaml
 stack_name: nextflow-ecs-service
 dependencies:
   - infra-dev/nextflow-ecs-cluster.yaml

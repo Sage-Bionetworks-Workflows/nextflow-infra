@@ -1,4 +1,5 @@
-template_path: nextflow-ecs-security-group.yaml
+template:
+  path: nextflow-ecs-security-group.yaml
 stack_name: nextflow-ecs-security-group
 dependencies:
   - infra-prod/nextflow-vpc.yaml

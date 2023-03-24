@@ -1,4 +1,5 @@
-template_path: nextflow-r53-alias-record.yaml
+template:
+  path: nextflow-r53-alias-record.yaml
 stack_name: nextflow-r53-alias-record
 dependencies:
   - infra-dev/nextflow-r53-hostedzone.yaml

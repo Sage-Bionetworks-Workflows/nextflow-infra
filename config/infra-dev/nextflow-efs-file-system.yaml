@@ -1,4 +1,5 @@
-template_path: nextflow-efs-file-system.yaml
+template:
+  path: nextflow-efs-file-system.yaml
 stack_name: nextflow-efs-file-system
 dependencies:
   - infra-dev/nextflow-vpc.yaml
