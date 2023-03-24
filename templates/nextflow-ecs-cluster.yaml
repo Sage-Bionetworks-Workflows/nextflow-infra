@@ -116,6 +116,40 @@ Resources:
       LogGroupName: !Join ['-', [ECSLogGroup, !Ref 'AWS::StackName']]
       RetentionInDays: 14
 
+  EcsLaunchTemplate:
+    Type: AWS::AutoScaling::LaunchTemplate
+    Properties:
+      ImageId: !Ref EcsAmiId
+      InstanceType: !Ref EcsInstanceType
+      IamInstanceProfile: !Ref EcsInstanceProfile
+      SecurityGroups:
+        - !Ref EcsSecurityGroupId
+      BlockDeviceMappings:
+        - DeviceName: !Ref RootDeviceName
+          Ebs:
+            VolumeSize: !Ref RootEbsVolumeSize
+            VolumeType: !Ref EbsVolumeType
+      UserData:
+        Fn::Base64: !Sub |
+          MIME-Version: 1.0
+          Content-Type: multipart/mixed; boundary="==BOUNDARY=="
+
+          --==BOUNDARY==
+          Content-Type: text/cloud-config; charset="us-ascii"
+
+          #cloud-config
+          repo_update: true
+          repo_upgrade: security
+
+          write_files:
+          - path: /etc/ecs/ecs.config
+            content: |
+              ECS_CLUSTER=${EcsClusterName}
+              ECS_IMAGE_PULL_BEHAVIOR=prefer-cached
+            append: true
+
+          --==BOUNDARY==--
+
   EcsLaunchConfiguration:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
@@ -156,7 +190,7 @@ Resources:
     Properties:
       VPCZoneIdentifier:
         - !Ref SubnetId
-      LaunchConfigurationName: !Ref EcsLaunchConfiguration
+      LaunchConfigurationName: !Ref EcsLaunchTemplate
       MinSize: '0'
       MaxSize: !Ref AutoscalingGroupMaxSize
       DesiredCapacity: !Ref AutoscalingGroupDesiredCapacity
@@ -192,6 +226,11 @@ Outputs:
     Value: !Ref EcsLaunchConfiguration
     Export:
       Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsLaunchConfiguration'
+
+  EcsLaunchTemplateName:
+    Value: !Ref EcsLaunchTemplate
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsLaunchTemplate'
 
   EcsAutoScalingGroupName:
     Value: !Ref EcsAutoScalingGroup
