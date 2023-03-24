@@ -190,7 +190,9 @@ Resources:
     Properties:
       VPCZoneIdentifier:
         - !Ref SubnetId
-      LaunchConfigurationName: !Ref EcsLaunchTemplate
+      LaunchTemplate:
+        LaunchTemplateId: !Ref EcsLaunchTemplate
+        Version: !GetAtt EcsLaunchTemplate.LatestVersionNumber
       MinSize: '0'
       MaxSize: !Ref AutoscalingGroupMaxSize
       DesiredCapacity: !Ref AutoscalingGroupDesiredCapacity
