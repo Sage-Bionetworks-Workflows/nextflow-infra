@@ -174,10 +174,30 @@ Resources:
           EFSVolumeConfiguration:
             FilesystemId: !Ref EfsFileSystemId
       ContainerDefinitions:
+        - Name: !Sub '${RedisContainerName}-CheckAOF'
+          Image: !Ref RedisContainerImage
+          Memory: 2000
+          Cpu: 0
+          EntryPoint:
+            - redis-check-aof
+          Command:
+            - --fix
+          MountPoints:
+            - ContainerPath: /data
+              SourceVolume: !Ref EfsVolumeName
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Sub '${AWS::Region}'
+              awslogs-group: !Ref TowerTaskLogGroup
+              awslogs-stream-prefix: !Ref AwslogsStreamPrefix
         - Name: !Ref RedisContainerName
           Image: !Ref RedisContainerImage
           Memory: 2000
           Cpu: 0
+          DependsOn:
+            - ContainerName: !Sub '${RedisContainerName}-CheckAOF'
+              Condition: SUCCESS
           PortMappings:
             - ContainerPort: 6379
               HostPort: 6379
