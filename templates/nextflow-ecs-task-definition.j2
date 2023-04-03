@@ -178,10 +178,14 @@ Resources:
           Image: !Ref RedisContainerImage
           Memory: 2000
           Cpu: 0
+          Essential: false
           EntryPoint:
-            - redis-check-aof
+            - /bin/sh
+          # The `yes` command is needed because `redis-check-aof` has an
+          # interactive prompt and doesn't have an option to disable it
           Command:
-            - --fix
+            - -c
+            - "yes | redis-check-aof --fix appendonly.aof"
           MountPoints:
             - ContainerPath: /data
               SourceVolume: !Ref EfsVolumeName
