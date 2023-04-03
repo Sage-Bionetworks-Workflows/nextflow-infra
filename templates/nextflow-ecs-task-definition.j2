@@ -174,10 +174,36 @@ Resources:
           EFSVolumeConfiguration:
             FilesystemId: !Ref EfsFileSystemId
       ContainerDefinitions:
+        # The following container definition is a stop-gap solution for
+        # https://sagebionetworks.jira.com/browse/WORKFLOWS-521
+        - Name: !Sub '${RedisContainerName}-CheckAOF'
+          Image: !Ref RedisContainerImage
+          Memory: 2000
+          Cpu: 0
+          Essential: false
+          EntryPoint:
+            - /bin/sh
+          # The `yes` command is needed because `redis-check-aof` has an
+          # interactive prompt and doesn't have an option to disable it
+          Command:
+            - -c
+            - "yes | redis-check-aof --fix appendonly.aof"
+          MountPoints:
+            - ContainerPath: /data
+              SourceVolume: !Ref EfsVolumeName
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Sub '${AWS::Region}'
+              awslogs-group: !Ref TowerTaskLogGroup
+              awslogs-stream-prefix: !Ref AwslogsStreamPrefix
         - Name: !Ref RedisContainerName
           Image: !Ref RedisContainerImage
           Memory: 2000
           Cpu: 0
+          DependsOn:
+            - ContainerName: !Sub '${RedisContainerName}-CheckAOF'
+              Condition: SUCCESS
           PortMappings:
             - ContainerPort: 6379
               HostPort: 6379
