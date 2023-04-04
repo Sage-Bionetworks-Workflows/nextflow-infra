@@ -1,4 +1,5 @@
-template_path: tower-project.j2
+template:
+  path: tower-project.j2
 stack_name: strides-ampad-project
 dependencies:
   - common/nextflow-forge-iam-policy.yaml

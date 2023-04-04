@@ -1,4 +1,5 @@
-template_path: budget.yaml
+template:
+  path: budget.yaml
 stack_name: budget-compute
 
 parameters:
