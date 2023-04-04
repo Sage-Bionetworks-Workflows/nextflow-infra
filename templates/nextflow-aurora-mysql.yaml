@@ -107,6 +107,7 @@ Resources:
       KmsKeyId: !Sub ${AuroraKeyStack.Outputs.Key}
 
   AuroraMasterSecretRotationSchedule:
+    Condition: UseSnapshotFalse
     Type: AWS::SecretsManager::RotationSchedule
     Properties:
       SecretId: !Ref AuroraMasterSecret
