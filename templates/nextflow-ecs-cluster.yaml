@@ -117,38 +117,40 @@ Resources:
       RetentionInDays: 14
 
   EcsLaunchTemplate:
-    Type: AWS::AutoScaling::LaunchTemplate
+    Type: AWS::EC2::LaunchTemplate
     Properties:
-      ImageId: !Ref EcsAmiId
-      InstanceType: !Ref EcsInstanceType
-      IamInstanceProfile: !Ref EcsInstanceProfile
-      SecurityGroups:
-        - !Ref EcsSecurityGroupId
-      BlockDeviceMappings:
-        - DeviceName: !Ref RootDeviceName
-          Ebs:
-            VolumeSize: !Ref RootEbsVolumeSize
-            VolumeType: !Ref EbsVolumeType
-      UserData:
-        Fn::Base64: !Sub |
-          MIME-Version: 1.0
-          Content-Type: multipart/mixed; boundary="==BOUNDARY=="
+      LaunchTemplateData:
+        ImageId: !Ref EcsAmiId
+        InstanceType: !Ref EcsInstanceType
+        IamInstanceProfile:
+          Arn: !GetAtt EcsInstanceProfile.Arn
+        SecurityGroupIds:
+          - !Ref EcsSecurityGroupId
+        BlockDeviceMappings:
+          - DeviceName: !Ref RootDeviceName
+            Ebs:
+              VolumeSize: !Ref RootEbsVolumeSize
+              VolumeType: !Ref EbsVolumeType
+        UserData:
+          Fn::Base64: !Sub |
+            MIME-Version: 1.0
+            Content-Type: multipart/mixed; boundary="==BOUNDARY=="
 
-          --==BOUNDARY==
-          Content-Type: text/cloud-config; charset="us-ascii"
+            --==BOUNDARY==
+            Content-Type: text/cloud-config; charset="us-ascii"
 
-          #cloud-config
-          repo_update: true
-          repo_upgrade: security
+            #cloud-config
+            repo_update: true
+            repo_upgrade: security
 
-          write_files:
-          - path: /etc/ecs/ecs.config
-            content: |
-              ECS_CLUSTER=${EcsClusterName}
-              ECS_IMAGE_PULL_BEHAVIOR=prefer-cached
-            append: true
+            write_files:
+            - path: /etc/ecs/ecs.config
+              content: |
+                ECS_CLUSTER=${EcsClusterName}
+                ECS_IMAGE_PULL_BEHAVIOR=prefer-cached
+              append: true
 
-          --==BOUNDARY==--
+            --==BOUNDARY==--
 
   EcsLaunchConfiguration:
     Type: AWS::AutoScaling::LaunchConfiguration
