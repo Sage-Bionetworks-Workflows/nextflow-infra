@@ -1,4 +1,5 @@
-template_path: nextflow-launch-iam-policy.yaml
+template:
+  path: nextflow-launch-iam-policy.yaml
 stack_name: nextflow-launch-iam-policy
 
 stack_tags:

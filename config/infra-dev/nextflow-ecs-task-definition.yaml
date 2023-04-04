@@ -1,4 +1,5 @@
-template_path: nextflow-ecs-task-definition.j2
+template:
+  path: nextflow-ecs-task-definition.j2
 stack_name: nextflow-ecs-task-definition
 dependencies:
   - infra-dev/nextflow-aurora-mysql.yaml

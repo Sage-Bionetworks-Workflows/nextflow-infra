@@ -197,8 +197,8 @@ class Projects:
         has_stack_name = "stack_name" in config
         is_valid = (
             has_stack_name
-            and "template_path" in config
-            and config["template_path"] == "tower-project.j2"
+            and "template" in config
+            and config["template"]["path"] == "tower-project.j2"
             and "parameters" in config
             and (
                 "S3ReadWriteAccessArns" in config["parameters"]
