@@ -229,10 +229,11 @@ Resources:
         - UseSnapshotTrue
         - !Ref 'AWS::NoValue'
         - !Sub '{{resolve:secretsmanager:${AuroraMasterSecret}:SecretString:username}}'
-      MasterUserPassword: !If
+      MasterUserSecret: !If
         - UseSnapshotTrue
         - !Ref 'AWS::NoValue'
-        - !Sub '{{resolve:secretsmanager:${AuroraMasterSecret}:SecretString:password}}'
+        - KmsKeyId: !Sub ${AuroraKeyStack.Outputs.Key}
+      ManageMasterUserPassword: true
       SnapshotIdentifier: !If [UseSnapshotTrue, !Ref SnapshotName, !Ref 'AWS::NoValue']
       StorageEncrypted:  !If [UseSnapshotTrue, !Ref 'AWS::NoValue', true]
       DBClusterParameterGroupName: !Ref AuroraClusterParameterGroup
