@@ -57,6 +57,6 @@ jobs:
     uses: "./.github/workflows/rw-deploy.yaml"
     secrets: inherit
     with:
-      job-environment: "worg-sagebase-strides-ampad-workflows"
+      job-environment: "org-sagebase-strides-ampad-workflows"
       sceptre-suffix: "ampad"
       tower-url: "https://tower.sagebionetworks.org"
