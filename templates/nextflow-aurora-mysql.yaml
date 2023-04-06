@@ -232,7 +232,8 @@ Resources:
       MasterUserSecret: !If
         - UseSnapshotTrue
         - !Ref 'AWS::NoValue'
-        - KmsKeyId: !Sub ${AuroraKeyStack.Outputs.Key}
+        - - KmsKeyId: !Sub ${AuroraKeyStack.Outputs.Key}
+          - SecretArn: !Ref AuroraMasterSecret
       ManageMasterUserPassword: true
       SnapshotIdentifier: !If [UseSnapshotTrue, !Ref SnapshotName, !Ref 'AWS::NoValue']
       StorageEncrypted:  !If [UseSnapshotTrue, !Ref 'AWS::NoValue', true]
