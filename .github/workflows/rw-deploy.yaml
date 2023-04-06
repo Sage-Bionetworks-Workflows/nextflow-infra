@@ -1,0 +1,85 @@
+name: rw-deploy
+on:
+  workflow_call:
+    inputs:
+      job-environment:
+        required: true
+        type: string
+      sceptre-suffix:
+        required: true
+        type: string
+      tower-url:
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.job-environment }}
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install pipenv
+        run: python -m pip install pipenv
+
+      - name: Set up dependency caching
+        uses: actions/cache@v2
+        with:
+          path: ~/.local/share/virtualenvs
+          key: ${{ runner.os }}-pipenv-v2-${{ hashFiles('**/Pipfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pipenv-v2-
+
+      - name: Install dependencies
+        if: steps.pipenv-cache.outputs.cache-hit != 'true'
+        env:
+          PIPENV_NOSPIN: 'true'
+          WORKON_HOME: ~/.local/share/virtualenvs
+          PIPENV_CACHE_DIR: ~/.local/share/pipcache
+        run: |
+          pipenv install --dev
+
+      - name: Assume AWS role in dev account
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.CI_USER_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.CI_USER_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.CI_ROLE_TO_ASSUME }}
+          role-duration-seconds: 3600
+
+      - name: Deploy common configuration
+        run: >
+          pipenv run sceptre --var-file=src/sceptre/variables/${{ inputs.sceptre-suffix }}.yaml
+          launch common --yes
+
+      - name: Deploy infrastructure configuration
+        run: >
+          pipenv run sceptre --var-file=src/sceptre/variables/${{ inputs.sceptre-suffix }}.yaml
+          launch infra-${{ inputs.sceptre-suffix }} --yes
+
+      - name: Deploy projects configuration
+        run: >
+          pipenv run sceptre --var-file=src/sceptre/variables/${{ inputs.sceptre-suffix }}.yaml
+          launch projects-${{ inputs.sceptre-suffix }} --yes
+
+      - name: Wait for Nextflow Tower to be up
+        uses: nev7n/wait_for_response@v1
+        with:
+          url: ${{ inputs.tower-url }}
+          responseCode: 200
+          timeout: 1800000  # 30 minutes
+          interval: 30000   # 30 seconds
+
+      - name: Configure projects in Tower
+        run: pipenv run bin/configure-tower-projects.py config/projects-${{ inputs.sceptre-suffix }}
+        env:
+          NXF_TOWER_TOKEN: ${{ secrets.TOWER_TOKEN }}
+          NXF_TOWER_API_URL: ${{ inputs.tower-url }}/api
