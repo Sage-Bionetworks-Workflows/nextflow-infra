@@ -77,7 +77,7 @@ Resources:
     Condition: UseSnapshotFalse
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub ${TemplateRootUrl}/aws-infra/v0.2.19/KMS/kms-key.yaml
+      TemplateURL: !Sub ${TemplateRootUrl}/aws-infra/v0.6.83/KMS/kms-key.yaml
       TimeoutInMinutes: 5
       Parameters:
         AliasName: 'alias/nextflow-aurora-bootstrap-lambda'
