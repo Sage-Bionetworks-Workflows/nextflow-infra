@@ -196,6 +196,11 @@ Outputs:
     Export:
       Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsLaunchTemplate'
 
+  EcsLaunchTemplateLatestVersionNumber:
+    Value: !GetAtt EcsLaunchTemplate.LatestVersionNumber
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsLaunchTemplateLatestVersionNumber'
+
   EcsAutoScalingGroupName:
     Value: !Ref EcsAutoScalingGroup
     Export:
