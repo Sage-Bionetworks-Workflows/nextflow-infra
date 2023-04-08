@@ -13,3 +13,6 @@
 
 # Hidden OS files
 .DS_Store
+
+# jetbrains
+.idea/
