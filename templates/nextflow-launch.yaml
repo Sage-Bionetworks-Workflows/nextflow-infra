@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: ECS Cluster for NextFlow Tower
+Description: NextFlow Tower Launch
 Parameters:
   EcsSecurityGroupId:
     Type: AWS::EC2::SecurityGroup::Id
@@ -7,8 +7,14 @@ Parameters:
   SubnetIds:
     Type: CommaDelimitedList
     Description: List of public Subnet Ids for the load balancer
+  MaxvCpus:
+    Type: Number
+    Description: The number of max CPUs for Batch compute environments
+    MinValue: 1
+    MaxValue: 16
+    Default: 1
 Resources:
-  NfTowerUserPolicy:
+  UserManagedPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
       PolicyDocument:
@@ -28,7 +34,7 @@ Resources:
               - batch:TerminateJob
             Resource:
               - '*'
-  NfTowerBatchJobPolicy:
+  JobManagedPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
       PolicyDocument:
@@ -60,7 +66,7 @@ Resources:
               - logs:TestMetricFilter
               - logs:FilterLogEvents
             Resource: '*'
-  NfTowerServiceRole:
+  BatchServiceRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -72,7 +78,7 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole
-  NfTowerInstanceRole:
+  InstanceRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -86,8 +92,8 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
-        - !Ref NfTowerBatchJobPolicy
-  NfTowerFleetRole:
+        - !Ref JobManagedPolicy
+  SpotFleetRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -100,7 +106,7 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetTaggingRole
-  BatchComputeEnvironmentOnDemand:
+  ComputeEnvironmentOnDemand:
     Type: AWS::Batch::ComputeEnvironment
     Metadata:
       cfn-lint:
@@ -110,14 +116,14 @@ Resources:
     Properties:
       Type: MANAGED
       State: ENABLED
-      ServiceRole: !Ref NfTowerServiceRole
+      ServiceRole: !Ref BatchServiceRole
       ComputeResources:
         Type: EC2
-        MaxvCpus: 1    # TODO: parameterize
+        MaxvCpus: !Ref MaxvCpus
         Subnets: !Ref SubnetIds
         SecurityGroupIds:
           - !Ref EcsSecurityGroupId
-        InstanceRole: !Ref NfTowerInstanceRole
+        InstanceRole: !Ref InstanceRole
         LaunchTemplate:
           LaunchTemplateId: !ImportValue
             'Fn::Sub': '${AWS::Region}-nextflow-ecs-cluster-EcsLaunchTemplate'
@@ -125,7 +131,7 @@ Resources:
             'Fn::Sub': '${AWS::Region}-nextflow-ecs-cluster-EcsLaunchTemplate'
           Version: !ImportValue
             'Fn::Sub': '${AWS::Region}-nextflow-ecs-cluster-EcsLaunchTemplateLatestVersionNumber'
-  BatchComputeEnvironmentSpot:
+  ComputeEnvironmentSpot:
     Type: AWS::Batch::ComputeEnvironment
     Metadata:
       cfn-lint:
@@ -135,14 +141,15 @@ Resources:
     Properties:
       Type: MANAGED
       State: ENABLED
-      ServiceRole: !Ref NfTowerServiceRole
+      ServiceRole: !Ref BatchServiceRole
       ComputeResources:
         Type: SPOT
-        MaxvCpus: 1    # TODO: parameterize
+        MaxvCpus: !Ref MaxvCpus
         Subnets: !Ref SubnetIds
         SecurityGroupIds:
           - !Ref EcsSecurityGroupId
-        SpotIamFleetRole: !Ref NfTowerFleetRole
+        SpotIamFleetRole: !Ref SpotFleetRole
+        InstanceRole: !Ref InstanceRole
         LaunchTemplate:
           LaunchTemplateId: !ImportValue
             'Fn::Sub': '${AWS::Region}-nextflow-ecs-cluster-EcsLaunchTemplate'
@@ -150,48 +157,48 @@ Resources:
             'Fn::Sub': '${AWS::Region}-nextflow-ecs-cluster-EcsLaunchTemplate'
           Version: !ImportValue
             'Fn::Sub': '${AWS::Region}-nextflow-ecs-cluster-EcsLaunchTemplateLatestVersionNumber'
-  BatchJobQueueOnDemand:
+  JobQueueOnDemand:
     Type: AWS::Batch::JobQueue
     Properties:
       ComputeEnvironmentOrder:
-        - ComputeEnvironment: !Ref BatchComputeEnvironmentOnDemand
+        - ComputeEnvironment: !Ref ComputeEnvironmentOnDemand
           Order: 1
       Priority: 1
       State: ENABLED
-  BatchJobQueueSpot:
+  JobQueueSpot:
     Type: AWS::Batch::JobQueue
     Properties:
       ComputeEnvironmentOrder:
-        - ComputeEnvironment: !Ref BatchComputeEnvironmentSpot
+        - ComputeEnvironment: !Ref ComputeEnvironmentSpot
           Order: 1
       Priority: 1
       State: ENABLED
 Outputs:
-  NfTowerServiceRole:
-    Value: !Ref NfTowerServiceRole
+  BatchServiceRole:
+    Value: !Ref BatchServiceRole
     Export:
-      Name: !Sub '${AWS::Region}-${AWS::StackName}-NfTowerServiceRole'
-  NfTowerInstanceRole:
-    Value: !Ref NfTowerInstanceRole
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-BatchServiceRole'
+  InstanceRole:
+    Value: !Ref InstanceRole
     Export:
-      Name: !Sub '${AWS::Region}-${AWS::StackName}-NfTowerInstanceRole'
-  NfTowerFleetRole:
-    Value: !Ref NfTowerFleetRole
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-InstanceRole'
+  SpotFleetRole:
+    Value: !Ref SpotFleetRole
     Export:
-      Name: !Sub '${AWS::Region}-${AWS::StackName}-NfTowerFleetRole'
-  BatchComputeEnvironmentOnDemand:
-    Value: !Ref BatchComputeEnvironmentOnDemand
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-SpotFleetRole'
+  ComputeEnvironmentOnDemand:
+    Value: !Ref ComputeEnvironmentOnDemand
     Export:
-      Name: !Sub '${AWS::Region}-${AWS::StackName}-BatchComputeEnvironmentOnDemand'
-  BatchComputeEnvironmentSpot:
-    Value: !Ref BatchComputeEnvironmentSpot
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-ComputeEnvironmentOnDemand'
+  ComputeEnvironmentSpot:
+    Value: !Ref ComputeEnvironmentSpot
     Export:
-      Name: !Sub '${AWS::Region}-${AWS::StackName}-BatchComputeEnvironmentSpot'
-  BatchJobQueueOnDemand:
-    Value: !Ref BatchJobQueueOnDemand
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-ComputeEnvironmentSpot'
+  JobQueueOnDemand:
+    Value: !Ref JobQueueOnDemand
     Export:
-      Name: !Sub '${AWS::Region}-${AWS::StackName}-BatchJobQueueOnDemand'
-  BatchJobQueueSpot:
-    Value: !Ref BatchJobQueueSpot
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-JobQueueOnDemand'
+  JobQueueSpot:
+    Value: !Ref JobQueueSpot
     Export:
-      Name: !Sub '${AWS::Region}-${AWS::StackName}-BatchJobQueueSpot'
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-JobQueueSpot'
