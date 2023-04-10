@@ -1,0 +1,11 @@
+template:
+  path: nextflow-tower-role.yaml
+stack_name: nextflow-tower-role
+stack_tags:
+  {{stack_group_config.default_stack_tags}}
+parameters:
+  PrincipalArns:
+    - "arn:aws:sts::035458030717:root"
+    - "arn:aws:sts::526515999252:assumed-role/AWSReservedSSO_Administrator_66bb518af6b2dfa2/bruno.grande@sagebase.org"
+  BucketArns:
+    - !stack_output infra-dev/nextlfow-tower-config-bucket.yaml::BucketArn
