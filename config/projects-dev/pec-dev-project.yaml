@@ -1,0 +1,24 @@
+template:
+  path: tower-project.j2
+stack_name: mc2-mcmicro-dev-project
+dependencies:
+  - common/nextflow-forge-iam-policy.yaml
+  - common/nextflow-launch-iam-policy.yaml
+
+parameters:
+  S3ReadWriteAccessArns:
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/dan.lu@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
+  AllowSynapseIndexing: Enabled
+  AccountAdminArns:
+    - '{{stack_group_config.sso_admin_role.arn}}'
+    - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
+  TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
+  TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
+  TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
+
+stack_tags:
+  Department: SysBio
+  Project: PEC
+  OwnerEmail: nextflow-admins@sagebase.org
+  CostCenter: UMass PECDCC / 106000
