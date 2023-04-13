@@ -71,9 +71,9 @@ Resources:
                 - "clarenceyapp111@gmail.com"
                 - "jmuhlich@gmail.com"
           trustedEmails:
-            - 'benjamin_vincent@med.unc.edu'
-            - 'dbortone@email.unc.edu'
-            - 'steven_vensko@med.unc.edu'
+            - "benjamin_vincent@med.unc.edu"
+            - "dbortone@email.unc.edu"
+            - "steven_vensko@med.unc.edu"
           scm:
             providers:
               github:
