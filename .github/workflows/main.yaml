@@ -11,6 +11,7 @@ jobs:
   prep-environment:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
       - name: Set up python and cache
         uses: actions/setup-python@v4
         with:
@@ -21,7 +22,6 @@ jobs:
       - name: Install dependencies
         run: pipenv install --dev
   validate:
-      - uses: actions/checkout@v3
       - name: Run pre-commit linters
         uses: pre-commit/action@v3.0.0
       # verify jinja templates
