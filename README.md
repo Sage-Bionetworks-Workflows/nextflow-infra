@@ -4,7 +4,6 @@ The AWS infrastructure for hosting a private instance (see link below) of [Nextf
 
 The Nextflow infrastructure has been vetted by Sage IT to process sensitive or controlled-access (_e.g._ PHI) data. Notably, only [HIPAA eligible AWS services](https://aws.amazon.com/compliance/hipaa-eligible-services-reference/) are deployed.
 
-
 ## Getting Started
 
 Instructions on how to get started with Tower are described on the [Getting Started with Nextflow and Tower](https://sagebionetworks.jira.com/wiki/spaces/WF/pages/2191556616/Getting+Started+with+Nextflow+and+Tower#Creating-a-Tower-project) wiki page. This page is only accessible to Sage employees.
