@@ -32,7 +32,7 @@ jobs:
       - name: Execute jinja linter
         run: find . -type f -name "*.j2" -exec /tmp/jinja2-lint/j2lint.py '{}' +
   deploy-dev:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/dev'
     needs:
       - pre-commit
       - jinja-lint
@@ -43,8 +43,10 @@ jobs:
       sceptre-suffix: "dev"
       tower-url: "https://tower-dev.sagebionetworks.org"
   deploy-prod:
-    if: github.ref == 'refs/heads/main'
-    needs: deploy-dev
+    if: github.ref == 'refs/heads/prod'
+    needs:
+      - pre-commit
+      - jinja-lint
     uses: "./.github/workflows/rw-deploy.yaml"
     secrets: inherit
     with:
@@ -52,7 +54,7 @@ jobs:
       sceptre-suffix: "prod"
       tower-url: "https://tower.sagebionetworks.org"
   deploy-ampad:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/prod'
     needs: deploy-prod
     uses: "./.github/workflows/rw-deploy.yaml"
     secrets: inherit

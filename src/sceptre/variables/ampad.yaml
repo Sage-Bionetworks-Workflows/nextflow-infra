@@ -1,4 +1,4 @@
-compute_budget: "5000"
-storage_budget: "2000"
+compute_budget: "10000"
+storage_budget: "10000"
 security_budget: "500"
 other_budget: "500"
