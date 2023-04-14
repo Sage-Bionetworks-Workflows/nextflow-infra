@@ -4,8 +4,8 @@ on:
   pull_request:
     branches: [ '*' ]
   push:
-    # paths-ignore:
-    #   - '**.md'
+    paths-ignore:
+      - '**.md'
 
 jobs:
   pre-commit:
@@ -32,7 +32,7 @@ jobs:
       - name: Execute jinja linter
         run: find . -type f -name "*.j2" -exec /tmp/jinja2-lint/j2lint.py '{}' +
   deploy-dev:
-    if: github.ref == 'refs/heads/dev'
+    if: github.ref == 'refs/heads/main'
     needs:
       - pre-commit
       - jinja-lint
@@ -43,7 +43,7 @@ jobs:
       sceptre-suffix: "dev"
       tower-url: "https://tower-dev.sagebionetworks.org"
   deploy-prod:
-    if: github.ref == 'refs/heads/prod'
+    if: github.ref == 'refs/heads/main'
     needs:
       - pre-commit
       - jinja-lint
@@ -54,7 +54,7 @@ jobs:
       sceptre-suffix: "prod"
       tower-url: "https://tower.sagebionetworks.org"
   deploy-ampad:
-    if: github.ref == 'refs/heads/prod'
+    if: github.ref == 'refs/heads/main'
     needs: deploy-prod
     uses: "./.github/workflows/rw-deploy.yaml"
     secrets: inherit
