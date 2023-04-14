@@ -21,7 +21,10 @@ jobs:
         run: curl https://raw.githubusercontent.com/pypa/pipenv/master/get-pipenv.py | python
       - name: Install dependencies
         run: pipenv install --dev
+
   validate:
+    runs-on: ubuntu-latest
+    steps:
       - name: Run pre-commit linters
         uses: pre-commit/action@v3.0.0
       # verify jinja templates
@@ -32,6 +35,7 @@ jobs:
         run: git clone --single-branch https://github.com/drm/jinja2-lint.git /tmp/jinja2-lint && pushd /tmp/jinja2-lint && git checkout 75dcd5a
       - name: Lint jinja templates
         run: find . -type f -name "*.j2" -exec /tmp/jinja2-lint/j2lint.py '{}' +
+
   deploy-dev:
     if: github.ref == 'refs/heads/main'
     needs:
@@ -42,6 +46,7 @@ jobs:
       job-environment: "workflows-nextflow-dev"
       sceptre-suffix: "dev"
       tower-url: "https://tower-dev.sagebionetworks.org"
+
   deploy-prod:
     if: github.ref == 'refs/heads/main'
     needs: deploy-dev
@@ -51,6 +56,7 @@ jobs:
       job-environment: "workflows-nextflow-prod"
       sceptre-suffix: "prod"
       tower-url: "https://tower.sagebionetworks.org"
+
   deploy-ampad:
     if: github.ref == 'refs/heads/main'
     needs: deploy-prod
