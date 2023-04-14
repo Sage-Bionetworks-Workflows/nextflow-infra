@@ -44,9 +44,7 @@ jobs:
       tower-url: "https://tower-dev.sagebionetworks.org"
   deploy-prod:
     if: github.ref == 'refs/heads/main'
-    needs:
-      - pre-commit
-      - jinja-lint
+    needs: deploy-dev
     uses: "./.github/workflows/rw-deploy.yaml"
     secrets: inherit
     with:
