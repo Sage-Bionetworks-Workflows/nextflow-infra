@@ -26,6 +26,12 @@ jobs:
           python-version: '3.10'
           cache: 'pipenv'
 
+      - name: Install pipenv
+        run: curl https://raw.githubusercontent.com/pypa/pipenv/master/get-pipenv.py | python
+
+      - name: Install dependencies
+        run: pipenv install --dev
+
       - name: Assume AWS role in dev account
         uses: aws-actions/configure-aws-credentials@v1
         with:
