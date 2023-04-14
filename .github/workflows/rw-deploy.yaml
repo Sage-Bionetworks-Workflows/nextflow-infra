@@ -17,7 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.job-environment }}
     steps:
-
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -26,12 +25,6 @@ jobs:
         with:
           python-version: '3.10'
           cache: 'pipenv'
-
-      - name: Install pipenv
-        run: curl https://raw.githubusercontent.com/pypa/pipenv/master/get-pipenv.py | python
-
-      - name: Install dependencies
-        run: pipenv install --dev
 
       - name: Assume AWS role in dev account
         uses: aws-actions/configure-aws-credentials@v1
