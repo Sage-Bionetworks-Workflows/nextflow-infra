@@ -10,9 +10,9 @@ import time
 from collections import defaultdict
 from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
 
-import boto3
+import boto3  # type: ignore
 import yaml  # type: ignore
-from sagetasks.nextflowtower.client import TowerClient
+from sagetasks.nextflowtower.client import TowerClient  # type: ignore
 
 # Increment this version when updating compute environments
 CE_VERSION = "v11"
