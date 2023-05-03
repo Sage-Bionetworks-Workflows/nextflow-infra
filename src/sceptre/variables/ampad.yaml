@@ -1,3 +1,4 @@
+notifications_email: aws.strides-ampad-workflows@sagebase.org
 compute_budget: "10000"
 storage_budget: "10000"
 security_budget: "500"
