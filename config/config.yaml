@@ -9,7 +9,7 @@ default_stack_tags:
   Project: Infrastructure
   OwnerEmail: nextflow-admins@sagebase.org
   CostCenter: NO PROGRAM / 000000
-notifications_email: nextflow-admins@sagebase.org
+notifications_email: {{ var.notifications_email | default("nextflow-admins@sagebase.org") }}
 budgets:
   compute: {{ var.compute_budget | default("1000") }}
   storage: {{ var.storage_budget | default("500") }}
