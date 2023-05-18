@@ -17,7 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.job-environment }}
     steps:
-
       - name: Checkout repository
         uses: actions/checkout@v3
 
