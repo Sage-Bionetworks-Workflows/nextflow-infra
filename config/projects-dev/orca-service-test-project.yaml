@@ -9,7 +9,6 @@ parameters:
   S3ReadWriteAccessArns:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/orca-service-accounts@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/brad.macdonald@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
   AllowSynapseIndexing: Enabled
   AccountAdminArns:

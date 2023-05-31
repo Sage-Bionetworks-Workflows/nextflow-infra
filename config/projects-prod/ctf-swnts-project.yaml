@@ -16,7 +16,7 @@ parameters:
     - "{{stack_group_config.tower_viewer_arn_prefix}}/sasha.scott@sagebase.org"
     - "{{stack_group_config.tower_viewer_arn_prefix}}/robert.allaway@sagebase.org"
     - "{{stack_group_config.tower_viewer_arn_prefix}}/jineta.banerjee@sagebase.org"
-    - "{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org"
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org"
 
   # (Optional) Step 6: Uncomment the following line to disable the feature allowing Synapse to index files
   #                    in the long-term (archival) S3 bucket (by default, this feature is enabled)
