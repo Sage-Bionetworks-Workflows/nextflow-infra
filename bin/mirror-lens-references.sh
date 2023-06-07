@@ -4,6 +4,8 @@
 # profile that has write-access to the `s3://sage-igenomes` bucket
 # (or using any other means of authenticating with the AWS CLI).
 
+# Downloading the LENS reference files will temporarily take up ~72.1 GB of disk space.
+
 prefixes=(
     "antigen.garnish/"
     "erv/"
