@@ -23,7 +23,7 @@ bash download_human_references.sh ./references
 bash download_mouse_references.sh ./references
 
 for prefix in ${prefixes[*]}; do
-    echo "Syncing $prefix..." 
+    echo "Syncing $prefix..."
     aws s3 --region us-east-1 sync "./references/$prefix/" "s3://sage-igenomes/LENS/$prefix/" --acl public-read
 done
 
