@@ -10,6 +10,9 @@ parameters:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/adam.taylor@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/milen.nikolov@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/brad.macdonald@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/rixing.xu@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/phil.snyder@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
     - 'arn:aws:sts::888810830951:assumed-role/AWSReservedSSO_Administrator_bf3b4691e22cc3c6/adam.taylor@sagebase.org' # Provides for htan-dev cross-account access
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
