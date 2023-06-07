@@ -13,7 +13,7 @@ prefixes=(
     "viral/"
 )
 
-echo "syncing LENS reference files"
+echo "Downloading LENS reference files"
 mkdir -p "./lens/references"
 wget -P ./lens https://gitlab.com/landscape-of-effective-neoantigens-software/nextflow/modules/tools/lens/-/wikis/uploads/b0d8a24036628bd9e6c860eb531919c3/download_general_references.sh \
     https://gitlab.com/landscape-of-effective-neoantigens-software/nextflow/modules/tools/lens/-/wikis/uploads/2238c7f4af5c5499f298315bf5080ad7/download_human_references.sh \
@@ -23,6 +23,7 @@ bash download_human_references.sh ./references
 bash download_mouse_references.sh ./references
 
 for prefix in ${prefixes[*]}; do
+    echo "Syncing $prefix..."
     aws s3 --region us-east-1 sync "./references/$prefix/" "s3://sage-igenomes/LENS/$prefix/" --acl public-read
 done
 
