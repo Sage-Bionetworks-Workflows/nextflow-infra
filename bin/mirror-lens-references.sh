@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Refer to the Running LENS instructions and set up your environment accordingly before executing this script:
+# https://gitlab.com/landscape-of-effective-neoantigens-software/nextflow/modules/tools/lens/-/wikis/Running-LENS#populate-raft-global-references-directory
+
 # This script assumes that `AWS_PROFILE` has been set to a AWS CLI
 # profile that has write-access to the `s3://sage-igenomes` bucket
 # (or using any other means of authenticating with the AWS CLI).
