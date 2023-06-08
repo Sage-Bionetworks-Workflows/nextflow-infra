@@ -1,0 +1,150 @@
+Description: Policy and roles for NextFlow tower
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  PrincipalArns:
+    Type: CommaDelimitedList
+    Description: Grant access to principals (accounts, groups, and users).
+    ConstraintDescription: List of ARNs (i.e. ["arn:aws:iam::011223344556:user/jsmith", "arn:aws:iam::544332211006:user/rjones"])
+  BucketArns:
+    Type: CommaDelimitedList
+    Description: Grant access to NF tower buckets.
+    ConstraintDescription: List of ARNs (i.e. ["arn:aws:s3:::BUCKET-01/*", "arn:aws:s3:::BUCKET-02/*"])
+Resources:
+  ManagedPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: TowerForgePermissions
+            Effect: Allow
+            Action:
+              - ssm:GetParameters
+              - iam:CreateInstanceProfile
+              - iam:DeleteInstanceProfile
+              - iam:GetRole
+              - iam:RemoveRoleFromInstanceProfile
+              - iam:CreateRole
+              - iam:DeleteRole
+              - iam:AttachRolePolicy
+              - iam:PutRolePolicy
+              - iam:AddRoleToInstanceProfile
+              - iam:PassRole
+              - iam:DetachRolePolicy
+              - iam:ListAttachedRolePolicies
+              - iam:DeleteRolePolicy
+              - iam:ListRolePolicies
+              - batch:CreateComputeEnvironment
+              - batch:DescribeComputeEnvironments
+              - batch:CreateJobQueue
+              - batch:DescribeJobQueues
+              - batch:UpdateComputeEnvironment
+              - batch:DeleteComputeEnvironment
+              - batch:UpdateJobQueue
+              - batch:DeleteJobQueue
+              - fsx:DeleteFileSystem
+              - fsx:DescribeFileSystems
+              - fsx:CreateFileSystem
+              - ec2:DescribeSecurityGroups
+              - ec2:DescribeAccountAttributes
+              - ec2:DescribeSubnets
+              - ec2:DescribeLaunchTemplates
+              - ec2:DescribeLaunchTemplateVersions
+              - ec2:CreateLaunchTemplate
+              - ec2:DeleteLaunchTemplate
+              - ec2:DescribeKeyPairs
+              - ec2:DescribeVpcs
+              - ec2:DescribeInstanceTypeOfferings
+              - elasticfilesystem:DescribeMountTargets
+              - elasticfilesystem:CreateMountTarget
+              - elasticfilesystem:CreateFileSystem
+              - elasticfilesystem:DescribeFileSystems
+              - elasticfilesystem:DeleteMountTarget
+              - elasticfilesystem:DeleteFileSystem
+              - elasticfilesystem:UpdateFileSystem
+              - elasticfilesystem:PutLifecycleConfiguration
+            Resource: '*'
+          - Sid: TowerLaunchPermissions
+            Effect: Allow
+            Action:
+              - batch:DescribeJobQueues
+              - batch:CancelJob
+              - batch:SubmitJob
+              - batch:ListJobs
+              - batch:DescribeComputeEnvironments
+              - batch:TerminateJob
+              - batch:DescribeJobs
+              - batch:RegisterJobDefinition
+              - batch:DescribeJobDefinitions
+              - ecs:DescribeTasks
+              - ec2:DescribeInstances
+              - ec2:DescribeInstanceTypes
+              - ec2:DescribeInstanceAttribute
+              - ecs:DescribeContainerInstances
+              - ec2:DescribeInstanceStatus
+              - ec2:DescribeImages
+              - logs:Describe*
+              - logs:Get*
+              - logs:List*
+              - logs:StartQuery
+              - logs:StopQuery
+              - logs:TestMetricFilter
+              - logs:FilterLogEvents
+            Resource: '*'
+          - Sid: BucketPolicy01
+            Effect: Allow
+            Action:
+              - s3:ListAllMyBuckets
+              - s3:ListBucket
+              - s3:GetBucketLocation
+            Resource:
+              - '*'
+          - Sid: BucketPolicy02
+            Effect: Allow
+            Action:
+              - s3:*Object*
+            Resource: !Ref BucketArns
+  Role:
+    Type: "AWS::IAM::Role"
+    Properties:
+      ManagedPolicyArns:
+        - !Ref ManagedPolicy
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              Service: eks.amazonaws.com
+            Action: sts:AssumeRole
+          - Sid: AllowEc2AssumeRole
+            Effect: Allow
+            Principal:
+              AWS: !Ref PrincipalArns
+            Action: sts:AssumeRole
+  InstanceProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties:
+      Path: "/"
+      Roles:
+        - !Ref Role
+Outputs:
+  ManagedPolicy:
+    Value: !Ref ManagedPolicy
+    Export:
+      Name: !Sub '${AWS::StackName}-ManagedPolicy'
+  Role:
+    Value: !Ref Role
+    Export:
+      Name: !Sub '${AWS::StackName}-Role'
+  InstanceProfile:
+    Value: !Ref InstanceProfile
+    Export:
+      Name: !Sub '${AWS::StackName}-InstanceProfile'
