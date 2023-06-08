@@ -214,8 +214,3 @@ Outputs:
     Value: !GetAtt EcsApplicationLoadBalancer.CanonicalHostedZoneID
     Export:
       Name: !Sub '${AWS::Region}-${AWS::StackName}-LoadBalancerCanonicalHostedZoneID'
-
-  EcsServiceRoleArn:
-    Value: !GetAtt EcsServiceRole.Arn
-    Export:
-      Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsServiceRoleArn'
