@@ -1,3 +1,4 @@
+---
 AWSTemplateFormatVersion: "2010-09-09"
 Description: >-
   Stack for provisioning the AWS resources needed for
@@ -170,8 +171,7 @@ Resources:
           - Sid: AllowEcsServiceRole2AssumeRole
             Effect: Allow
             Principal:
-              AWS:
-                - !Sub '!ImportValue ${AWS::Region}-nextflow-ecs-service-EcsServiceRoleArn'
+              AWS: !Sub '!ImportValue ${AWS::Region}-nextflow-ecs-service-EcsServiceRoleArn'
             Action: sts:AssumeRole
 
   TowerForgeBatchHeadJobPolicy:
@@ -467,20 +467,48 @@ Resources:
             Status: !Ref EnableScratchDataExpiration
             ExpirationInDays: 30
             Prefix: work/
-          {%- set default_scratch_data_expirations = [1, 3, 5, 7, 10, 20, 30, 60, 90] %}
-          {%- set scratch_data_expirations = sceptre_user_data.scratch_data_expirations | default( default_scratch_data_expirations ) %}
-          {%- for num in scratch_data_expirations %}
-          - Id: DataExpirationFor{{ num }}DaysDirectory
+          - Id: DataExpirationFor1DaysDirectory
             Status: !Ref EnableScratchDataExpiration
-            ExpirationInDays: {{ num }}
-            Prefix: {{ num }}days/
-          {%- endfor %}
+            ExpirationInDays: 1
+            Prefix: 1days/
+          - Id: DataExpirationFor3DaysDirectory
+            Status: !Ref EnableScratchDataExpiration
+            ExpirationInDays: 3
+            Prefix: 3days/
+          - Id: DataExpirationFor5DaysDirectory
+            Status: !Ref EnableScratchDataExpiration
+            ExpirationInDays: 5
+            Prefix: 5days/
+          - Id: DataExpirationFor7DaysDirectory
+            Status: !Ref EnableScratchDataExpiration
+            ExpirationInDays: 7
+            Prefix: 7days/
+          - Id: DataExpirationFor10DaysDirectory
+            Status: !Ref EnableScratchDataExpiration
+            ExpirationInDays: 10
+            Prefix: 10days/
+          - Id: DataExpirationFor20DaysDirectory
+            Status: !Ref EnableScratchDataExpiration
+            ExpirationInDays: 20
+            Prefix: 20days/
+          - Id: DataExpirationFor30DaysDirectory
+            Status: !Ref EnableScratchDataExpiration
+            ExpirationInDays: 30
+            Prefix: 30days/
+          - Id: DataExpirationFor60DaysDirectory
+            Status: !Ref EnableScratchDataExpiration
+            ExpirationInDays: 60
+            Prefix: 60days/
+          - Id: DataExpirationFor90DaysDirectory
+            Status: !Ref EnableScratchDataExpiration
+            ExpirationInDays: 90
+            Prefix: 90days/
           # max(scratch_data_expirations) (e.g., 90 days) will appear twice. This doesn't
           # change the end result. This decision was made to avoid writing the logic to
           # exclude the max duration from the above for-loop.
           - Id: DataExpirationForEntireBucket
             Status: !Ref EnableScratchDataExpiration
-            ExpirationInDays: {{ scratch_data_expirations | max }}
+            ExpirationInDays: 90
 
   TowerScratchPolicy:
     Type: AWS::S3::BucketPolicy
