@@ -145,8 +145,8 @@ Resources:
     Type: "AWS::IAM::Role"
     Properties:
       ManagedPolicyArns:
-        - !Sub '!ImportValue ${AWS::Region}-nextflow-forge-iam-policy-NextFlowForgePolicyArn'
-        - !Sub '!ImportValue ${AWS::Region}-nextflow-launch-iam-policy-NextFlowLaunchPolicyArn'
+        - 'Fn::ImportValue': !Sub ${AWS::Region}-nextflow-forge-iam-policy-NextFlowForgePolicyArn
+        - 'Fn::ImportValue': !Sub ${AWS::Region}-nextflow-launch-iam-policy-NextFlowLaunchPolicyArn
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -170,7 +170,8 @@ Resources:
           - Sid: AllowEcsServiceRole2AssumeRole
             Effect: Allow
             Principal:
-              AWS: !Sub '!ImportValue ${AWS::Region}-nextflow-ecs-service-EcsServiceRoleArn'
+              AWS:
+                - 'Fn::ImportValue': !Sub ${AWS::Region}-nextflow-ecs-service-EcsServiceRoleArn
             Action: sts:AssumeRole
 
   TowerForgeBatchHeadJobPolicy:
