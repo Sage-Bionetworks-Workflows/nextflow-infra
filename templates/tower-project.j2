@@ -170,7 +170,8 @@ Resources:
           - Sid: AllowEcsServiceRole2AssumeRole
             Effect: Allow
             Principal:
-              AWS: !Sub '!ImportValue ${AWS::Region}-nextflow-ecs-service-EcsServiceRoleArn'
+              AWS:
+                - !Sub '!ImportValue ${AWS::Region}-nextflow-ecs-service-EcsServiceRoleArn'
             Action: sts:AssumeRole
 
   TowerForgeBatchHeadJobPolicy:
