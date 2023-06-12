@@ -12,7 +12,7 @@ parameters:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/robert.allaway@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/sasha.scott@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/jineta.banerjee@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
 
   # (Optional) Step 6: Uncomment and update the following lines to change the S3 bucket lifecycle configuration,
   #                    which cannot be changed as long as 'AllowSynapseIndexing' is enabled (default)

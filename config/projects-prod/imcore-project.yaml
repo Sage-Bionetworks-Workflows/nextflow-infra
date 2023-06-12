@@ -7,7 +7,7 @@ dependencies:
 
 parameters:
   S3ReadOnlyAccessArns:
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/james.eddy@sagebase.org'
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
@@ -20,5 +20,5 @@ parameters:
 stack_tags:
   Department: IBC
   Project: imCORE
-  OwnerEmail: bruno.grande@sagebase.org
+  OwnerEmail: thomas.yu@sagebase.org
   CostCenter: Genentech imCore / 40033
