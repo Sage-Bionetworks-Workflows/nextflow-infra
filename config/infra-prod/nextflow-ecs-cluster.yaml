@@ -8,6 +8,7 @@ dependencies:
 parameters:
   EcsSecurityGroupId: !stack_output_external nextflow-ecs-security-group::SecurityGroupId
   SubnetId: !stack_output_external nextflow-vpc::PrivateSubnet
+  EcsInstanceType: "c4.4xlarge"
 
 stack_tags:
   {{stack_group_config.default_stack_tags}}
