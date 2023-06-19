@@ -7,7 +7,7 @@ dependencies:
 
 parameters:
   S3ReadOnlyAccessArns:
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/jineta.banerjee@sagebase.org'
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
@@ -20,5 +20,5 @@ parameters:
 stack_tags:
   Department: SCCE
   Project: Neurofibromatosis
-  OwnerEmail: bruno.grande@sagebase.org
+  OwnerEmail: thomas.yu@sagebase.org
   CostCenter: NTAP NF Addendum 5 / 301101

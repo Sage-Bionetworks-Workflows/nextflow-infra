@@ -28,7 +28,6 @@ parameters:
   EfsVolumeMountPath: '/efs'
   TowerUserWorkspace: 'false'
   TowerRootUsers:
-    - bruno.grande@sagebase.org
     - thomas.yu@sagebase.org
   TowerConfigFileName: 'tower.yaml'
 
