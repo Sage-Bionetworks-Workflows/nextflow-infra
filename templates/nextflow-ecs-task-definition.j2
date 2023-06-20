@@ -178,7 +178,7 @@ Resources:
         # https://sagebionetworks.jira.com/browse/WORKFLOWS-521
         - Name: !Sub '${RedisContainerName}-CheckAOF'
           Image: !Ref RedisContainerImage
-          Memory: 2000
+          Memory: 4000
           Cpu: 0
           Essential: false
           EntryPoint:
@@ -187,7 +187,7 @@ Resources:
           # interactive prompt and doesn't have an option to disable it
           Command:
             - -c
-            - "yes | redis-check-aof --fix appendonly.aof"
+            - echo 'start redis-check-aof' && 'yes | redis-check-aof --fix appendonly.aof' && echo 'redis-check-aof complete'
           MountPoints:
             - ContainerPath: /data
               SourceVolume: !Ref EfsVolumeName
