@@ -32,14 +32,14 @@ jobs:
       - name: Install dependencies
         run: pipenv install --dev
 
-      - name: Assume AWS role in dev account
+      - name: Assume AWS role
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.CI_USER_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.CI_USER_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
           role-to-assume: ${{ secrets.CI_ROLE_TO_ASSUME }}
-          role-duration-seconds: 3600
+          role-duration-seconds: ${{ inputs.aws-assume-role-duration }}
 
       - name: Deploy common configuration
         run: >
