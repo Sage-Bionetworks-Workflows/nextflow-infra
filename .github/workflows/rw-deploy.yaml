@@ -11,6 +11,9 @@ on:
       tower-url:
         required: true
         type: string
+      aws-role-to-assume:
+        required: true
+        type: string
       aws-assume-role-duration:
         required: false
         type: number
@@ -39,10 +42,9 @@ jobs:
       - name: Assume AWS role
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.CI_USER_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.CI_USER_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
-          role-to-assume: ${{ secrets.CI_ROLE_TO_ASSUME }}
+          role-to-assume: ${{ inputs.aws-role-to-assume }}
+          role-session-name: GitHubActions-${{ github.repository_owner }}-${{ github.event.repository.name }}-${{ github.run_id }}
           role-duration-seconds: ${{ inputs.aws-assume-role-duration }}
 
       - name: Deploy common configuration
