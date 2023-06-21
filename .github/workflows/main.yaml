@@ -42,6 +42,7 @@ jobs:
       job-environment: "workflows-nextflow-dev"
       sceptre-suffix: "dev"
       tower-url: "https://tower-dev.sagebionetworks.org"
+      aws-assume-role-duration: "3600"
 
   deploy-prod:
     if: github.ref == 'refs/heads/prod'
@@ -53,6 +54,7 @@ jobs:
       job-environment: "workflows-nextflow-prod"
       sceptre-suffix: "prod"
       tower-url: "https://tower.sagebionetworks.org"
+      aws-assume-role-duration: "14400"
 
   deploy-ampad:
     if: github.ref == 'refs/heads/prod'
