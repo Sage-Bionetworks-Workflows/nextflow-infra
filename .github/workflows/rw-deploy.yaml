@@ -11,6 +11,10 @@ on:
       tower-url:
         required: true
         type: string
+      aws-assume-role-duration:
+        required: false
+        type: number
+        default: 3600
 
 jobs:
   deploy:
