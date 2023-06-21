@@ -28,6 +28,8 @@ Resources:
       BackupPolicy:
         Status: DISABLED
       Encrypted: true
+      ThroughputMode: provisioned
+      ProvisionedThroughputInMibps: 1024
 
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
