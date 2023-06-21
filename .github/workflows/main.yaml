@@ -53,6 +53,7 @@ jobs:
       job-environment: "workflows-nextflow-prod"
       sceptre-suffix: "prod"
       tower-url: "https://tower.sagebionetworks.org"
+      aws-assume-role-duration: 14400
 
   deploy-ampad:
     if: github.ref == 'refs/heads/prod'
