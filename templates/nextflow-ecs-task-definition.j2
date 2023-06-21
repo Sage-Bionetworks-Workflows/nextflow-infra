@@ -178,16 +178,19 @@ Resources:
         # https://sagebionetworks.jira.com/browse/WORKFLOWS-521
         - Name: !Sub '${RedisContainerName}-CheckAOF'
           Image: !Ref RedisContainerImage
-          Memory: 2000
+          Memory: 4000
           Cpu: 0
           Essential: false
           EntryPoint:
             - /bin/sh
           # The `yes` command is needed because `redis-check-aof` has an
           # interactive prompt and doesn't have an option to disable it
+          # Use parentheses around the piped commands to enforce order
+          # between `|` and `&&` operators, and wrap the entire string
+          # in double-quotes to prevent YAML parsing of the `|` operator.
           Command:
             - -c
-            - "yes | redis-check-aof --fix appendonly.aof"
+            - "echo 'start redis-check-aof' && (date) && ( yes | redis-check-aof --fix appendonly.aof ) && echo 'redis-check-aof complete' && (date)"
           MountPoints:
             - ContainerPath: /data
               SourceVolume: !Ref EfsVolumeName
