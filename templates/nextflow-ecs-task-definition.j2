@@ -190,7 +190,7 @@ Resources:
           # in double-quotes to prevent YAML parsing of the `|` operator.
           Command:
             - -c
-            - "echo 'start redis-check-aof' && ( yes | redis-check-aof --fix appendonly.aof ) && echo 'redis-check-aof complete'"
+            - "echo 'start redis-check-aof' && (date) && ( yes | redis-check-aof --fix appendonly.aof ) && echo 'redis-check-aof complete' && (date)"
           MountPoints:
             - ContainerPath: /data
               SourceVolume: !Ref EfsVolumeName
