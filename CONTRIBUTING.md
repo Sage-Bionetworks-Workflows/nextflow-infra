@@ -76,7 +76,7 @@ There are two types of [stack group configurations](https://sceptre.cloudreach.c
 
 ### CI/CD
 
-[GitHub Actions](https://github.com/features/actions) are used for continuous integration and deployment (CI/CD). Currently, this repository is configured with a single workflow, [aws-deploy](.github/workflows/aws-deploy.yaml), which runs some lint checks and conditionally deploys the [stacks](#configuration) on pushes to the `main` branch.
+[GitHub Actions](https://github.com/features/actions) are used for continuous integration and deployment (CI/CD). Currently, this repository is configured with a single workflow, [rw-deploy](.github/workflows/rw-deploy.yaml), which runs some lint checks and conditionally deploys the [stacks](#configuration) on pushes to the `main` branch.
 
 The lint checks are defined as [pre-commit hooks](.pre-commit-config.yaml) and are partially configured by the [.yamllint](.yamllint) file. See [above](#setting-up-the-repository-for-development) for how to locally set up pre-commit hooks in Git to ensure that these checks are run before every commit.
 
@@ -106,13 +106,10 @@ After switching to a matrix strategy in the CI/CD workflow, all secrets are bein
 
 Our GitHub secrets are stored in [account-specific environments](https://github.com/Sage-Bionetworks-Workflows/nextflow-infra/settings/environments). These secrets contain AWS and Nextflow Tower credentials.
 
-The AWS credentials were bootstrapped in the [`organizations-infra`](https://github.com/Sage-Bionetworks-IT/organizations-infra/) repository. For `nextflow-dev` and `nextflow-prod`, look for `WorkflowsNextflowCIServiceAccounts` in [this file](https://github.com/Sage-Bionetworks-IT/organizations-infra/blob/master/org-formation/600-access/_tasks.yaml). For `strides-ampad`, look at [this file](https://github.com/Sage-Bionetworks-IT/organizations-infra/blob/master/sceptre/strides-ampad-workflows/config/prod/workflows-nextflow-ci-service-account.yaml). The secrets can be retrieved from the CloudFormation Console in the respective AWS accounts under the `workflows-nextflow-ci-service-account` stack.
+The Github OIDC for GH actions were bootstrapped in the [`organizations-infra`](https://github.com/Sage-Bionetworks-IT/organizations-infra/) repository. For `nextflow-dev` and `nextflow-prod`, look for `GithubOidcWorkflowsDevNextflowInfra` in [this file](https://github.com/Sage-Bionetworks-IT/organizations-infra/blob/master/org-formation/650-identity-providers/_tasks.yaml). For `strides-ampad`, look at [this file](https://github.com/Sage-Bionetworks-IT/organizations-infra/blob/master/sceptre/strides-ampad-workflows/config/prod/github-oidc-nextflow-infra.yaml).
 
 The Nextflow Tower credentials (_i.e._ access tokens) were created manually using the Google service accounts that we provisioned for creating the Google OAuth clients, `nextflowgdev.dev@sagebase.org` and `nextflowgdev.prod@sagebase.org`, respectively. The login info for these two Google accounts are stored in LastPass under the `Shared-IBC-DPE-Workflows` folder. Note that the `*-prod` and `*-ampad` stacks are configured to use the token associated with `nextflowgdev.prod@sagebase.org` whereas the `*-dev` stacks are configured to use the token associated with `nextflowgdev.dev@sagebase.org`.
 
-- `CI_USER_ACCESS_KEY_ID`: The AWS access key ID for authenticating as an IAM CI service user.
-- `CI_USER_SECRET_ACCESS_KEY`: The AWS secret access key for authenticating as an IAM CI service user.
-- `CI_ROLE_TO_ASSUME`: The ARN of the IAM role that will be assumed after authenticating with the above IAM user credentials.
 - `TOWER_TOKEN`: The Nextflow Tower access token that will be used to provision the Tower teams, workspaces, credentials, and compute environments.
 
 ### AWS Secrets
