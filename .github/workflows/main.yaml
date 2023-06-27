@@ -38,6 +38,9 @@ jobs:
       - validate
     uses: "./.github/workflows/rw-deploy.yaml"
     secrets: inherit
+    permissions:
+      id-token: write
+      contents: read
     with:
       job-environment: "workflows-nextflow-dev"
       sceptre-suffix: "dev"
@@ -50,6 +53,9 @@ jobs:
       - validate
     uses: "./.github/workflows/rw-deploy.yaml"
     secrets: inherit
+    permissions:
+      id-token: write
+      contents: read
     with:
       job-environment: "workflows-nextflow-prod"
       sceptre-suffix: "prod"
@@ -62,6 +68,9 @@ jobs:
     needs: deploy-prod
     uses: "./.github/workflows/rw-deploy.yaml"
     secrets: inherit
+    permissions:
+      id-token: write
+      contents: read
     with:
       job-environment: "org-sagebase-strides-ampad-workflows"
       sceptre-suffix: "ampad"
