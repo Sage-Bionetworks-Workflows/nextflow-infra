@@ -15,6 +15,7 @@ parameters:
   AccountAdminArns:
     - {{stack_group_config.sso_admin_role.arn}}
     - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
+    - !stack_output_external sagebase-github-oidc-workflows-prod-nextflow-infra::ProviderRoleArn
 
 stack_tags:
   {{stack_group_config.default_stack_tags}}
