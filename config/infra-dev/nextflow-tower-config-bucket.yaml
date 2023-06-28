@@ -2,6 +2,8 @@
 template:
   path: nextflow-tower-config-bucket.yaml
 stack_name: {{ stack_name }}
+dependencies:
+  - infra-dev/workflows-kms-key.yaml
 
 parameters:
   BucketName: {{ stack_name }}

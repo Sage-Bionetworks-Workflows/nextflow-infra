@@ -2,6 +2,7 @@ template:
   path: nextflow-aurora-mysql.yaml
 stack_name: nextflow-aurora-mysql
 dependencies:
+  - infra-dev/workflows-kms-key.yaml
   - infra-dev/nextflow-vpc.yaml
   - infra-dev/nextflow-ecs-security-group.yaml
 
