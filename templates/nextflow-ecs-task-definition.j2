@@ -178,7 +178,7 @@ Resources:
         # https://sagebionetworks.jira.com/browse/WORKFLOWS-521
         - Name: !Sub '${RedisContainerName}-CheckAOF'
           Image: !Ref RedisContainerImage
-          Memory: 4000
+          Memory: 2000
           Cpu: 0
           Essential: false
           EntryPoint:
