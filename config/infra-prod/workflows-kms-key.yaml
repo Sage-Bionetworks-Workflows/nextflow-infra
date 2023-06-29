@@ -1,8 +1,6 @@
 template:
   path: workflows-kms-key.yaml
 stack_name: workflows-infra-kms-key
-dependencies:
-  - infra-prod/workflows-kms-key.yaml
 
 parameters:
   TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
