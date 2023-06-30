@@ -1,16 +1,15 @@
-cd $RAFT_PATH/references
+export RAFT_PATH=~/raft
+export REFERENCES_PATH=$RAFT_PATH/references
+cd $REFERENCES_PATH
 
 # mhcflurry data directory
-mkdir -p mhcflurry
-cd mhcflurry
-mkdir -p tmp
-cd tmp
+mkdir -p mhcflurry/tmp
+cd mhcflurry/tmp
 wget https://github.com/openvax/mhcflurry/releases/download/pre-2.0/models_class1_presentation.20200611.tar.bz2
 tar xvf *
 mv models/* ../
-cd ..
-rm -rf tmp
-cd ..
+cd $REFERENCES_PATH
+rm -rf mhcflurry/tmp
 
 # Viral reference
 mkdir -p viral; cd viral
@@ -19,7 +18,7 @@ wget https://gitlab.com/landscape-of-effective-neoantigens-software/nextflow/mod
 wget https://gitlab.com/landscape-of-effective-neoantigens-software/nextflow/modules/tools/lens/-/wikis/uploads/ad52c657d06c12d7a3346f15b71390af/virus.cds.fa.gz
 wget https://gitlab.com/landscape-of-effective-neoantigens-software/nextflow/modules/tools/lens/-/wikis/uploads/9e3a49921bd325caa98dcd9211f8cdd9/virus.pep.fa.gz
 gunzip *
-cd ..
+cd $REFERENCES_PATH
 
 # antigen.garnish data directory
 # The gzip extracts to the desired directory, so no mkdir and cd required.
@@ -30,11 +29,9 @@ chmod -R 700 antigen.garnish
 mkdir -p bin; cd bin
 wget https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.13.0/ncbi-blast-2.13.0+-x64-linux.tar.gz
 tar xvf *gz
-mv ncbi*/bin/blastp .
-rm -rf ncbi*
-mv blastp ../antigen.garnish
-cd ..
+mv ncbi*/bin/blastp $REFERENCES_PATH/antigen.garnish
+cd $REFERENCES_PATH
 rm -rf bin
 
-# Make dummy_file
+# Make dummy_file - I have no idea why this was here in the first place
 touch dummy_file
