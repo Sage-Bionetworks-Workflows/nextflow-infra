@@ -171,7 +171,7 @@ Resources:
             Effect: Allow
             Principal:
               AWS:
-                - 'Fn::ImportValue': !Sub ${AWS::Region}-nextflow-ecs-service-EcsServiceRoleArn
+                - 'Fn::ImportValue': !Sub ${AWS::Region}-nextflow-ecs-service-shared-EcsServiceRoleArn
             Action: sts:AssumeRole
 
   TowerForgeBatchHeadJobPolicy:
