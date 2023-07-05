@@ -3,7 +3,7 @@ export REFERENCES_PATH=$RAFT_PATH/references
 cd $REFERENCES_PATH
 
 mkdir -p mus_musculus; cd mus_musculus
-export MOUSE_REFERENCES_PATH=$REFERENCES_PATH/mus_musculus 
+export MOUSE_REFERENCES_PATH=$REFERENCES_PATH/mus_musculus
 
 
 # Genomic reference
