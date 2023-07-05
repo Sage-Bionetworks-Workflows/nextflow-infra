@@ -4,7 +4,7 @@ cd $REFERENCES_PATH
 
 # set up homo sapiens directory
 mkdir -p homo_sapiens; cd homo_sapiens
-export HUMAN_REFERENCES_PATH=$REFERENCES_PATH/homo_sapiens 
+export HUMAN_REFERENCES_PATH=$REFERENCES_PATH/homo_sapiens
 
 #mhcflurry
 mkdir -p mhcflurry/tmp
