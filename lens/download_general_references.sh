@@ -2,15 +2,6 @@ export RAFT_PATH=~/raft
 export REFERENCES_PATH=$RAFT_PATH/references
 cd $REFERENCES_PATH
 
-# mhcflurry data directory
-mkdir -p mhcflurry/tmp
-cd mhcflurry/tmp
-wget https://github.com/openvax/mhcflurry/releases/download/pre-2.0/models_class1_presentation.20200611.tar.bz2
-tar xvf *
-mv models/* ../
-cd $REFERENCES_PATH
-rm -rf mhcflurry/tmp
-
 # Viral reference
 mkdir -p viral; cd viral
 wget https://github.com/dmarron/virdetect/raw/master/reference/virus_masked_hg38.fa

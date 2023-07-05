@@ -6,6 +6,16 @@ cd $REFERENCES_PATH
 mkdir -p homo_sapiens; cd homo_sapiens
 export HUMAN_REFERENCES_PATH=$REFERENCES_PATH/homo_sapiens 
 
+#mhcflurry
+mkdir -p mhcflurry/tmp
+cd mhcflurry/tmp
+wget https://github.com/openvax/mhcflurry/releases/download/pre-2.0/models_class1_presentation.20200611.tar.bz2
+tar xvf *
+mv models/* ../
+cd $HUMAN_REFERENCES_PATH
+rm -rf tmp
+
+
 # Genomic reference
 mkdir -p fasta; cd fasta
 wget https://storage.googleapis.com/genomics-public-data/resources/broad/hg38/v0/Homo_sapiens_assembly38.fasta
