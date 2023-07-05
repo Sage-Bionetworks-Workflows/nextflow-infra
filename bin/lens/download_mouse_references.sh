@@ -3,7 +3,7 @@ export REFERENCES_PATH=$RAFT_PATH/references
 cd $REFERENCES_PATH
 
 mkdir -p mus_musculus; cd mus_musculus
-export MOUSE_REFERENCES_PATH=$REFERENCES_PATH/mus_musculus
+export MOUSE_REFERENCES_PATH=$REFERENCES_PATH/mus_musculus 
 
 
 # Genomic reference
@@ -64,7 +64,7 @@ cd $MOUSE_REFERENCES_PATH
 
 # NeoSplice reference
 mkdir -p neosplice; cd neosplice
-wget https://raw.githubusercontent.com/max555beyond/NeoSplice/master/generate_reference_peptidome.py
+wget https://raw.githubusercontent.com/BWMac/NeoSplice/master/generate_reference_peptidome.py
 python3 generate_reference_peptidome.py $MOUSE_REFERENCES_PATH/annot/gencode.vM25.annotation.gff3 $MOUSE_REFERENCES_PATH/fasta/GRCm38.primary_assembly.genome.fa .
 mv .peptidome_result/ peptidome.mus_musculus
 rm generate_reference_peptidome.py
@@ -77,14 +77,14 @@ mkdir -p cta_self; cd cta_self
 wget https://gitlab.com/landscape-of-effective-neoantigens-software/nextflow/modules/tools/lens/-/wikis/uploads/7f7454717866c1a61fb505f8ac5446e0/cta_and_self_antigen.mus_musculus.gene_list
 cd $MOUSE_REFERENCES_PATH
 
-# STARFusion reference
-mkdir -p starfusion; cd starfusion
-wget https://data.broadinstitute.org/Trinity/CTAT_RESOURCE_LIB/__genome_libs_StarFv1.9/Mouse_gencode_M24_CTAT_lib_Apr062020.plug-n-play.tar.gz
-tar -xvf Mouse_gencode_M24_CTAT_lib_Apr062020.plug-n-play.tar.gz
-cd Mouse_gencode_M24_CTAT_lib_Apr062020.plug-n-play
-mv ctat_genome_lib_build_dir/* .; rm -rf ctat_genome_lib_build_dir/; cd ..
-rm -rf Mouse_gencode_M24_CTAT_lib_Apr062020.plug-n-play.tar.gz
-cd $MOUSE_REFERENCES_PATH
+# STARFusion reference - waiting for response on 404 error
+# mkdir -p starfusion; cd starfusion
+# wget https://data.broadinstitute.org/Trinity/CTAT_RESOURCE_LIB/__genome_libs_StarFv1.9/Mouse_gencode_M24_CTAT_lib_Apr062020.plug-n-play.tar.gz
+# tar -xvf Mouse_gencode_M24_CTAT_lib_Apr062020.plug-n-play.tar.gz
+# cd Mouse_gencode_M24_CTAT_lib_Apr062020.plug-n-play
+# mv ctat_genome_lib_build_dir/* .; rm -rf ctat_genome_lib_build_dir/; cd ..
+# rm -rf Mouse_gencode_M24_CTAT_lib_Apr062020.plug-n-play.tar.gz
+# cd $MOUSE_REFERENCES_PATH
 
 # ERV reference
 mkdir -p erv; cd erv
