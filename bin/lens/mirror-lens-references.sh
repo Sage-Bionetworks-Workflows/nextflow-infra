@@ -11,10 +11,9 @@
 
 prefixes=(
     "antigen.garnish/"
-    "erv/"
+    # "erv/"
     "homo_sapiens/"
-    "mhcflurry/"
-    "mus_musculus/"
+    # "mus_musculus/"
     "viral/"
 )
 
@@ -23,7 +22,7 @@ mkdir -p "./lens/references"
 cd ./lens
 bash download_general_references.sh
 bash download_human_references.sh
-bash download_mouse_references.sh
+# bash download_mouse_references.sh
 
 for prefix in ${prefixes[*]}; do
     echo "Syncing $prefix..."

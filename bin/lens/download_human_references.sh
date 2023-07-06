@@ -66,14 +66,15 @@ cd $HUMAN_REFERENCES_PATH
 
 # snpEff reference
 mkdir -p snpeff; cd snpeff
-docker pull resolwebio/snpeff:2.0.0
+docker pull resolwebio/snpeff:latest
 mkdir -p GRCh38.GENCODEv37; cd GRCh38.GENCODEv37
 wget https://gitlab.com/landscape-of-effective-neoantigens-software/nextflow/modules/tools/lens/-/wikis/uploads/430f9d80c841721499fbcec937b0f721/snpEff.config
-ln $HUMAN_REFERENCES_PATH/annot/gencode.v37.annotation.gtf.gz genes.gtf.gz
+cp $HUMAN_REFERENCES_PATH/annot/gencode.v37.annotation.gtf.gz genes.gtf.gz
+gunzip genes.gtf.gz
 sudo ln $HUMAN_REFERENCES_PATH/fasta/Homo_sapiens.assembly38.no_ebv.fa sequences.fa
 cd $HUMAN_REFERENCES_PATH/snpeff
-docker run -v $PWD:/data resolwebio/snpeff:2.0.0 /opt/snpeff/snpeff/bin/snpEff build -gtf22 -v GRCh38.GENCODEv37 -dataDir ${PWD} -c GRCh38.GENCODEv37/snpEff.config
-rm -f GRCh38.GENCODEv37/sequences.fa GRCh38.GENCODEv37/genes.gtf.gz
+docker run -v $PWD:/data -w /data resolwebio/snpeff:latest /opt/snpeff/snpeff/bin/snpEff build -gtf22 -v GRCh38.GENCODEv37 -dataDir /data -c GRCh38.GENCODEv37/snpEff.config
+rm -f GRCh38.GENCODEv37/sequences.fa GRCh38.GENCODEv37/genes.gtf
 cd $HUMAN_REFERENCES_PATH
 
 
@@ -94,12 +95,10 @@ mkdir -p neosplice; cd neosplice
 # rm generate_reference_peptidome.py
 
 mkdir -p peptidome.homo_sapiens; cd peptidome.homo_sapiens
-
-wget https://github.com/Benjamin-Vincent-Lab/NeoSplice/blob/master/Reference_peptidome/reference_peptidome_8.txt.gz
-wget https://github.com/Benjamin-Vincent-Lab/NeoSplice/blob/master/Reference_peptidome/reference_peptidome_9.txt.gz
-wget https://github.com/Benjamin-Vincent-Lab/NeoSplice/blob/master/Reference_peptidome/reference_peptidome_10.txt.gz
-wget https://github.com/Benjamin-Vincent-Lab/NeoSplice/blob/master/Reference_peptidome/reference_peptidome_11.txt.gz
-
+wget https://github.com/Benjamin-Vincent-Lab/NeoSplice/raw/master/Reference_peptidome/reference_peptidome_8.txt.gz
+wget https://github.com/Benjamin-Vincent-Lab/NeoSplice/raw/master/Reference_peptidome/reference_peptidome_9.txt.gz
+wget https://github.com/Benjamin-Vincent-Lab/NeoSplice/raw/master/Reference_peptidome/reference_peptidome_10.txt.gz
+wget https://github.com/Benjamin-Vincent-Lab/NeoSplice/raw/master/Reference_peptidome/reference_peptidome_11.txt.gz
 cd $HUMAN_REFERENCES_PATH
 
 # CTA/Self-antigen reference
