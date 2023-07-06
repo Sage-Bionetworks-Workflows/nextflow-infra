@@ -27,8 +27,6 @@ docker run -v $PWD:/data staphb/samtools:1.13 samtools faidx -o Homo_sapiens.ass
 rm -f *.fasta*
 cd $HUMAN_REFERENCES_PATH
 
-# stopped here
-
 # GTF/GFF3
 mkdir -p annot; cd annot
 wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_37/gencode.v37.annotation.gtf.gz
