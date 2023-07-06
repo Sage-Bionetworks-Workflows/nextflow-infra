@@ -24,5 +24,5 @@ mv ncbi*/bin/blastp $REFERENCES_PATH/antigen.garnish
 cd $REFERENCES_PATH
 rm -rf bin
 
-# Make dummy_file - I have no idea why this was here in the first place
+# Make dummy_file
 touch dummy_file
