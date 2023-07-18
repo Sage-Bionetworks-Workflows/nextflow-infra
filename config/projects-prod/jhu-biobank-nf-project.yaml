@@ -1,6 +1,6 @@
 template:
   path: tower-project.j2
-stack_name: jhu-biobank-nf-project
+stack_name: ntap-add6-project
 dependencies:
   - common/nextflow-forge-iam-policy.yaml
   - common/nextflow-launch-iam-policy.yaml
@@ -22,4 +22,4 @@ stack_tags:
   Department: SCCE
   Project: Neurofibromatosis
   OwnerEmail: thomas.yu@sagebase.org
-  CostCenter: NTAP NF Addendum 5 / 301101
+  CostCenter: NTAP NF Amendment 6 / 301102
