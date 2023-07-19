@@ -671,7 +671,7 @@ class TowerWorkspace:
                     "preRunScript": "NXF_OPTS='-Xms7g -Xmx14g'",
                     "region": self.org.aws.region,
                     "resourceLabelIds": label_ids,
-                    "waveEnabled": False,
+                    "waveEnabled": True,
                     "workDir": f"s3://{self.stack['TowerScratch']}/work",
                     "forge": {
                         "allocStrategy": alloc_strategy,
