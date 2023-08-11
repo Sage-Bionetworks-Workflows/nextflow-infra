@@ -15,7 +15,7 @@ import yaml  # type: ignore
 from sagetasks.nextflowtower.client import TowerClient  # type: ignore
 
 # Increment this version when updating compute environments
-CE_VERSION = "v11"
+CE_VERSION = "v12"
 
 REGION = "us-east-1"
 ORG_NAME = "Sage Bionetworks"
@@ -671,7 +671,7 @@ class TowerWorkspace:
                     "preRunScript": "NXF_OPTS='-Xms7g -Xmx14g'",
                     "region": self.org.aws.region,
                     "resourceLabelIds": label_ids,
-                    "waveEnabled": False,
+                    "waveEnabled": True,
                     "workDir": f"s3://{self.stack['TowerScratch']}/work",
                     "forge": {
                         "allocStrategy": alloc_strategy,
