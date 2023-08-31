@@ -14,6 +14,7 @@ parameters:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/phil.snyder@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
     - 'arn:aws:sts::888810830951:assumed-role/AWSReservedSSO_Administrator_bf3b4691e22cc3c6/adam.taylor@sagebase.org' # Provides for htan-dev cross-account access
+    - 'arn:aws:sts::526515999252:assumed-role/AWSReservedSSO_S3ExternalCollab_40c062f682e7f3f5/adam.taylor@sagebase.org' # Provides access to HTAN buckets in SciComp
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
     - '{{stack_group_config.sso_admin_role.arn}}'
