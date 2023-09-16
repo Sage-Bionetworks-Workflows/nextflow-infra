@@ -1,6 +1,6 @@
 template:
   path: tower-project.j2
-stack_name: nf-project
+stack_name: nf-test
 dependencies:
   - common/nextflow-forge-iam-policy.yaml
   - common/nextflow-launch-iam-policy.yaml
