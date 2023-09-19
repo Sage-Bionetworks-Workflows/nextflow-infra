@@ -1,0 +1,36 @@
+# (REQUIRED) Step 0: Duplicate this file and rename using the updated stack name (see Step 1)
+
+# (REQUIRED) Step 1: Update the stack name below by replacing "example" with your project name
+#                    Note that the stack name cannot contain more than 32 characters
+stack_name: nf-test-project
+
+stack_tags:
+  # (REQUIRED) Step 2: Update all four values below
+  Department: SCCE
+  Project: Neurofibromatosis
+  OwnerEmail: robert.allaway@sagebase.org
+  CostCenter: NTAP NF Addendum 4 / 301100
+
+parameters:
+  S3ReadWriteAccessArns:
+    # (REQUIRED) Step 3: Replace the email below with your '@sagebase.org' address
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/robert.allaway@sagebase.org'
+    # Provides access to HTAN buckets in SciComp
+    - 'arn:aws:sts::526515999252:assumed-role/AWSReservedSSO_S3ExternalCollab_40c062f682e7f3f5/robert.allaway@sagebase.org'
+
+  # DO NOT EDIT ANYTHING BELOW THIS LINE ------------------------------------------------------------------------
+
+  AccountAdminArns:
+    - "{{stack_group_config.sso_admin_role.arn}}"
+    - !stack_output_external sagebase-github-oidc-workflows-prod-nextflow-infra::ProviderRoleArn
+  TemplateRootUrl: "https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com"
+  TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
+  TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
+
+template:
+  path: tower-project.j2
+
+dependencies:
+  - common/nextflow-forge-iam-policy.yaml
+  - common/nextflow-launch-iam-policy.yaml
