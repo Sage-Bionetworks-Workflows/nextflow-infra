@@ -12,6 +12,8 @@ parameters:
   SubnetId: !stack_output_external nextflow-ecs-cluster::EcsAutoScalingGroupSubnetId
   EcsSecurityGroupId: !stack_output_external nextflow-ecs-security-group::SecurityGroupId
   NextflowTowerConfigBucketArn: !stack_output_external nextflow-tower-config::BucketArn
+  ThroughputMode: provisioned
+  ProvisionedThroughputInMibps: 1024
 
 stack_tags:
   {{stack_group_config.default_stack_tags}}

@@ -19,6 +19,25 @@ Parameters:
     Type: String
     Description: ARN of the S3 bucket where the tower config is stored
 
+  ThroughputMode:
+    Type: String
+    AllowedValues:
+      - bursting
+      - elastic
+      - provisioned
+    Default: bursting
+    Description: The throughput mode for the EFS file system
+
+  ProvisionedThroughputInMibps:
+    Type: Number
+    MinValue: 1
+    MaxValue: 3414
+    Default: 200
+    Description: The throughput in MiBps for the EFS file system
+
+Conditions:
+  ThroughputModeIsProvisioned: !Equals [ "provisioned", !Ref ThroughputMode ]
+
 Resources:
 
   FileSystem:
@@ -28,8 +47,8 @@ Resources:
       BackupPolicy:
         Status: DISABLED
       Encrypted: true
-      ThroughputMode: provisioned
-      ProvisionedThroughputInMibps: 1024
+      ThroughputMode: !Ref ThroughputMode
+      ProvisionedThroughputInMibps: !If [ ThroughputModeIsProvisioned, !Ref ProvisionedThroughputInMibps, !Ref "AWS::NoValue" ]
 
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
