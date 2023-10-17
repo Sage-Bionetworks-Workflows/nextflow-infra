@@ -1,0 +1,15 @@
+template:
+  path: nextflow-elasticache-cluster.yaml
+stack_name: nextflow-elasticache-cluster
+dependencies:
+  - infra-dev/nextflow-vpc.yaml
+  - infra-dev/nextflow-ecs-security-group.yaml
+  - infra-dev/nextflow-ecs-cluster.yaml
+
+parameters:
+  VpcId: !stack_output_external nextflow-vpc::VPCId
+  SubnetId: !stack_output_external nextflow-ecs-cluster::EcsAutoScalingGroupSubnetId
+  EcsSecurityGroupId: !stack_output_external nextflow-ecs-security-group::SecurityGroupId
+
+stack_tags:
+  {{stack_group_config.default_stack_tags}}
