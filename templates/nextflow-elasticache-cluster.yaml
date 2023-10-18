@@ -14,24 +14,16 @@ Parameters:
     Type: String
 
 Resources:
-  SecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: ECS Security Group
-      VpcId: !Ref VpcId
-  SecurityGroupIngress:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: !GetAtt SecurityGroup.GroupId
-      SourceSecurityGroupId: !Ref EcsSecurityGroupId
-      IpProtocol: tcp
-      FromPort: 6379
-      ToPort: 6379
   ElasticacheSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: Elasticache Security Group
-      SecurityGroupIngress: !Ref SecurityGroupIngress
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - SourceSecurityGroupId: !Ref EcsSecurityGroupId
+          IpProtocol: tcp
+          FromPort: 6379
+          ToPort: 6379
   ElasticacheCluster:
     Type: AWS::ElastiCache::CacheCluster
     Properties:
