@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Elasticache cluster for Nextflow Tower
+Parameters:
+  VpcId:
+    Description: ID of VPC
+    Type: AWS::EC2::VPC::Id
+
+  EcsSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Security group ID for ECS cluster to grant database access
+
+  SubnetId:
+    Description: The ID of the ECS subnet group.
+    Type: String
+
+Resources:
+  ElasticacheSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Elasticache Security Group
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - SourceSecurityGroupId: !Ref EcsSecurityGroupId
+          IpProtocol: tcp
+          FromPort: 6379
+          ToPort: 6379
+  ElasticacheCluster:
+    Type: AWS::ElastiCache::CacheCluster
+    Properties:
+      CacheNodeType: cache.r6gd.xlarge
+      Engine: redis
+      NumCacheNodes: '1'
+      TransitEncryptionEnabled: true
+      VpcSecurityGroupIds:
+        - !GetAtt ElasticacheSecurityGroup.GroupId
+      CacheSubnetGroupName: !Ref SubnetId
+
+Outputs:
+
+  ElasticacheClusterEndpointAddress:
+    Value: !GetAtt ElasticacheCluster.ConfigurationEndpoint.Address
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-ElasticacheClusterEndpointAddress'
+
+  ElasticacheClusterEndpointPort:
+    Value: !GetAtt ElasticacheCluster.ConfigurationEndpoint.Port
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-ElasticacheClusterEndpointPort'
+
+  RedisEndpointAddress:
+    Value: !GetAtt ElasticacheCluster.RedisEndpoint.Address
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-RedisEndpointAddress'
+
+  RedisEndpointPort:
+    Value: !GetAtt ElasticacheCluster.RedisEndpoint.Port
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-RedisEndpointPort'
