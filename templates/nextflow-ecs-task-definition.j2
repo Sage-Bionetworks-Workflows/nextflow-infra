@@ -70,6 +70,10 @@ Parameters:
     Description: >
       The authentication service URL to which Tower connects to authenticate
       the sign-in request. Ignored if `TowerOidcClientId` is undefined.
+  TowerRedisUrl:
+    Type: String
+    Default: 'NULL'
+    Description: Redis connection URL
   RedisContainerName:
     Type: String
     Description: (Optional) Name of the container that runs redis

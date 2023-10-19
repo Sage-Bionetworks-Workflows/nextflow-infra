@@ -12,6 +12,7 @@ parameters:
   TowerSmtpPassword: !ssm 'smtp-password'
   TowerContactEmail: nextflow-admins@sagebase.org
   TowerServerUrl: https://tower-dev.sagebionetworks.org
+  TowerRedisUrl: !stack_output_external nextflow-elasticache-cluster::RedisEndpoint
   TowerJwtSecret: !aws_secrets_manager nextflow-tower-secret/jwt::SecretString::secret
   TowerCryptoSecretkey: !aws_secrets_manager nextflow-tower-secret/crypto::SecretString::secret
   TowerLicense: !aws_secrets_manager nextflow/license::SecretString::license_key
