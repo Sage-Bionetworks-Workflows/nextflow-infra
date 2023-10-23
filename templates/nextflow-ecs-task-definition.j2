@@ -178,6 +178,7 @@ Resources:
           EFSVolumeConfiguration:
             FilesystemId: !Ref EfsFileSystemId
       ContainerDefinitions:
+      {%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
         # The following container definition is a stop-gap solution for
         # https://sagebionetworks.jira.com/browse/WORKFLOWS-521
         - Name: !Sub '${RedisContainerName}-CheckAOF'
@@ -225,16 +226,19 @@ Resources:
               awslogs-region: !Sub '${AWS::Region}'
               awslogs-group: !Ref TowerTaskLogGroup
               awslogs-stream-prefix: !Ref AwslogsStreamPrefix
+      {%- endif %}
         - Name: !Sub '${CronContainerName}-MigrateDb'
           Image: !Ref CronContainerImage
           Memory: 2000
           Cpu: 0
           Essential: false
+      {%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
           Links:
             - !Ref RedisContainerName
           DependsOn:
             - ContainerName: !Ref RedisContainerName
               Condition: START
+      {%- endif %}
           WorkingDirectory: /work
           EntryPoint:
             - /bin/sh
@@ -260,6 +264,7 @@ Resources:
           Image: !Ref CronContainerImage
           Memory: 2000
           Cpu: 0
+      {%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
           Links:
             - !Ref RedisContainerName
           DependsOn:
@@ -267,6 +272,7 @@ Resources:
               Condition: START
             - ContainerName: !Sub '${CronContainerName}-MigrateDb'
               Condition: SUCCESS
+      {%- endif %}
           WorkingDirectory: /work
           EntryPoint:
             - /bin/sh
