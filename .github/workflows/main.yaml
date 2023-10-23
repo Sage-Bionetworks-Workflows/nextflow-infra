@@ -43,6 +43,7 @@ jobs:
       sceptre-suffix: "dev"
       tower-url: "https://tower-dev.sagebionetworks.org"
       aws-role-to-assume: "arn:aws:iam::035458030717:role/sagebase-github-oidc-workflows-dev-nextflow-infra"
+      aws-assume-role-duration: "7200"
 
   deploy-prod:
     if: github.ref == 'refs/heads/prod'
@@ -55,6 +56,7 @@ jobs:
       sceptre-suffix: "prod"
       tower-url: "https://tower.sagebionetworks.org"
       aws-role-to-assume: "arn:aws:iam::728882028485:role/sagebase-github-oidc-workflows-prod-nextflow-infra"
+      aws-assume-role-duration: "7200"
 
   deploy-ampad:
     if: github.ref == 'refs/heads/prod'
