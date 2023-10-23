@@ -37,3 +37,4 @@ stack_tags:
 
 sceptre_user_data:
   environment: !file src/tower/resources/environment.yaml
+  EnableRedisDocker: false
