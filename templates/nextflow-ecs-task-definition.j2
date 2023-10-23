@@ -74,6 +74,7 @@ Parameters:
     Type: String
     Default: 'NULL'
     Description: Redis connection URL
+{%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
   RedisContainerName:
     Type: String
     Description: (Optional) Name of the container that runs redis
@@ -81,6 +82,7 @@ Parameters:
   RedisContainerImage:
     Type: String
     Description: Redis container docker image, e.g. 'redis:5.0.8'
+{%- endif %}
   CronContainerName:
     Type: String
     Description: (Optional) Name of the cron container
@@ -283,8 +285,13 @@ Resources:
             - Name: MICRONAUT_ENVIRONMENTS
               Value: !If
                 - HasTowerOidcClient
+              {%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
                 - prod,redis,cron,workspace,awsbatch-platform,auth-google,auth-oidc
                 - prod,redis,cron,workspace,awsbatch-platform,auth-google
+              {%- else %}
+                - prod,cron,workspace,awsbatch-platform,auth-google,auth-oidc
+                - prod,cron,workspace,awsbatch-platform,auth-google
+              {%- endif %}
             {%- for name, value in sceptre_user_data.environment.items() %}
             - Name: {{ name }}
               Value: {{ value }}
@@ -328,7 +335,9 @@ Resources:
               HostPort: !Ref BackendHostPort
           Essential: false
           Links:
+          {%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
             - redis
+          {%- endif %}
             - cron
           WorkingDirectory: /work
           DependsOn:
@@ -340,8 +349,13 @@ Resources:
             - Name: MICRONAUT_ENVIRONMENTS
               Value: !If
                 - HasTowerOidcClient
+              {%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
                 - prod,redis,ha,workspace,awsbatch-platform,auth-google,auth-oidc
                 - prod,redis,ha,workspace,awsbatch-platform,auth-google
+              {%- else %}
+                - prod,ha,workspace,awsbatch-platform,auth-google,auth-oidc
+                - prod,ha,workspace,awsbatch-platform,auth-google
+              {%- endif %}
             {%- for name, value in sceptre_user_data.environment.items() %}
             - Name: {{ name }}
               Value: {{ value }}
