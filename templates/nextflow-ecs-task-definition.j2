@@ -343,8 +343,10 @@ Resources:
           DependsOn:
             - ContainerName: cron
               Condition: START
+          {%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
             - ContainerName: redis
               Condition: START
+          {%- endif %}
           Environment:
             - Name: MICRONAUT_ENVIRONMENTS
               Value: !If
