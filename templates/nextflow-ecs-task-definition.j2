@@ -269,12 +269,14 @@ Resources:
       {%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
           Links:
             - !Ref RedisContainerName
+      {%- endif %}
           DependsOn:
+      {%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
             - ContainerName: !Ref RedisContainerName
               Condition: START
+      {%- endif %}
             - ContainerName: !Sub '${CronContainerName}-MigrateDb'
               Condition: SUCCESS
-      {%- endif %}
           WorkingDirectory: /work
           EntryPoint:
             - /bin/sh
