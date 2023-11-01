@@ -287,13 +287,8 @@ Resources:
             - Name: MICRONAUT_ENVIRONMENTS
               Value: !If
                 - HasTowerOidcClient
-              {%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
                 - prod,redis,cron,workspace,awsbatch-platform,auth-google,auth-oidc
                 - prod,redis,cron,workspace,awsbatch-platform,auth-google
-              {%- else %}
-                - prod,cron,workspace,awsbatch-platform,auth-google,auth-oidc
-                - prod,cron,workspace,awsbatch-platform,auth-google
-              {%- endif %}
             {%- for name, value in sceptre_user_data.environment.items() %}
             - Name: {{ name }}
               Value: {{ value }}
@@ -353,13 +348,8 @@ Resources:
             - Name: MICRONAUT_ENVIRONMENTS
               Value: !If
                 - HasTowerOidcClient
-              {%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
                 - prod,redis,ha,workspace,awsbatch-platform,auth-google,auth-oidc
                 - prod,redis,ha,workspace,awsbatch-platform,auth-google
-              {%- else %}
-                - prod,ha,workspace,awsbatch-platform,auth-google,auth-oidc
-                - prod,ha,workspace,awsbatch-platform,auth-google
-              {%- endif %}
             {%- for name, value in sceptre_user_data.environment.items() %}
             - Name: {{ name }}
               Value: {{ value }}
