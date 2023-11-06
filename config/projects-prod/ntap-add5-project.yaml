@@ -11,6 +11,9 @@ parameters:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/jineta.banerjee@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/robert.allaway@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/sasha.scott@sagebase.org'
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/brad.macdonald@sagebase.org"
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/dan.lu@sagebase.org"
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/bryan.fauble@sagebase.org"
   AccountAdminArns:
     - '{{stack_group_config.sso_admin_role.arn}}'
     - !stack_output_external sagebase-github-oidc-workflows-prod-nextflow-infra::ProviderRoleArn
