@@ -67,14 +67,13 @@ Resources:
               allow-list:
                 - "*@sagebase.org"
                 - "*@sagebionetworks.org"
-                - "artem.sokolov@gmail.com"
-                - "clarenceyapp111@gmail.com"
-                - "jmuhlich@gmail.com"
                 - "cheimann@isbscience.org"
           trustedEmails:
             - "benjamin_vincent@med.unc.edu"
             - "dbortone@email.unc.edu"
             - "steven_vensko@med.unc.edu"
+            - "clarence@hms.harvard.edu"
+            - "Jeremy_Muhlich@hms.harvard.edu"
           scm:
             providers:
               github:
