@@ -8,15 +8,13 @@ dependencies:
 parameters:
   S3ReadWriteAccessArns:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/adam.taylor@sagebase.org'
-    - arn:aws:iam::292075781285:user/sokolov
     - arn:aws:iam::292075781285:user/cy101
     - arn:aws:iam::292075781285:user/jmuhlich
     # The following roles don't exist since the users are not Sage employees.
     # However, this will ensure that they are added to the Tower workspace
     # until we find a permanent solution for listing external users.
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/artem.sokolov@gmail.com'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/clarenceyapp111@gmail.com'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/jmuhlich@gmail.com'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/clarence@hms.harvard.edu'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/Jeremy_Muhlich@hms.harvard.edu'
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
     - '{{stack_group_config.sso_admin_role.arn}}'
