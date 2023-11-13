@@ -817,12 +817,14 @@ class TowerOrganization:
         params = {"search": user}
         response = self.tower.paged_request("GET", f"{endpoint}", params=params)
         matches = list(response)
-
+        print(matches)
         if len(matches) == 1 and matches[0]["email"] == user:
             member = matches[0]
         else:
             data = {"user": user}
+            print(data)
             response = self.tower.request("PUT", f"{endpoint}/add", json=data)
+            print(response)
             member = response["member"]
 
         self.members[user] = member
