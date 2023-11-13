@@ -70,6 +70,11 @@ Parameters:
     Description: >
       The authentication service URL to which Tower connects to authenticate
       the sign-in request. Ignored if `TowerOidcClientId` is undefined.
+  TowerRedisUrl:
+    Type: String
+    Default: 'NULL'
+    Description: Redis connection URL
+{%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
   RedisContainerName:
     Type: String
     Description: (Optional) Name of the container that runs redis
@@ -77,6 +82,7 @@ Parameters:
   RedisContainerImage:
     Type: String
     Description: Redis container docker image, e.g. 'redis:5.0.8'
+{%- endif %}
   CronContainerName:
     Type: String
     Description: (Optional) Name of the cron container
@@ -174,6 +180,7 @@ Resources:
           EFSVolumeConfiguration:
             FilesystemId: !Ref EfsFileSystemId
       ContainerDefinitions:
+      {%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
         # The following container definition is a stop-gap solution for
         # https://sagebionetworks.jira.com/browse/WORKFLOWS-521
         - Name: !Sub '${RedisContainerName}-CheckAOF'
@@ -221,16 +228,19 @@ Resources:
               awslogs-region: !Sub '${AWS::Region}'
               awslogs-group: !Ref TowerTaskLogGroup
               awslogs-stream-prefix: !Ref AwslogsStreamPrefix
+      {%- endif %}
         - Name: !Sub '${CronContainerName}-MigrateDb'
           Image: !Ref CronContainerImage
           Memory: 2000
           Cpu: 0
           Essential: false
+      {%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
           Links:
             - !Ref RedisContainerName
           DependsOn:
             - ContainerName: !Ref RedisContainerName
               Condition: START
+      {%- endif %}
           WorkingDirectory: /work
           EntryPoint:
             - /bin/sh
@@ -256,11 +266,15 @@ Resources:
           Image: !Ref CronContainerImage
           Memory: 2000
           Cpu: 0
+      {%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
           Links:
             - !Ref RedisContainerName
+      {%- endif %}
           DependsOn:
+      {%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
             - ContainerName: !Ref RedisContainerName
               Condition: START
+      {%- endif %}
             - ContainerName: !Sub '${CronContainerName}-MigrateDb'
               Condition: SUCCESS
           WorkingDirectory: /work
@@ -318,14 +332,18 @@ Resources:
               HostPort: !Ref BackendHostPort
           Essential: false
           Links:
+          {%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
             - redis
+          {%- endif %}
             - cron
           WorkingDirectory: /work
           DependsOn:
             - ContainerName: cron
               Condition: START
+          {%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
             - ContainerName: redis
               Condition: START
+          {%- endif %}
           Environment:
             - Name: MICRONAUT_ENVIRONMENTS
               Value: !If
