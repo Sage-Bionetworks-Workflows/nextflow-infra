@@ -13,6 +13,7 @@ parameters:
     - "{{stack_group_config.tower_viewer_arn_prefix}}/brad.macdonald@sagebase.org"
     - "{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org"
     - "{{stack_group_config.tower_viewer_arn_prefix}}/rchai@sagebase.org"
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/jenny.medina@sagebase.org"
   AccountAdminArns:
     - "{{stack_group_config.sso_admin_role.arn}}"
     - !stack_output_external sagebase-github-oidc-workflows-prod-nextflow-infra::ProviderRoleArn
