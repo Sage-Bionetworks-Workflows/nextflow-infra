@@ -4,7 +4,7 @@ stack_tags:
   Department: DNT
   Project: PEGS Challenge
   OwnerEmail: nextflow-admins@sagebase.org
-  CostCenter: 12470001 # Valid values here: https://mips-api.finops.sageit.org/tags
+  CostCenter: PEGS Gene Environment / 124700 # Valid values here: https://mips-api.finops.sageit.org/tags
 
 parameters:
   S3ReadWriteAccessArns:
