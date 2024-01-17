@@ -4,7 +4,7 @@ stack_tags:
   Department: DNT
   Project: PEGS Challenge
   OwnerEmail: nextflow-admins@sagebase.org
-  CostCenter: 12470001 # Valid values here: https://github.com/Sage-Bionetworks/aws-infra/tree/master/templates/tags
+  CostCenter: 12470001 # Valid values here: https://mips-api.finops.sageit.org/tags
 
 parameters:
   S3ReadWriteAccessArns:
