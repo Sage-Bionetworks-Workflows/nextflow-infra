@@ -26,3 +26,4 @@ TOWER_OIDC_TOKEN_IMPORT: "!If [ HasTowerOidcClient, !Ref TowerOidcTokenImport, !
 TOWER_ROOT_USERS: "!If [ HasTowerRootUsers, !Join [',', !Ref TowerRootUsers], !Ref AWS::NoValue]"
 TOWER_USER_WORKSPACE_ENABLED: "!Ref 'TowerUserWorkspace'"
 TOWER_CONFIG_FILE: "!Sub '${EfsVolumeMountPath}/${TowerConfigFileName}'"
+TOWER_ALLOW_INSTANCE_CREDENTIALS: "true"

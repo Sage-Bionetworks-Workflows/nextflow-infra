@@ -141,6 +141,39 @@ Resources:
               Service:
                 - ecs-tasks.amazonaws.com
 
+  TowerRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      ManagedPolicyArns:
+        - 'Fn::ImportValue': !Sub ${AWS::Region}-nextflow-forge-iam-policy-NextFlowForgePolicyArn
+        - 'Fn::ImportValue': !Sub ${AWS::Region}-nextflow-launch-iam-policy-NextFlowLaunchPolicyArn
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              Service: eks.amazonaws.com
+            Action: sts:AssumeRole
+          - Sid: AllowEc2AssumeRole
+            Effect: Allow
+            Principal:
+              AWS: !Ref AccountAdminArns
+            Action: sts:AssumeRole
+          - Sid: AllowEcsServiceRole2AssumeRole
+            Effect: Allow
+            Principal:
+              AWS:
+                - 'Fn::ImportValue': !Sub ${AWS::Region}-nextflow-ecs-service-shared-EcsServiceRoleArn
+            Action: sts:AssumeRole
+
   TowerForgeBatchHeadJobPolicy:
     Type: AWS::IAM::Policy
     Properties:
@@ -585,6 +618,11 @@ Outputs:
     Value: !GetAtt TowerForgeServiceRole.Arn
     Export:
       Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceRoleArn"
+
+  TowerRoleArn:
+    Value: !GetAtt TowerRole.Arn
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerRoleArn"
 
   TowerForgeBatchHeadJobRole:
     Value: !Ref TowerForgeBatchHeadJobRole
