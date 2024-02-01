@@ -51,6 +51,33 @@ Parameters:
 
 Resources:
 
+  EcsServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+              - ecs.amazonaws.com
+          Action:
+            - sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName: ecs-service
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+              - elasticloadbalancing:DeregisterInstancesFromLoadBalancer
+              - elasticloadbalancing:DeregisterTargets
+              - elasticloadbalancing:Describe*
+              - elasticloadbalancing:RegisterInstancesWithLoadBalancer
+              - elasticloadbalancing:RegisterTargets
+              - ec2:Describe*
+              - ec2:AuthorizeSecurityGroupIngress
+            Resource: '*'
+
   EcsAlbSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -98,6 +125,7 @@ Resources:
 
   EcsAlbListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
+    DependsOn: EcsServiceRole
     Properties:
       DefaultActions:
       - Type: forward
@@ -120,8 +148,7 @@ Resources:
       CapacityProviderStrategy:
         - CapacityProvider: !Ref TowerCapacityProviderName
           Weight: 1
-      Role:
-        'Fn::ImportValue': !Sub ${AWS::Region}-nextflow-ecs-service-shared-EcsServiceRoleArn
+      Role: !Ref EcsServiceRole
       LoadBalancers:
       - ContainerName: !Ref TowerUIContainerName
         ContainerPort: !Ref TowerUIContainerPort
@@ -187,3 +214,8 @@ Outputs:
     Value: !GetAtt EcsApplicationLoadBalancer.CanonicalHostedZoneID
     Export:
       Name: !Sub '${AWS::Region}-${AWS::StackName}-LoadBalancerCanonicalHostedZoneID'
+
+  EcsServiceRoleArn:
+    Value: !GetAtt EcsServiceRole.Arn
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-EcsServiceRoleArn'
