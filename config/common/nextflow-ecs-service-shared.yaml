@@ -1,0 +1,6 @@
+template:
+  path: nextflow-ecs-service-shared.yaml
+stack_name: nextflow-ecs-service-shared
+
+stack_tags:
+  {{stack_group_config.default_stack_tags}}
