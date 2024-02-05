@@ -14,7 +14,7 @@ parameters:
     # However, this will ensure that they are added to the Tower workspace
     # until we find a permanent solution for listing external users.
     - '{{stack_group_config.tower_viewer_arn_prefix}}/clarence@hms.harvard.edu'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/Jeremy_Muhlich@hms.harvard.edu'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/jeremy_muhlich@hms.harvard.edu'
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
     - '{{stack_group_config.sso_admin_role.arn}}'

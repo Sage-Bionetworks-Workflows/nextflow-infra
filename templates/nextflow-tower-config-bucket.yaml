@@ -68,6 +68,7 @@ Resources:
                 - "*@sagebase.org"
                 - "*@sagebionetworks.org"
                 - "cheimann@isbscience.org"
+                - "clarisse.lau@isbscience.org"
           trustedEmails:
             - "benjamin_vincent@med.unc.edu"
             - "dbortone@email.unc.edu"
