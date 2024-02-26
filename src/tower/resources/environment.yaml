@@ -16,6 +16,7 @@ TOWER_LICENSE: "!Ref 'TowerLicense'"
 TOWER_ENABLE_OPENAPI: "true"
 TOWER_ENABLE_WAVE: "true"
 WAVE_SERVER_URL: "https://wave.seqera.io"
+TOWER_ENABLE_PLATFORMS: awsbatch-platform,googlebatch-platform
 FLYWAY_LOCATIONS: "classpath:db-schema/mysql"
 TOWER_GOOGLE_CLIENT: "!Ref TowerGoogleClientId"
 TOWER_GOOGLE_SECRET: "!Ref TowerGoogleSecret"
