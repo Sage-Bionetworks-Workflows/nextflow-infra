@@ -115,7 +115,6 @@ Resources:
     Properties:
       Cluster: !Ref ClusterName
       DesiredCount: 1
-      ServiceName: Nextflow-Tower-Service
       TaskDefinition: !Ref TaskDefinitionArn
       CapacityProviderStrategy:
         - CapacityProvider: !Ref TowerCapacityProviderName
