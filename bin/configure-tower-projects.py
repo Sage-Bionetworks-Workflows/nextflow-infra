@@ -661,7 +661,7 @@ class TowerWorkspace:
                     "credentials": None,
                     "environment": None,
                     "executionRole": self.stack["TowerForgeBatchExecutionRoleArn"],
-                    "fusion2Enabled": False,
+                    "fusion2Enabled": True,
                     "headJobCpus": 8,
                     "headJobMemoryMb": 15000,
                     "headJobRole": self.stack["TowerForgeBatchHeadJobRoleArn"],
