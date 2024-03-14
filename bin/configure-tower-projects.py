@@ -723,6 +723,9 @@ class TowerWorkspace:
                 elif comp_env["name"] == comp_env_ec2:
                     compute_env_ids["EC2"] = comp_env["id"]
         # Create any missing compute environments for the project
+        print("----------------------------------------------------------------")
+        print(response)
+        print("----------------------------------------------------------------")
         if compute_env_ids["SPOT"] is None:
             data = self.generate_compute_environment(comp_env_spot, "SPOT")
             response = self.tower.request("POST", endpoint, params=params, json=data)
