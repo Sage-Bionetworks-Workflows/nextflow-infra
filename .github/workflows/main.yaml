@@ -33,7 +33,6 @@ jobs:
         run: find . -type f -name "*.j2" -exec /tmp/jinja2-lint/j2lint.py '{}' +
 
   deploy-dev:
-    if: github.ref == 'refs/heads/dev'
     needs:
       - validate
     uses: "./.github/workflows/rw-deploy.yaml"
