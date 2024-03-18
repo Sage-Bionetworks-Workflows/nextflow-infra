@@ -11,7 +11,7 @@ parameters:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/chelsea.nayan@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/phil.snyder@sagebase.org'
-    - 'arn:aws:iam::136990331731:role/jjaco34_S3FullAccess'
+    - 'arn:aws:iam::136990331731:role/customroles/jjaco34S3'
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
     - '{{stack_group_config.sso_admin_role.arn}}'
