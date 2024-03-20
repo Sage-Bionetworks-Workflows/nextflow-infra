@@ -15,7 +15,7 @@ import yaml  # type: ignore
 from sagetasks.nextflowtower.client import TowerClient  # type: ignore
 
 # Increment this version when updating compute environments
-CE_VERSION = "v13"
+CE_VERSION = "v12"
 
 REGION = "us-east-1"
 ORG_NAME = "Sage Bionetworks"
@@ -661,7 +661,7 @@ class TowerWorkspace:
                     "credentials": None,
                     "environment": None,
                     "executionRole": self.stack["TowerForgeBatchExecutionRoleArn"],
-                    "fusion2Enabled": True,
+                    "fusion2Enabled": False,
                     "headJobCpus": 8,
                     "headJobMemoryMb": 15000,
                     "headJobRole": self.stack["TowerForgeBatchHeadJobRoleArn"],
