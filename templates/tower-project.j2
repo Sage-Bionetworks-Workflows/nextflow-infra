@@ -308,6 +308,15 @@ Resources:
               - "arn:aws:iam::325565585839:root"
               - !Ref AWS::NoValue
 
+  TowerLaunchStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub ${TemplateRootUrl}/aws-infra/v0.7.4/NextflowTower/nextflow-launch.yaml
+      TimeoutInMinutes: 5
+      Parameters:
+        EcsSecurityGroupId: !Sub '!ImportValue ${AWS::Region}-nextflow-ecs-security-group-SecurityGroupId'
+        SubnetId: !Sub '!ImportValue ${AWS::Region}-nextflow-vpc-PrivateSubnet'
+
   TowerBucket:
     Type: AWS::S3::Bucket
     Properties:
