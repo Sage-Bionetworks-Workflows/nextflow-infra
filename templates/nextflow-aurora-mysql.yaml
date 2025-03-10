@@ -60,12 +60,31 @@ Parameters:
     Type: List<String>
     Description: List of admin IAM user and role ARNs (strings)
 
+  DbClusterMapping:
+    Type: String
+    Description: List of admin IAM user and role ARNs (strings)
+    AllowedValues:
+      - mysql5
+      - mysql8
+    Default: mysql5
+
+  KmsKeyAlias:
+    Type: String
+    Description: Alias name of KMS key to use for encryption
+    Default: alias/nextflow-aurora-bootstrap-lambda
+
 Mappings:
   ClusterSettings:
-    mysql:
+    mysql5:
       version: 5.7.mysql_aurora.2.07.1
       engine: aurora-mysql
       family: aurora-mysql5.7
+      enginemode: serverless
+    mysql8:
+      version: 8.0.mysql_aurora.3.04.0
+      engine: aurora-mysql
+      family: aurora-mysql8.0
+      enginemode: provisioned
 
 Conditions:
   UseSnapshotTrue: !Not [!Equals [!Ref SnapshotName, '']]
@@ -80,7 +99,7 @@ Resources:
       TemplateURL: !Sub ${TemplateRootUrl}/aws-infra/v0.6.83/KMS/kms-key.yaml
       TimeoutInMinutes: 5
       Parameters:
-        AliasName: 'alias/nextflow-aurora-bootstrap-lambda'
+        AliasName: !Ref KmsKeyAlias
         AdminPrincipalArns: !Join
           - ','
           - - !Sub 'arn:aws:iam::${AWS::AccountId}:root'
@@ -200,7 +219,7 @@ Resources:
     Type: AWS::RDS::DBClusterParameterGroup
     Properties:
       Description: Custom Database Parameters
-      Family: !FindInMap [ ClusterSettings, mysql, family ]
+      Family: !FindInMap [ ClusterSettings, !Ref DbClusterMapping, family ]
       Parameters:
         log_output: FILE
         general_log: "1"
@@ -220,9 +239,9 @@ Resources:
       - CloudWatchDBClusterGeneralLogGroup
       - CloudWatchDBClusterSlowQueryLogGroup
     Properties:
-      Engine: !FindInMap [ ClusterSettings, mysql, engine ]
-      EngineMode: serverless
-      EngineVersion: !FindInMap [ ClusterSettings, mysql, version ]
+      Engine: !FindInMap [ ClusterSettings, !Ref DbClusterMapping, engine ]
+      EngineMode: !FindInMap [ ClusterSettings, !Ref DbClusterMapping, enginemode ]
+      EngineVersion: !FindInMap [ ClusterSettings, !Ref DbClusterMapping, version ]
       DatabaseName: !Ref DBName
       DBClusterIdentifier: !Ref DBClusterIdentifier
       MasterUsername: !If
@@ -291,7 +310,7 @@ Resources:
       Description: Bootstrap newly Created Aurora Database
       Handler: index.lambda_handler
       Role: !GetAtt BootstrapLambdaRole.Arn
-      Runtime: python3.7
+      Runtime: python3.10
       Environment:
         Variables:
           CLUSTER_ARN: !Sub 'arn:aws:rds:${AWS::Region}:${AWS::AccountId}:cluster:${AuroraCluster}'
