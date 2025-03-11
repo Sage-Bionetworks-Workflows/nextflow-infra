@@ -14,6 +14,7 @@ parameters:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/brad.macdonald@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/verena.chung@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/gaia.andreoletti@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/maria.diaz@sagebase.org'
     - "{{stack_group_config.tower_viewer_arn_prefix}}/bryan.fauble@sagebase.org"
 
     # (Optional) Step 4: Uncomment and update the following line(s) to grant additional users with read/write access
