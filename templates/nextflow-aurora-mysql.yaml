@@ -79,12 +79,14 @@ Mappings:
       version: 5.7.mysql_aurora.2.07.1
       engine: aurora-mysql
       family: aurora-mysql5.7
-      enginemode: serverless
+      EngineMode: serverless
+      EnableHttpEndpoint: true
     mysql8:
       version: 8.0.mysql_aurora.3.04.0
       engine: aurora-mysql
       family: aurora-mysql8.0
-      enginemode: provisioned
+      EngineMode: provisioned
+      EnableHttpEndpoint: false
 
 Conditions:
   UseSnapshotTrue: !Not [!Equals [!Ref SnapshotName, '']]
@@ -240,7 +242,7 @@ Resources:
       - CloudWatchDBClusterSlowQueryLogGroup
     Properties:
       Engine: !FindInMap [ ClusterSettings, !Ref DbClusterMapping, engine ]
-      EngineMode: !FindInMap [ ClusterSettings, !Ref DbClusterMapping, enginemode ]
+      EngineMode: !FindInMap [ ClusterSettings, !Ref DbClusterMapping, EngineMode ]
       EngineVersion: !FindInMap [ ClusterSettings, !Ref DbClusterMapping, version ]
       DatabaseName: !Ref DBName
       DBClusterIdentifier: !Ref DBClusterIdentifier
@@ -256,7 +258,7 @@ Resources:
       StorageEncrypted:  !If [UseSnapshotTrue, !Ref 'AWS::NoValue', true]
       DBClusterParameterGroupName: !Ref AuroraClusterParameterGroup
       BackupRetentionPeriod: 14
-      EnableHttpEndpoint: true
+      EnableHttpEndpoint: !FindInMap [ ClusterSettings, !Ref DbClusterMapping, EnableHttpEndpoint ]
       DBSubnetGroupName: !Ref DBSubnetGroup
       VpcSecurityGroupIds:
         - !Ref ClusterSecurityGroup
