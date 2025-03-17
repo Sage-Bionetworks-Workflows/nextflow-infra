@@ -7,7 +7,7 @@ stack_tags:
   CostCenter: PEGS Gene Environment / 124700 # Valid values here: https://mips-api.finops.sageit.org/tags
 
 parameters:
-  S3ReadWriteAccessArns:
+  S3ReadOnlyAccessArns:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/rchai@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/jenny.medina@sagebase.org'
