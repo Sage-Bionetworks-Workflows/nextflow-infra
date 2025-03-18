@@ -1,0 +1,23 @@
+template:
+  path: nextflow-aurora-mysql8.yaml
+stack_name: nextflow-aurora-mysql8
+dependencies:
+  - infra-dev/workflows-kms-key.yaml
+  - infra-dev/nextflow-vpc.yaml
+  - infra-dev/nextflow-ecs-security-group.yaml
+
+parameters:
+  DBClusterIdentifier: tower8
+  DBName: tower8
+  VpcID: !stack_output_external nextflow-vpc::VPCId
+  SubnetIDs:
+    - !stack_output_external nextflow-vpc::PrivateSubnet1
+    - !stack_output_external nextflow-vpc::PrivateSubnet2
+  EcsSecurityGroupId: !stack_output_external nextflow-ecs-security-group::SecurityGroupId
+  TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
+  AccountAdminArns:
+    - {{stack_group_config.sso_admin_role.arn}}
+    - !stack_output_external sagebase-github-oidc-workflows-dev-nextflow-infra::ProviderRoleArn
+
+stack_tags:
+  {{stack_group_config.default_stack_tags}}
