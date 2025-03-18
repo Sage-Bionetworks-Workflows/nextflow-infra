@@ -82,11 +82,11 @@ Mappings:
       EngineMode: serverless
       EnableHttpEndpoint: true
     mysql8:
-      version: 8.0.mysql_aurora.3.04.0
+      version: 8.0.mysql_aurora.3.08.1
       engine: aurora-mysql
       family: aurora-mysql8.0
       EngineMode: provisioned
-      EnableHttpEndpoint: false
+      EnableHttpEndpoint: true
 
 Conditions:
   UseSnapshotTrue: !Not [!Equals [!Ref SnapshotName, '']]
@@ -120,7 +120,7 @@ Resources:
       GenerateSecretString:
         SecretStringTemplate: '{"username": "admin"}'
         GenerateStringKey: password
-        ExcludeCharacters: '"@/\$`&'
+        ExcludePunctuation: true
         PasswordLength: 16
       KmsKeyId: !Sub ${AuroraKeyStack.Outputs.Key}
 
@@ -133,7 +133,7 @@ Resources:
       GenerateSecretString:
         SecretStringTemplate: !Sub '{"username": "${DBUserName}"}'
         GenerateStringKey: password
-        ExcludeCharacters: '"@/\$`&'
+        ExcludePunctuation: true
         PasswordLength: 16
       KmsKeyId: !Sub ${AuroraKeyStack.Outputs.Key}
 
@@ -263,10 +263,28 @@ Resources:
       VpcSecurityGroupIds:
         - !Ref ClusterSecurityGroup
 
+  DBParameterGroup:
+    Type: 'AWS::RDS::DBParameterGroup'
+    Properties:
+      Description: Aurora Database Parameter Group
+      Family: aurora-mysql8.0
+
+  DBInstance1:
+    Type: 'AWS::RDS::DBInstance'
+    Properties:
+      DBParameterGroupName:
+        Ref: DBParameterGroup
+      Engine: aurora-mysql
+      DBClusterIdentifier:
+        Ref: AuroraCluster
+      DBInstanceClass: db.r8g.large   # Data API isn't supported on "t" DB instance classes
+
   # this custom resource exists to trigger the bootstrap lambda on creation
   BootstrapLambdaTrigger:
     Condition: UseSnapshotFalse
     Type: Custom::BootstrapLambdaTrigger
+    DependsOn:
+      - DBInstance1
     Properties:
       ServiceToken: !GetAtt BootstrapLambdaFunction.Arn
 
@@ -331,11 +349,11 @@ Resources:
           log.setLevel(logging.DEBUG)
 
           def submit_sql(sql):
+            log.debug(f'Submitting SQL: {sql}')
             return boto3.client('rds-data').execute_statement(
               secretArn=environ['MASTER_SECRET_ARN'],
               database=environ['DB_NAME'],
               resourceArn=environ['CLUSTER_ARN'],
-              schema='mysql',
               sql=sql
             )
 
@@ -347,9 +365,11 @@ Resources:
               secret = json.loads(secret_response['SecretString'])
               username = secret['username']
               password = secret['password']
+              log.debug(f'submit to database: {environ["DB_NAME"]}')
+              log.debug(f'using resourceArn: {environ["CLUSTER_ARN"]}')
               alter_db_response = submit_sql(f"ALTER DATABASE {db_name} CHARACTER SET utf8 COLLATE utf8_bin;")
               log.debug(f"Alter DB response: {alter_db_response}")
-              create_user_response = submit_sql(f"CREATE USER '{username}' IDENTIFIED BY '{password}';")
+              create_user_response = submit_sql(f"CREATE USER IF NOT EXISTS '{username}' IDENTIFIED BY '{password}';")
               log.debug(f"Create user response: {create_user_response}")
               grant_response = submit_sql(f"GRANT ALL PRIVILEGES ON {db_name}.* TO {username}@'%' ;")
               log.debug(f"Grant privileges response: {grant_response}")
@@ -369,6 +389,7 @@ Resources:
 
 
           def lambda_handler(event, context):
+            log.debug('Received event: ' + json.dumps(event, sort_keys=False))
             status = cfnresponse.SUCCESS
             message = 'no-op'
             error = None
