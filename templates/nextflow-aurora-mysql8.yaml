@@ -66,7 +66,7 @@ Mappings:
       version: 8.0.mysql_aurora.3.08.1
       engine: aurora-mysql
       family: aurora-mysql8.0
-      EngineMode: provisioned  #
+      EngineMode: provisioned
       EnableHttpEndpoint: true
 
 Conditions:
