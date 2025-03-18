@@ -316,7 +316,7 @@ Resources:
       Parameters:
         EcsSecurityGroupId:
           'Fn::ImportValue': !Sub ${AWS::Region}-nextflow-ecs-security-group-SecurityGroupId
-        SubnetId:
+        SubnetIds:
           'Fn::ImportValue': !Sub ${AWS::Region}-nextflow-vpc-PrivateSubnet
 
   TowerBucket:
