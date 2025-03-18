@@ -277,7 +277,7 @@ Resources:
       Engine: aurora-mysql
       DBClusterIdentifier:
         Ref: AuroraCluster
-      DBInstanceClass: db.r8g.large   # Data API isn't supported on "t" DB instance classes
+      DBInstanceClass: db.r6g.large   # Data API isn't supported on "t" DB instance classes
 
   # this custom resource exists to trigger the bootstrap lambda on creation
   BootstrapLambdaTrigger:
