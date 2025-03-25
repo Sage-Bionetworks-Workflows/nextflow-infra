@@ -311,7 +311,7 @@ Resources:
   TowerLaunchStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub ${TemplateRootUrl}/aws-infra/v0.7.7/NextflowTower/nextflow-launch.yaml
+      TemplateURL: !Sub ${TemplateRootUrl}/aws-infra/v0.9.5/NextflowTower/nextflow-launch.yaml
       TimeoutInMinutes: 5
       Parameters:
         EcsSecurityGroupId:
