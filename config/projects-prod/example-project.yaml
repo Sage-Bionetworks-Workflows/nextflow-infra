@@ -21,6 +21,7 @@ parameters:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/bryan.fauble@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/dan.lu@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/jenny.medina@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/lingling.peng@sagebase.org'
 
     # (Optional) Step 4: Uncomment and update the following line(s) to grant additional users with read/write access
     # - '{{stack_group_config.tower_viewer_arn_prefix}}/rixing.xu@sagebase.org'

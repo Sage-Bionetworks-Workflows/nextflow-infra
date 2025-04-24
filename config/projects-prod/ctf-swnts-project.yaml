@@ -9,7 +9,7 @@ stack_tags:
   Department: SCCE
   Project: Neurofibromatosis
   OwnerEmail: sasha.scott@sagebase.org
-  CostCenter: CTF NF Amend 11 / 304002 # Valid values here: https://github.com/Sage-Bionetworks/aws-infra/tree/master/templates/tags
+  CostCenter: CTF Amendment 10 / 304001 # Valid values here: https://github.com/Sage-Bionetworks/aws-infra/tree/master/templates/tags
 
 parameters:
   S3ReadWriteAccessArns:
