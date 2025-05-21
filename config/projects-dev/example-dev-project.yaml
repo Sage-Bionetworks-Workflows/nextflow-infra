@@ -14,7 +14,6 @@ parameters:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/bryan.fauble@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/dan.lu@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/jenny.medina@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/lingling.peng@sagebase.org'
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
     - '{{stack_group_config.sso_admin_role.arn}}'
