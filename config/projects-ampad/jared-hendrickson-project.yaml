@@ -6,7 +6,7 @@ dependencies:
   - common/nextflow-launch-iam-policy.yaml
 
 parameters:
-  S3ReadOnlyAccessArns:
+  S3ReadWriteAccessArns:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/william.poehlman@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/jaclyn.beck@sagebase.org'
