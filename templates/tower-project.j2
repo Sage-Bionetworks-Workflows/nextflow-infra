@@ -340,8 +340,9 @@ Resources:
             - Id: SynapseCORSRule
               AllowedHeaders: ["*"]
               AllowedOrigins: ["*"]
-              AllowedMethods: [GET, POST, PUT, HEAD]
+              AllowedMethods: ["GET", "POST", "PUT", "HEAD", "DELETE"]
               MaxAge: 3000
+              ExposedHeaders: ["ETag"]
             - Id: NullCorsRule
               AllowedHeaders: [""]
               AllowedOrigins: [""]
