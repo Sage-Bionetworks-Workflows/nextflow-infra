@@ -6,7 +6,7 @@ dependencies:
   - common/nextflow-launch-iam-policy.yaml
 
 parameters:
-  S3ReadWriteAccessArns:
+  S3ReadOnlyAccessArns:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/brad.macdonald@sagebase.org'
   AllowSynapseIndexing: Enabled
