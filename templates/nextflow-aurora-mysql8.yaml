@@ -1,0 +1,461 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Serverless Aurora MySQL DB for NextFlow Tower
+
+Parameters:
+
+  VpcID:
+    Description: ID of VPC
+    Type: AWS::EC2::VPC::Id
+
+  SubnetIDs:
+    Description: A list of subnets in the chosen VPC
+    Type: List<AWS::EC2::Subnet::Id>
+
+  DBClusterIdentifier:
+    Description: Unique identifier of databse cluster.
+    Type: String
+    MinLength: 1
+    MaxLength: 63
+    AllowedPattern: "^(?!.*--)[a-zA-Z]+[0-9a-zA-Z-]*[0-9a-zA-Z]$"
+    ConstraintDescription: >
+      1 to 63 alphanumeric characters or hyphens.
+      First character must be a letter.
+      Can't contain two consecutive hyphens.
+      Can't end with a hyphen.
+    Default: tower
+
+  DBName:
+    Description: Optional. Database Name within cluster.
+    Type: String
+    MinLength: 1
+    MaxLength: 64
+    AllowedPattern: "^[a-zA-Z]+[0-9,a-z,A-Z$_]*$"
+    ConstraintDescription: >
+      1 to 64 alphanumeric characters, dollar sign, or underscore.
+      First character must be a letter.
+    Default: tower
+
+  DBUserName:
+    Description: Optional. Username to be created for database.
+    Type: String
+    MinLength: 1
+    MaxLength: 32
+    Default: tower
+
+  SnapshotName:
+    Description: Optional. Snapshot ID to restore database. Leave this blank if you are not restoring from a snapshot.
+    Type: String
+    Default: ''
+
+  EcsSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Security group ID for ECS cluster to grant database access
+
+  TemplateRootUrl:
+    Type: String
+    Description: URL of S3 bucket where templates are deployed
+    ConstraintDescription: Must be a valid S3 HTTP URL
+
+  AccountAdminArns:
+    Type: List<String>
+    Description: List of admin IAM user and role ARNs (strings)
+
+Mappings:
+  ClusterSettings:
+    mysql:
+      version: 8.0.mysql_aurora.3.08.1
+      engine: aurora-mysql
+      family: aurora-mysql8.0
+      EngineMode: provisioned
+      EnableHttpEndpoint: true
+
+Conditions:
+  UseSnapshotTrue: !Not [!Equals [!Ref SnapshotName, '']]
+  UseSnapshotFalse: !Equals [!Ref SnapshotName, '']
+
+Resources:
+
+  AuroraKeyStack:
+    Condition: UseSnapshotFalse
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub ${TemplateRootUrl}/aws-infra/v0.6.83/KMS/kms-key.yaml
+      TimeoutInMinutes: 5
+      Parameters:
+        AliasName: 'alias/nextflow-aurora-bootstrap-lambda8'
+        AdminPrincipalArns: !Join
+          - ','
+          - - !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            - !Join [",", !Ref AccountAdminArns]
+        UserPrincipalArns: !Join
+          - ','
+          - - !Join [",", !Ref AccountAdminArns]
+            - !GetAtt BootstrapLambdaRole.Arn
+
+  AuroraMasterSecret:
+    Condition: UseSnapshotFalse
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub '${AWS::StackName}-MasterSecret'
+      Description: !Sub 'Aurora MySQL Master User Secret for CloudFormation Stack ${AWS::StackName}'
+      GenerateSecretString:
+        SecretStringTemplate: '{"username": "admin"}'
+        GenerateStringKey: password
+        ExcludePunctuation: true
+        PasswordLength: 16
+      KmsKeyId: !Sub ${AuroraKeyStack.Outputs.Key}
+
+  AuroraNextflowTowerDatabaseUserSecret:
+    Condition: UseSnapshotFalse
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub '${AWS::StackName}-NextflowTowerDatabaseUserSecret'
+      Description: !Sub 'Aurora MySQL ${DBUserName} User Secret for CloudFormation Stack ${AWS::StackName}'
+      GenerateSecretString:
+        SecretStringTemplate: !Sub '{"username": "${DBUserName}"}'
+        GenerateStringKey: password
+        ExcludePunctuation: true
+        PasswordLength: 16
+      KmsKeyId: !Sub ${AuroraKeyStack.Outputs.Key}
+
+  SecretAuroraClusterAttachment:
+    Condition: UseSnapshotFalse
+    Type: AWS::SecretsManager::SecretTargetAttachment
+    Properties:
+      SecretId: !Ref AuroraMasterSecret
+      TargetId: !Ref AuroraCluster
+      TargetType: AWS::RDS::DBCluster
+
+  AuroraMasterSecretResourcePolicy:
+    Condition: UseSnapshotFalse
+    Type: AWS::SecretsManager::ResourcePolicy
+    Properties:
+      SecretId: !Ref AuroraMasterSecret
+      ResourcePolicy:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Effect: Deny
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: secretsmanager:DeleteSecret
+            Resource: '*'
+
+  AuroraNextflowTowerDatabaseUserSecretResourcePolicy:
+    Condition: UseSnapshotFalse
+    Type: AWS::SecretsManager::ResourcePolicy
+    Properties:
+      SecretId: !Ref AuroraNextflowTowerDatabaseUserSecret
+      ResourcePolicy:
+        Version: '2012-10-17'
+        Statement:
+          -
+            Effect: Deny
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: secretsmanager:DeleteSecret
+            Resource: '*'
+
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Aurora DB Subnet Group
+      SubnetIds: !Ref SubnetIDs
+
+  ClusterSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VpcID
+      GroupDescription: Aurora Cluster Security Group
+      SecurityGroupIngress:
+        - Description: Inbound rule to allow database access to ECS cluster
+          SourceSecurityGroupId: !Ref EcsSecurityGroupId
+          IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+
+  CloudWatchDBClusterAuditLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/rds/cluster/${DBClusterIdentifier}/audit'
+      RetentionInDays: 30
+
+  CloudWatchDBClusterErrorLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/rds/cluster/${DBClusterIdentifier}/error'
+      RetentionInDays: 30
+
+  CloudWatchDBClusterGeneralLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/rds/cluster/${DBClusterIdentifier}/general'
+      RetentionInDays: 30
+
+  CloudWatchDBClusterSlowQueryLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/rds/cluster/${DBClusterIdentifier}/slowquery'
+      RetentionInDays: 30
+
+  AuroraClusterParameterGroup:
+    Type: AWS::RDS::DBClusterParameterGroup
+    Properties:
+      Description: Custom Database Parameters
+      Family: !FindInMap [ ClusterSettings, mysql, family ]
+      Parameters:
+        log_output: FILE
+        general_log: "1"
+        server_audit_logging: "1"
+        log_queries_not_using_indexes: "1"
+        slow_query_log: "1"
+        long_query_time: "10"
+        server_audit_events: "CONNECT,QUERY,QUERY_DCL,QUERY_DDL,QUERY_DML,TABLE"
+
+  AuroraCluster:
+    Type: AWS::RDS::DBCluster
+    DeletionPolicy: Snapshot
+    UpdateReplacePolicy: Snapshot
+    DependsOn:
+      - CloudWatchDBClusterAuditLogGroup
+      - CloudWatchDBClusterErrorLogGroup
+      - CloudWatchDBClusterGeneralLogGroup
+      - CloudWatchDBClusterSlowQueryLogGroup
+    Properties:
+      Engine: !FindInMap [ ClusterSettings, mysql, engine ]
+      EngineMode: !FindInMap [ ClusterSettings, mysql, EngineMode ]
+      EngineVersion: !FindInMap [ ClusterSettings, mysql, version ]
+      DatabaseName: !Ref DBName
+      DBClusterIdentifier: !Ref DBClusterIdentifier
+      MasterUsername: !If
+        - UseSnapshotTrue
+        - !Ref 'AWS::NoValue'
+        - !Sub '{{resolve:secretsmanager:${AuroraMasterSecret}:SecretString:username}}'
+      MasterUserPassword: !If
+        - UseSnapshotTrue
+        - !Ref 'AWS::NoValue'
+        - !Sub '{{resolve:secretsmanager:${AuroraMasterSecret}:SecretString:password}}'
+      SnapshotIdentifier: !If [UseSnapshotTrue, !Ref SnapshotName, !Ref 'AWS::NoValue']
+      StorageEncrypted:  !If [UseSnapshotTrue, !Ref 'AWS::NoValue', true]
+      DBClusterParameterGroupName: !Ref AuroraClusterParameterGroup
+      BackupRetentionPeriod: 14
+      EnableHttpEndpoint: !FindInMap [ ClusterSettings, mysql, EnableHttpEndpoint ]
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VpcSecurityGroupIds:
+        - !Ref ClusterSecurityGroup
+
+  DBParameterGroup:
+    Type: 'AWS::RDS::DBParameterGroup'
+    Properties:
+      Description: Aurora Database Parameter Group
+      Family: aurora-mysql8.0
+
+  DBInstance1:
+    Type: 'AWS::RDS::DBInstance'
+    Properties:
+      DBParameterGroupName:
+        Ref: DBParameterGroup
+      Engine: aurora-mysql
+      DBClusterIdentifier:
+        Ref: AuroraCluster
+      DBInstanceClass: db.r6g.large   # Data API isn't supported on "t" DB instance classes
+
+  # this custom resource exists to trigger the bootstrap lambda on creation
+  BootstrapLambdaTrigger:
+    Condition: UseSnapshotFalse
+    Type: Custom::BootstrapLambdaTrigger
+    DependsOn:
+      - DBInstance1
+    Properties:
+      ServiceToken: !GetAtt BootstrapLambdaFunction.Arn
+
+  BootstrapLambdaRole:
+    Condition: UseSnapshotFalse
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole'
+
+  BootstrapLambdaPolicy:
+    Condition: UseSnapshotFalse
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Allow access to SecretsManager and RDS for Bootstrap Lambda Role
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Action: secretsmanager:GetSecretValue
+          Resource:
+            - !Ref AuroraMasterSecret
+            - !Ref AuroraNextflowTowerDatabaseUserSecret
+        - Effect: Allow
+          Action: 'rds-data:*'
+          Resource: '*'
+      Roles:
+        - !Ref BootstrapLambdaRole
+
+  BootstrapLambdaFunction:
+    Condition: UseSnapshotFalse
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Bootstrap newly Created Aurora Database
+      Handler: index.lambda_handler
+      Role: !GetAtt BootstrapLambdaRole.Arn
+      Runtime: python3.10
+      Environment:
+        Variables:
+          CLUSTER_ARN: !Sub 'arn:aws:rds:${AWS::Region}:${AWS::AccountId}:cluster:${AuroraCluster}'
+          MASTER_SECRET_ARN: !Ref AuroraMasterSecret
+          DB_NAME: !Ref DBName
+          DB_USER_SECRET_ARN: !Ref AuroraNextflowTowerDatabaseUserSecret
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+          import json
+          import logging
+          from os import environ
+
+          log = logging.getLogger(__name__)
+          log.setLevel(logging.DEBUG)
+
+          def submit_sql(sql):
+            return boto3.client('rds-data').execute_statement(
+              secretArn=environ['MASTER_SECRET_ARN'],
+              database=environ['DB_NAME'],
+              resourceArn=environ['CLUSTER_ARN'],
+              sql=sql
+            )
+
+
+          def bootstrap():
+            try:
+              db_name = environ['DB_NAME']
+              secret_response = boto3.client('secretsmanager').get_secret_value(SecretId=environ['DB_USER_SECRET_ARN'])
+              secret = json.loads(secret_response['SecretString'])
+              username = secret['username']
+              password = secret['password']
+              alter_db_response = submit_sql(f"ALTER DATABASE {db_name} CHARACTER SET utf8 COLLATE utf8_bin;")
+              log.debug(f"Alter DB response: {alter_db_response}")
+              create_user_response = submit_sql(f"CREATE USER IF NOT EXISTS '{username}' IDENTIFIED BY '{password}';")
+              log.debug(f"Create user response: {create_user_response}")
+              grant_response = submit_sql(f"GRANT ALL PRIVILEGES ON {db_name}.* TO {username}@'%' ;")
+              log.debug(f"Grant privileges response: {grant_response}")
+              return {
+                'status': cfnresponse.SUCCESS,
+                'message': f'Succeeded bootstrapping {db_name} database',
+                'error': None
+              }
+
+            except Exception as e:
+              log.error(f'An error was encountered when bootstrapping: {e}')
+              return {
+                'status': cfnresponse.FAILED,
+                'message': f'Failed bootstrapping {db_name} database',
+                'error': e
+              }
+
+
+          def lambda_handler(event, context):
+            log.debug('Received event: ' + json.dumps(event, sort_keys=False))
+            status = cfnresponse.SUCCESS
+            message = 'no-op'
+            error = None
+            if event['RequestType'] == 'Create':
+              log.info('Received Create event: bootstrapping database')
+              bootstrap_response = bootstrap()
+              status = bootstrap_response['status']
+              message = bootstrap_response['message']
+              error = bootstrap_response['error']
+            elif event['RequestType'] == 'Update':
+              log.info('Received Update event: do nothing')
+            elif event['RequestType'] == 'Delete':
+              log.info('Received Delete event: do nothing')
+            else:
+              message = f'Lambda cannot process event: {event}'
+              error = ValueError(message)
+              log.info(message)
+            cfnresponse.send(
+              event=event,
+              context=context,
+              responseStatus=status,
+              responseData={ 'message': message },
+              reason=str(error))
+
+
+Outputs:
+
+  AuroraMasterSecretArn:
+    Condition: UseSnapshotFalse
+    Value: !Ref AuroraMasterSecret
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-AuroraMasterSecretArn'
+
+  AuroraNextflowTowerDatabaseUserSecretArn:
+    Condition: UseSnapshotFalse
+    Value: !Ref AuroraNextflowTowerDatabaseUserSecret
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-AuroraNextflowTowerDatabaseUserSecretArn'
+
+  AuroraClusterName:
+    Value: !Ref AuroraCluster
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-DBClusterName'
+
+  AuroraClusterEndpointAddress:
+    Value: !GetAtt AuroraCluster.Endpoint.Address
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-DBClusterEndpointAddress'
+
+  AuroraClusterEndpointPort:
+    Value: !GetAtt AuroraCluster.Endpoint.Port
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-DBClusterEndpointPort'
+
+  DBUrl:
+    Value: !Join
+      - ''
+      - - !Sub 'jdbc:mysql://${AuroraCluster.Endpoint.Address}:'
+        - !Sub '${AuroraCluster.Endpoint.Port}/${DBName}?permitMysqlScheme=true'
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-DBUrl'
+
+
+  AuroraClusterSecurityGroupID:
+    Value: !Ref ClusterSecurityGroup
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-DBClusterSecurityGroupID'
+
+  ClusterVpcID:
+    Value: !Ref VpcID
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-DBClusterVpcID'
+
+  ClusterSubnets:
+    Value: !Join
+      - ','
+      - !Ref SubnetIDs
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-DBClusterSubnetsList'
+
+  BoostrapLambdaFunctionArn:
+    Condition: UseSnapshotFalse
+    Value: !GetAtt BootstrapLambdaFunction.Arn
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-BoostrapLambdaFunctionArn'
+
+  BootstrapLambdaRoleArn:
+    Condition: UseSnapshotFalse
+    Value: !GetAtt BootstrapLambdaRole.Arn
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-BoostrapLambdaRoleArn'
