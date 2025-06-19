@@ -11,7 +11,6 @@ parameters:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/rchai@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/jenny.medina@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/brad.macdonald@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/verena.chung@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/gaia.andreoletti@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/maria.diaz@sagebase.org'

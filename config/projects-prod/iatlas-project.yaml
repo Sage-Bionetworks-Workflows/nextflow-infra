@@ -10,7 +10,6 @@ stack_tags:
 
 parameters:
   S3ReadWriteAccessArns:
-    - "{{stack_group_config.tower_viewer_arn_prefix}}/brad.macdonald@sagebase.org"
     - "{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org"
     - "{{stack_group_config.tower_viewer_arn_prefix}}/adam.taylor@sagebase.org"
     - "{{stack_group_config.tower_viewer_arn_prefix}}/bryan.fauble@sagebase.org"
