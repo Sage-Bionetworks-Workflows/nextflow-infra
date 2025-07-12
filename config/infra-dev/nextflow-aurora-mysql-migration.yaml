@@ -8,7 +8,7 @@ dependencies:
 
 parameters:
   DBClusterIdentifier: tower8
-  DBName: tower8
+  DBName: tower
   SnapshotName: "arn:aws:rds:us-east-1:035458030717:cluster-snapshot:seqera-tower-migrated-v5-7-to-v8-0"
   VpcCidr: !stack_output_external nextflow-vpc::VpcCidr
   VpcID: !stack_output_external nextflow-vpc::VPCId
