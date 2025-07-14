@@ -1,6 +1,8 @@
 # This template is based off of the original nextflow-aurora-mysql.yaml template,
 # modified to create a new DB based off of a manually migrated tower db snapshot
 # this deployment uses a provisioned DB instead of a serverless db.
+# A DB migration requires some manual steps, please check issue IT-3929 and
+# the below comments around AuroraMasterSecret resource.
 AWSTemplateFormatVersion: 2010-09-09
 Description: DB for Migrating from MySQL v5.7 to v8.0 using a DB snapshot
 
@@ -96,6 +98,11 @@ Resources:
           - ','
           - - !Join [",", !Ref AccountAdminArns]
 
+  #####-----  !Important if doing a DB migration ----######
+  # These secrets manager resources are required because there are other things that
+  # depend on these resource.  Cloudformation will create these resources with new secrets
+  # however the new secrets will not work on an existing database.  We need to manually update
+  # the values in this resource to match the existing secrets for the old database.
   AuroraMasterSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
@@ -119,6 +126,8 @@ Resources:
         ExcludeCharacters: '"@/\$`&'
         PasswordLength: 16
       KmsKeyId: !Sub ${AuroraKeyStack.Outputs.Key}
+
+  #####-----------------------------------------------------######
 
   DBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
