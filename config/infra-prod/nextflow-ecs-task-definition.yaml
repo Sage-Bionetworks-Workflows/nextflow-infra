@@ -2,7 +2,7 @@ template:
   path: nextflow-ecs-task-definition.j2
 stack_name: nextflow-ecs-task-definition
 dependencies:
-  - infra-prod/nextflow-aurora-mysql.yaml
+  - infra-prod/nextflow-aurora-mysql-migration.yaml
   - infra-prod/nextflow-efs-file-system.yaml
   - infra-prod/nextflow-elasticache-cluster.yaml
 
@@ -17,9 +17,9 @@ parameters:
   TowerJwtSecret: !aws_secrets_manager nextflow-tower-secret/jwt::SecretString::secret
   TowerCryptoSecretkey: !aws_secrets_manager nextflow-tower-secret/crypto::SecretString::secret
   TowerLicense: !aws_secrets_manager nextflow/license::SecretString::license_key
-  TowerDbUrl: !stack_output_external nextflow-aurora-mysql::DBUrl
-  TowerDbUser: !aws_secrets_manager nextflow-aurora-mysql-NextflowTowerDatabaseUserSecret::SecretString::username
-  TowerDbPassword: !aws_secrets_manager nextflow-aurora-mysql-NextflowTowerDatabaseUserSecret::SecretString::password
+  TowerDbUrl: !stack_output_external nextflow-aurora-mysql-migration::DBUrl
+  TowerDbUser: !aws_secrets_manager nextflow-aurora-mysql-NextflowTowerDatabaseUserSecret-migration::SecretString::username
+  TowerDbPassword: !aws_secrets_manager nextflow-aurora-mysql-NextflowTowerDatabaseUserSecret-migration::SecretString::password
   TowerGoogleClientId: !aws_secrets_manager nextflow/google_oauth_app::SecretString::client
   TowerGoogleSecret: !aws_secrets_manager nextflow/google_oauth_app::SecretString::secret
   CronContainerImage: 'cr.seqera.io/private/nf-tower-enterprise/backend:{{stack_group_config.tower_version}}'
