@@ -10,8 +10,7 @@ parameters:
     - "{{stack_group_config.tower_viewer_arn_prefix}}/william.poehlman@sagebase.org"
     - "{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org"
   S3ReadOnlyAccessArns:
-    - arn:aws:iam::751556145034:role/jared-hendrickson-project-TowerForgeBatchHeadJobRo-1XYQQ76D6E75Z
-    - arn:aws:iam::751556145034:role/jared-hendrickson-project-TowerForgeBatchWorkJobRo-1V2DBC9NYIPOB
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/beatriz.saldana@sagebase.org"
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
     - "{{stack_group_config.sso_admin_role.arn}}"

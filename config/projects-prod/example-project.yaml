@@ -15,7 +15,6 @@ parameters:
   S3ReadWriteAccessArns:
     # (REQUIRED) Step 3: Replace the email below with your '@sagebase.org' address
     - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/brad.macdonald@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/phil.snyder@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/rixing.xu@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/bryan.fauble@sagebase.org'
