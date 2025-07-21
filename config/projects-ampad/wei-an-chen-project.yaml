@@ -8,7 +8,6 @@ dependencies:
 parameters:
   S3ReadOnlyAccessArns:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/william.poehlman@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/wei-an.chen@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
@@ -21,4 +20,4 @@ parameters:
 stack_tags:
   Department: NDR
   Project: amp-ad
-  OwnerEmail: wei-an.chen@sagebase.org
+  OwnerEmail: thomas.yu@sagebase.org
