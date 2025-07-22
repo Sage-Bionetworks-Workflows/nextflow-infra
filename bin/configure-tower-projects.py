@@ -52,6 +52,15 @@ NONGPU_EC2_INSTANCE_TYPES = (
     "m6i.8xlarge", "r5a.8xlarge", "r6a.8xlarge", "r6i.8xlarge"
 )
 
+GPU_EC2_INSTANCE_TYPES = (
+    # Amazon linux 2023 AMIs:
+    #   https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-optimized_AMI.html
+    # GPU instance types:
+    #   https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-gpu.html
+    "p3.2xlarge", "p3.8xlarge", "p3.16xlarge", "p3dn.24xlarge", "p4d.24xlarge",
+    "p5.48xlarge"
+)
+
 ECS_CONFIG = """
 ECS_CONTAINER_STOP_TIMEOUT=10m
 ECS_CONTAINER_START_TIMEOUT=10m
@@ -645,7 +654,7 @@ class TowerWorkspace:
         # of instances when provisioning spot instances.
         instance_types = list(NONGPU_EC2_INSTANCE_TYPES)
         # Leaving this out based on Sage-Bionetworks-Workflows/nextflow-infra#161
-        # instance_types.extend(GPU_EC2_INSTANCE_TYPES)
+        instance_types.extend(GPU_EC2_INSTANCE_TYPES)
 
         # This is modeled after a request made in the Tower web client
         data = {
@@ -685,7 +694,7 @@ class TowerWorkspace:
                         "ec2KeyPair": None,
                         "ecsConfig": ECS_CONFIG.strip(),
                         "efsCreate": False,
-                        "gpuEnabled": False,
+                        "gpuEnabled": True,
                         "imageId": None,
                         "instanceTypes": instance_types,
                         "maxCpus": 1000,
