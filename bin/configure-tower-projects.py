@@ -57,8 +57,8 @@ GPU_EC2_INSTANCE_TYPES = (
     #   https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-optimized_AMI.html
     # GPU instance types:
     #   https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-gpu.html
-    "p4d.24xlarge", "p4de.24xlarge", "p5.48xlarge", "p5e.48xlarge",
-    "p5en.48xlarge", "p6-b200.48xlarge", "p6e-gb200.36xlarge"
+    "p4d.24xlarge", "p4de.24xlarge", "p5.48xlarge", "p5en.48xlarge",
+    "p6-b200.48xlarge"
 )
 
 ECS_CONFIG = """
