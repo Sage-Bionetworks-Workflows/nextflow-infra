@@ -28,7 +28,7 @@ parameters:
   MigrateDBContainerImage: 'cr.seqera.io/private/nf-tower-enterprise/migrate-db:{{stack_group_config.tower_version}}'
   EfsFileSystemId: !stack_output_external nextflow-efs-file-system::FileSystemId
   EfsVolumeMountPath: '/efs'
-  TowerUserWorkspace: 'false'
+  TowerUserWorkspace: 'true'
   TowerRootUsers:
     - thomas.yu@sagebase.org
     - khai.do@sagebase.org
