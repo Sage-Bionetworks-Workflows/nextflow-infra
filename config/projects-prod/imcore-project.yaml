@@ -7,12 +7,11 @@ dependencies:
 
 parameters:
   S3ReadOnlyAccessArns:
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/james.eddy@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
     - '{{stack_group_config.sso_admin_role.arn}}'
-    - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
+    - !stack_output_external sagebase-github-oidc-workflows-prod-nextflow-infra::ProviderRoleArn
   TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
   TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
   TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
@@ -20,5 +19,5 @@ parameters:
 stack_tags:
   Department: IBC
   Project: imCORE
-  OwnerEmail: bruno.grande@sagebase.org
+  OwnerEmail: thomas.yu@sagebase.org
   CostCenter: Genentech imCore / 40033

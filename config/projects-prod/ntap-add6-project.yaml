@@ -1,18 +1,19 @@
 template:
   path: tower-project.j2
-stack_name: jhu-biobank-nf-project
+stack_name: ntap-add6-project
 dependencies:
   - common/nextflow-forge-iam-policy.yaml
   - common/nextflow-launch-iam-policy.yaml
 
 parameters:
-  S3ReadOnlyAccessArns:
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org'
+  S3ReadWriteAccessArns:
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/jineta.banerjee@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/sasha.scott@sagebase.org'
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
     - '{{stack_group_config.sso_admin_role.arn}}'
-    - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
+    - !stack_output_external sagebase-github-oidc-workflows-prod-nextflow-infra::ProviderRoleArn
   TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
   TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
   TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
@@ -20,5 +21,5 @@ parameters:
 stack_tags:
   Department: SCCE
   Project: Neurofibromatosis
-  OwnerEmail: bruno.grande@sagebase.org
-  CostCenter: NTAP NF Addendum 5 / 301101
+  OwnerEmail: thomas.yu@sagebase.org
+  CostCenter: NTAP NF Amendment 6 / 301102

@@ -15,7 +15,7 @@ import yaml  # type: ignore
 from sagetasks.nextflowtower.client import TowerClient  # type: ignore
 
 # Increment this version when updating compute environments
-CE_VERSION = "v11"
+CE_VERSION = "v12"
 
 REGION = "us-east-1"
 ORG_NAME = "Sage Bionetworks"
@@ -50,6 +50,15 @@ NONGPU_EC2_INSTANCE_TYPES = (
     # 8xlarge instance (32 vCPUs)
     "c6a.8xlarge", "c5a.8xlarge", "c6i.8xlarge", "m5a.8xlarge", "m6a.8xlarge",
     "m6i.8xlarge", "r5a.8xlarge", "r6a.8xlarge", "r6i.8xlarge"
+)
+
+GPU_EC2_INSTANCE_TYPES = (
+    # Amazon linux 2023 AMIs:
+    #   https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-optimized_AMI.html
+    # GPU instance types:
+    #   https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-gpu.html
+    "p4d.24xlarge", "p4de.24xlarge", "p5.48xlarge", "p5en.48xlarge",
+    "p6-b200.48xlarge"
 )
 
 ECS_CONFIG = """
@@ -645,7 +654,7 @@ class TowerWorkspace:
         # of instances when provisioning spot instances.
         instance_types = list(NONGPU_EC2_INSTANCE_TYPES)
         # Leaving this out based on Sage-Bionetworks-Workflows/nextflow-infra#161
-        # instance_types.extend(GPU_EC2_INSTANCE_TYPES)
+        instance_types.extend(GPU_EC2_INSTANCE_TYPES)
 
         # This is modeled after a request made in the Tower web client
         data = {
@@ -671,7 +680,7 @@ class TowerWorkspace:
                     "preRunScript": "NXF_OPTS='-Xms7g -Xmx14g'",
                     "region": self.org.aws.region,
                     "resourceLabelIds": label_ids,
-                    "waveEnabled": False,
+                    "waveEnabled": True,
                     "workDir": f"s3://{self.stack['TowerScratch']}/work",
                     "forge": {
                         "allocStrategy": alloc_strategy,
@@ -685,7 +694,7 @@ class TowerWorkspace:
                         "ec2KeyPair": None,
                         "ecsConfig": ECS_CONFIG.strip(),
                         "efsCreate": False,
-                        "gpuEnabled": False,
+                        "gpuEnabled": True,
                         "imageId": None,
                         "instanceTypes": instance_types,
                         "maxCpus": 1000,
@@ -817,12 +826,14 @@ class TowerOrganization:
         params = {"search": user}
         response = self.tower.paged_request("GET", f"{endpoint}", params=params)
         matches = list(response)
-
+        print(matches)
         if len(matches) == 1 and matches[0]["email"] == user:
             member = matches[0]
         else:
             data = {"user": user}
+            print(data)
             response = self.tower.request("PUT", f"{endpoint}/add", json=data)
+            print(response)
             member = response["member"]
 
         self.members[user] = member

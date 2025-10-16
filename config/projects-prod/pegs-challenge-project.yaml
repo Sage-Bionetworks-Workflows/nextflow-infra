@@ -1,18 +1,27 @@
-stack_name: nf-ntap5-biobank-jineta-project
+stack_name: pegs-challenge-project
 
 stack_tags:
-  # (REQUIRED) Step 2: Update all four values below
-  Department: SCCE
-  Project: Neurofibromatosis
-  OwnerEmail: jineta.banerjee@sagebase.org
-  CostCenter: NTAP NF Addendum 5 / 301101 # Valid values here: https://github.com/Sage-Bionetworks/aws-infra/tree/master/templates/tags
+  Department: DNT
+  Project: PEGS Challenge
+  OwnerEmail: nextflow-admins@sagebase.org
+  CostCenter: PEGS Gene Environment / 124700 # Valid values here: https://mips-api.finops.sageit.org/tags
 
 parameters:
   S3ReadOnlyAccessArns:
-    - "{{stack_group_config.tower_viewer_arn_prefix}}/jineta.banerjee@sagebase.org"
-    - "{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org"
-    - "{{stack_group_config.tower_viewer_arn_prefix}}/robert.allaway@sagebase.org"
-    - "{{stack_group_config.tower_viewer_arn_prefix}}/sasha.scott@sagebase.org"
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/rchai@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/jenny.medina@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/verena.chung@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/gaia.andreoletti@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/maria.diaz@sagebase.org'
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/bryan.fauble@sagebase.org"
+
+    # (Optional) Step 4: Uncomment and update the following line(s) to grant additional users with read/write access
+    # - '{{stack_group_config.tower_viewer_arn_prefix}}/rixing.xu@sagebase.org'
+
+  # (Optional) Step 5: Uncomment and update the following line(s) to grant additional users with read-only access
+  # S3ReadOnlyAccessArns:
+  #   - '{{stack_group_config.tower_viewer_arn_prefix}}/rixing.xu@sagebase.org'
 
   # (Optional) Step 6: Uncomment the following line to disable the feature allowing Synapse to index files
   #                    in the long-term (archival) S3 bucket (by default, this feature is enabled)
@@ -32,7 +41,7 @@ parameters:
 
   AccountAdminArns:
     - "{{stack_group_config.sso_admin_role.arn}}"
-    - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
+    - !stack_output_external sagebase-github-oidc-workflows-prod-nextflow-infra::ProviderRoleArn
   TemplateRootUrl: "https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com"
   TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
   TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn

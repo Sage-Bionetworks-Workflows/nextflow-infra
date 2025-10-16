@@ -2,8 +2,9 @@ template:
   path: nextflow-ecs-task-definition.j2
 stack_name: nextflow-ecs-task-definition
 dependencies:
-  - infra-prod/nextflow-aurora-mysql.yaml
+  - infra-prod/nextflow-aurora-mysql-migration.yaml
   - infra-prod/nextflow-efs-file-system.yaml
+  - infra-prod/nextflow-elasticache-cluster.yaml
 
 parameters:
   TowerSmtpHost: 'email-smtp.us-east-1.amazonaws.com'
@@ -12,24 +13,25 @@ parameters:
   TowerSmtpPassword: !ssm 'smtp-password'
   TowerContactEmail: nextflow-admins@sagebase.org
   TowerServerUrl: https://tower.sagebionetworks.org
+  TowerRedisUrl: !stack_output_external nextflow-elasticache-cluster::RedisEndpoint
   TowerJwtSecret: !aws_secrets_manager nextflow-tower-secret/jwt::SecretString::secret
   TowerCryptoSecretkey: !aws_secrets_manager nextflow-tower-secret/crypto::SecretString::secret
   TowerLicense: !aws_secrets_manager nextflow/license::SecretString::license_key
-  TowerDbUrl: !stack_output_external nextflow-aurora-mysql::DBUrl
-  TowerDbUser: !aws_secrets_manager nextflow-aurora-mysql-NextflowTowerDatabaseUserSecret::SecretString::username
-  TowerDbPassword: !aws_secrets_manager nextflow-aurora-mysql-NextflowTowerDatabaseUserSecret::SecretString::password
+  TowerDbUrl: !stack_output_external nextflow-aurora-mysql-migration::DBUrl
+  TowerDbUser: !aws_secrets_manager nextflow-aurora-mysql-migration-NextflowTowerDatabaseUserSecret::SecretString::username
+  TowerDbPassword: !aws_secrets_manager nextflow-aurora-mysql-migration-NextflowTowerDatabaseUserSecret::SecretString::password
   TowerGoogleClientId: !aws_secrets_manager nextflow/google_oauth_app::SecretString::client
   TowerGoogleSecret: !aws_secrets_manager nextflow/google_oauth_app::SecretString::secret
-  RedisContainerImage: 'redis:5.0.8'
-  CronContainerImage: '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/backend:{{stack_group_config.tower_version}}'
-  FrontendContainerImage: '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/frontend:{{stack_group_config.tower_version}}'
-  BackendContainerImage: '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/backend:{{stack_group_config.tower_version}}'
+  CronContainerImage: 'cr.seqera.io/private/nf-tower-enterprise/backend:{{stack_group_config.tower_version}}'
+  FrontendContainerImage: 'cr.seqera.io/private/nf-tower-enterprise/frontend:{{stack_group_config.tower_version}}'
+  BackendContainerImage: 'cr.seqera.io/private/nf-tower-enterprise/backend:{{stack_group_config.tower_version}}'
+  MigrateDBContainerImage: 'cr.seqera.io/private/nf-tower-enterprise/migrate-db:{{stack_group_config.tower_version}}'
   EfsFileSystemId: !stack_output_external nextflow-efs-file-system::FileSystemId
   EfsVolumeMountPath: '/efs'
-  TowerUserWorkspace: 'false'
+  TowerUserWorkspace: 'true'
   TowerRootUsers:
-    - bruno.grande@sagebase.org
     - thomas.yu@sagebase.org
+    - khai.do@sagebase.org
   TowerConfigFileName: 'tower.yaml'
 
 stack_tags:
@@ -37,3 +39,4 @@ stack_tags:
 
 sceptre_user_data:
   environment: !file src/tower/resources/environment.yaml
+  EnableRedisDocker: false

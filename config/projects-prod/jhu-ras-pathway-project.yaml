@@ -1,0 +1,56 @@
+# (REQUIRED) Step 0: Duplicate this file and rename using the updated stack name (see Step 1)
+
+# (REQUIRED) Step 1: Update the stack name below by replacing "example" with your project name
+#                    Note that the stack name cannot contain more than 32 characters
+stack_name: jhu-ras-pathway-project
+
+stack_tags:
+  # (REQUIRED) Step 2: Update all four values below
+  Department: Rare Disease
+  Project: Neurofibromatosis
+  OwnerEmail: sasha.scott@sagebase.org
+  CostCenter: JHU - RAS Pathway / 124800 # Valid values here: https://github.com/Sage-Bionetworks/aws-infra/tree/master/templates/tags
+
+parameters:
+  S3ReadWriteAccessArns:
+    # (REQUIRED) Step 3: Replace the email below with your '@sagebase.org' address
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/sasha.scott@sagebase.org"
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/jineta.banerjee@sagebase.org"
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org"
+
+     # (Optional) Step 4: Uncomment and update the following line(s) to grant additional users with read/write access
+    # - '{{stack_group_config.tower_viewer_arn_prefix}}/rixing.xu@sagebase.org'
+
+  # (Optional) Step 5: Uncomment and update the following line(s) to grant additional users with read-only access
+  # S3ReadOnlyAccessArns:
+  #   - '{{stack_group_config.tower_viewer_arn_prefix}}/rixing.xu@sagebase.org'
+
+  # (Optional) Step 6: Uncomment the following line to disable the feature allowing Synapse to index files
+  #                    in the long-term (archival) S3 bucket (by default, this feature is enabled)
+  # AllowSynapseIndexing: Disabled
+
+  # (Optional) Step 7: Uncomment and update the following lines to change the data lifecycle configuration
+  #                    on the files in the short-term (scratch) S3 bucket (by default, this is enabled)
+  # EnableScratchDataExpiration: Enabled
+  # ScratchLifecycleTransition: '30'  # In days
+  # ScratchLifecycleStorageClass: INTELLIGENT_TIERING
+
+  # (Optional) Step 8: Uncomment and update the following line to change when files are deleted automatically
+  #                    in the short-term (scratch) S3 bucket (by default, this is enabled and set to 6 months)
+  # ScratchLifecycleExpiration: '183'  # In days (i.e., 6 months)
+
+  # DO NOT EDIT ANYTHING BELOW THIS LINE ------------------------------------------------------------------------
+
+  AccountAdminArns:
+    - "{{stack_group_config.sso_admin_role.arn}}"
+    - !stack_output_external sagebase-github-oidc-workflows-prod-nextflow-infra::ProviderRoleArn
+  TemplateRootUrl: "https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com"
+  TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
+  TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
+
+template:
+  path: tower-project.j2
+
+dependencies:
+  - common/nextflow-forge-iam-policy.yaml
+  - common/nextflow-launch-iam-policy.yaml

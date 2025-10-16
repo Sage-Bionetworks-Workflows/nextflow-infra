@@ -70,6 +70,11 @@ Parameters:
     Description: >
       The authentication service URL to which Tower connects to authenticate
       the sign-in request. Ignored if `TowerOidcClientId` is undefined.
+  TowerRedisUrl:
+    Type: String
+    Default: 'NULL'
+    Description: Redis connection URL
+{%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
   RedisContainerName:
     Type: String
     Description: (Optional) Name of the container that runs redis
@@ -77,6 +82,16 @@ Parameters:
   RedisContainerImage:
     Type: String
     Description: Redis container docker image, e.g. 'redis:5.0.8'
+{%- endif %}
+  MigrateDBContainerName:
+    Type: String
+    Description: (Optional) Name of the migrate-db container
+    Default: migrate-db
+  MigrateDBContainerImage:
+    Type: String
+    Description: >
+      (Optional) migrate-db container docker image,
+      e.g. 'cr.seqera.io/private/nf-tower-enterprise/migrate-db:v23.4.3'
   CronContainerName:
     Type: String
     Description: (Optional) Name of the cron container
@@ -85,7 +100,7 @@ Parameters:
     Type: String
     Description: >
       (Optional) Cron container docker image,
-      e.g. '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/backend:v21.06.0'
+      e.g. 'cr.seqera.io/private/nf-tower-enterprise/backend:v21.06.0'
   FrontendContainerName:
     Type: String
     Description: (Optional) Name of the container that runs the tower ui
@@ -94,7 +109,7 @@ Parameters:
     Type: String
     Description: >
       Frontend container docker image,
-      e.g. '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/frontend:v21.06.0'
+      e.g. 'cr.seqera.io/private/nf-tower-enterprise/frontend:v21.06.0'
   FrontendContainerPort:
     Type: Number
     Description: (Optional) Port to open in frontend container
@@ -111,7 +126,7 @@ Parameters:
     Type: String
     Description: >
       Backend container docker image,
-      e.g. '195996028523.dkr.ecr.eu-west-1.amazonaws.com/nf-tower-enterprise/backend:v21.06.0'
+      e.g. 'cr.seqera.io/private/nf-tower-enterprise/backend:v21.06.0'
   BackendContainerPort:
     Type: Number
     Description: (Optional) Port to open in backend container
@@ -165,15 +180,32 @@ Resources:
       LogGroupName: '/aws/ecs/task/nf-tower'
       RetentionInDays: 30
 
+  EcsTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: EcsTaskExecutionRole
+      AssumeRolePolicyDocument:
+        Version:  '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+
   TowerTask:
     Type: AWS::ECS::TaskDefinition
     Properties:
+      ExecutionRoleArn: !Sub 'arn:aws:iam::${AWS::AccountId}:role/EcsTaskExecutionRole'
       NetworkMode: bridge
       Volumes:
         - Name: !Ref EfsVolumeName
           EFSVolumeConfiguration:
             FilesystemId: !Ref EfsFileSystemId
       ContainerDefinitions:
+      {%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
         # The following container definition is a stop-gap solution for
         # https://sagebionetworks.jira.com/browse/WORKFLOWS-521
         - Name: !Sub '${RedisContainerName}-CheckAOF'
@@ -185,9 +217,12 @@ Resources:
             - /bin/sh
           # The `yes` command is needed because `redis-check-aof` has an
           # interactive prompt and doesn't have an option to disable it
+          # Use parentheses around the piped commands to enforce order
+          # between `|` and `&&` operators, and wrap the entire string
+          # in double-quotes to prevent YAML parsing of the `|` operator.
           Command:
             - -c
-            - "yes | redis-check-aof --fix appendonly.aof"
+            - "echo 'start redis-check-aof' && (date) && ( yes | redis-check-aof --fix appendonly.aof ) && echo 'redis-check-aof complete' && (date)"
           MountPoints:
             - ContainerPath: /data
               SourceVolume: !Ref EfsVolumeName
@@ -218,16 +253,21 @@ Resources:
               awslogs-region: !Sub '${AWS::Region}'
               awslogs-group: !Ref TowerTaskLogGroup
               awslogs-stream-prefix: !Ref AwslogsStreamPrefix
-        - Name: !Sub '${CronContainerName}-MigrateDb'
-          Image: !Ref CronContainerImage
+      {%- endif %}
+        - Name: !Ref MigrateDBContainerName
+          Image: !Ref MigrateDBContainerImage
+          RepositoryCredentials:
+            CredentialsParameter: !Sub 'arn:aws:secretsmanager:us-east-1:${AWS::AccountId}:secret:TOWER_DEV_SEQERA_REGISTRY_SECRET'
           Memory: 2000
           Cpu: 0
           Essential: false
+      {%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
           Links:
             - !Ref RedisContainerName
           DependsOn:
             - ContainerName: !Ref RedisContainerName
               Condition: START
+      {%- endif %}
           WorkingDirectory: /work
           EntryPoint:
             - /bin/sh
@@ -251,14 +291,20 @@ Resources:
               awslogs-stream-prefix: !Ref AwslogsStreamPrefix
         - Name: !Ref CronContainerName
           Image: !Ref CronContainerImage
+          RepositoryCredentials:
+            CredentialsParameter: !Sub 'arn:aws:secretsmanager:us-east-1:${AWS::AccountId}:secret:TOWER_DEV_SEQERA_REGISTRY_SECRET'
           Memory: 2000
           Cpu: 0
+      {%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
           Links:
             - !Ref RedisContainerName
+      {%- endif %}
           DependsOn:
+      {%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
             - ContainerName: !Ref RedisContainerName
               Condition: START
-            - ContainerName: !Sub '${CronContainerName}-MigrateDb'
+      {%- endif %}
+            - ContainerName: !Ref MigrateDBContainerName
               Condition: SUCCESS
           WorkingDirectory: /work
           EntryPoint:
@@ -288,6 +334,8 @@ Resources:
               awslogs-stream-prefix: !Ref AwslogsStreamPrefix
         - Name: !Ref FrontendContainerName
           Image: !Ref FrontendContainerImage
+          RepositoryCredentials:
+            CredentialsParameter: !Sub 'arn:aws:secretsmanager:us-east-1:${AWS::AccountId}:secret:TOWER_DEV_SEQERA_REGISTRY_SECRET'
           Memory: 2000
           Cpu: 0
           Essential: false
@@ -310,19 +358,25 @@ Resources:
           Memory: 2000
           Cpu: 0
           Image: !Ref BackendContainerImage
+          RepositoryCredentials:
+            CredentialsParameter: !Sub 'arn:aws:secretsmanager:us-east-1:${AWS::AccountId}:secret:TOWER_DEV_SEQERA_REGISTRY_SECRET'
           PortMappings:
             - ContainerPort: !Ref BackendContainerPort
               HostPort: !Ref BackendHostPort
           Essential: false
           Links:
+          {%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
             - redis
+          {%- endif %}
             - cron
           WorkingDirectory: /work
           DependsOn:
             - ContainerName: cron
               Condition: START
+          {%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
             - ContainerName: redis
               Condition: START
+          {%- endif %}
           Environment:
             - Name: MICRONAUT_ENVIRONMENTS
               Value: !If

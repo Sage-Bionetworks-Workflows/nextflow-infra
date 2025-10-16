@@ -5,17 +5,18 @@ stack_name: agora-project
 stack_tags:
   Department: ADTR
   Project: Agora
-  OwnerEmail: brad.macdonald@sagebase.org
+  OwnerEmail: lingling.peng@sagebase.org
   CostCenter: Agora / 112300
 
 parameters:
   S3ReadWriteAccessArns:
-    - "{{stack_group_config.tower_viewer_arn_prefix}}/brad.macdonald@sagebase.org"
     - "{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org"
     - "{{stack_group_config.tower_viewer_arn_prefix}}/jessica.britton@sagebase.org"
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/beatriz.saldana@sagebase.org"
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/lingling.peng@sagebase.org"
   AccountAdminArns:
     - "{{stack_group_config.sso_admin_role.arn}}"
-    - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
+    - !stack_output_external github-oidc-nextflow-infra::ProviderRoleArn
   TemplateRootUrl: "https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com"
   TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
   TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn

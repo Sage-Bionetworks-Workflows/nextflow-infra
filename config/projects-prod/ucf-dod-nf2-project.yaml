@@ -8,11 +8,11 @@ stack_tags:
 
 parameters:
 
-  S3ReadOnlyAccessArns:
+  S3ReadWriteAccessArns:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/robert.allaway@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/sasha.scott@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/jineta.banerjee@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
 
   # (Optional) Step 6: Uncomment and update the following lines to change the S3 bucket lifecycle configuration,
   #                    which cannot be changed as long as 'AllowSynapseIndexing' is enabled (default)
@@ -28,7 +28,7 @@ parameters:
 
   AccountAdminArns:
     - '{{stack_group_config.sso_admin_role.arn}}'
-    - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
+    - !stack_output_external sagebase-github-oidc-workflows-prod-nextflow-infra::ProviderRoleArn
   TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
   TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
   TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn

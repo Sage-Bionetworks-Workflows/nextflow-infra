@@ -6,14 +6,14 @@ dependencies:
   - common/nextflow-launch-iam-policy.yaml
 
 parameters:
-  S3ReadWriteAccessArns:
+  S3ReadOnlyAccessArns:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/william.poehlman@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/jared.hendrickson@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/jaclyn.beck@sagebase.org'
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
     - '{{stack_group_config.sso_admin_role.arn}}'
-    - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
+    - !stack_output_external github-oidc-nextflow-infra::ProviderRoleArn
   TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
   TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
   TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
@@ -21,4 +21,4 @@ parameters:
 stack_tags:
   Department: NDR
   Project: amp-ad
-  OwnerEmail: jared.hendrickson@sagebase.org
+  OwnerEmail: william.poehlman@sagebase.org

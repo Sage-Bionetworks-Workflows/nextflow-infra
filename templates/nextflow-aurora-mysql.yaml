@@ -406,7 +406,7 @@ Outputs:
     Value: !Join
       - ''
       - - !Sub 'jdbc:mysql://${AuroraCluster.Endpoint.Address}:'
-        - !Sub '${AuroraCluster.Endpoint.Port}/${DBName}'
+        - !Sub '${AuroraCluster.Endpoint.Port}/${DBName}?permitMysqlScheme=true'
     Export:
       Name: !Sub '${AWS::Region}-${AWS::StackName}-DBUrl'
 

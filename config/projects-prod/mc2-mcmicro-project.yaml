@@ -6,21 +6,19 @@ dependencies:
   - common/nextflow-launch-iam-policy.yaml
 
 parameters:
-  S3ReadWriteAccessArns:
+  S3ReadOnlyAccessArns:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/adam.taylor@sagebase.org'
-    - arn:aws:iam::292075781285:user/sokolov
     - arn:aws:iam::292075781285:user/cy101
     - arn:aws:iam::292075781285:user/jmuhlich
     # The following roles don't exist since the users are not Sage employees.
     # However, this will ensure that they are added to the Tower workspace
     # until we find a permanent solution for listing external users.
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/artem.sokolov@gmail.com'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/clarenceyapp111@gmail.com'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/jmuhlich@gmail.com'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/clarence@hms.harvard.edu'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/jeremy_muhlich@hms.harvard.edu'
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
     - '{{stack_group_config.sso_admin_role.arn}}'
-    - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
+    - !stack_output_external sagebase-github-oidc-workflows-prod-nextflow-infra::ProviderRoleArn
   TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
   TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
   TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
@@ -29,4 +27,4 @@ stack_tags:
   Department: SCCE
   Project: MC2
   OwnerEmail: adam.taylor@sagebase.org
-  CostCenter: CSBC - NCI / 101300
+  CostCenter: Multi-Consortia Coordinating Center AKA MC2 Center / 123100

@@ -9,15 +9,21 @@ parameters:
   S3ReadWriteAccessArns:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/adam.taylor@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/milen.nikolov@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/brad.macdonald@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/rixing.xu@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/phil.snyder@sagebase.org'
+    # - '{{stack_group_config.tower_viewer_arn_prefix}}/rixing.xu@sagebase.org'
+    # - '{{stack_group_config.tower_viewer_arn_prefix}}/phil.snyder@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/aditi.gopalan@sagebase.org'
     - 'arn:aws:sts::888810830951:assumed-role/AWSReservedSSO_Administrator_bf3b4691e22cc3c6/adam.taylor@sagebase.org' # Provides for htan-dev cross-account access
+    - 'arn:aws:sts::526515999252:assumed-role/AWSReservedSSO_S3ExternalCollab_40c062f682e7f3f5/adam.taylor@sagebase.org' # Provides access to HTAN buckets in SciComp
+    - "arn:aws:iam::426577889437:user/darya.pozhidayeva.admin"
+    # The following roles don't exist since the users are not Sage employees.
+    # However, this will ensure that they are added to the Tower workspace
+    # until we find a permanent solution for listing external users.
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/dpozhida@systemsbiology.org'
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
     - '{{stack_group_config.sso_admin_role.arn}}'
-    - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
+    - !stack_output_external sagebase-github-oidc-workflows-prod-nextflow-infra::ProviderRoleArn
   TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
   TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
   TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn

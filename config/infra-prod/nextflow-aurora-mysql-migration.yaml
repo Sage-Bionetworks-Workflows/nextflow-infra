@@ -1,0 +1,24 @@
+template:
+  path: nextflow-aurora-mysql-migration.yaml
+stack_name: nextflow-aurora-mysql-migration
+dependencies:
+  - infra-prod/workflows-kms-key.yaml
+  - infra-prod/nextflow-vpc.yaml
+  - infra-prod/nextflow-ecs-security-group.yaml
+
+parameters:
+  DBClusterIdentifier: tower8
+  DBName: tower
+  SnapshotName: "arn:aws:rds:us-east-1:728882028485:cluster-snapshot:seqera-tower-migrated-v5-7-to-v8-0"
+  VpcCidr: !stack_output_external nextflow-vpc::VpcCidr
+  VpcID: !stack_output_external nextflow-vpc::VPCId
+  SubnetIDs:
+    - !stack_output_external nextflow-vpc::PrivateSubnet1
+    - !stack_output_external nextflow-vpc::PrivateSubnet2
+  TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
+  AccountAdminArns:
+    - {{stack_group_config.sso_admin_role.arn}}
+    - !stack_output_external sagebase-github-oidc-workflows-prod-nextflow-infra::ProviderRoleArn
+
+stack_tags:
+  {{stack_group_config.default_stack_tags}}

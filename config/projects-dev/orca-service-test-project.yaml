@@ -8,13 +8,11 @@ dependencies:
 parameters:
   S3ReadWriteAccessArns:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/orca-service-accounts@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/brad.macdonald@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
     - '{{stack_group_config.sso_admin_role.arn}}'
-    - !stack_output_external workflows-nextflow-ci-service-account::ServiceRoleArn
+    - !stack_output_external sagebase-github-oidc-workflows-dev-nextflow-infra::ProviderRoleArn
   TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
   TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
   TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
