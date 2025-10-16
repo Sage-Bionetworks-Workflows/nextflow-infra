@@ -15,6 +15,7 @@ parameters:
     - "{{stack_group_config.tower_viewer_arn_prefix}}/bruno.grande@sagebase.org"
     - "{{stack_group_config.tower_viewer_arn_prefix}}/adam.taylor@sagebase.org"
     - "{{stack_group_config.tower_viewer_arn_prefix}}/james.eddy@sagebase.org"
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/rixing.xu@sagebase.org"
     # The following roles don't exist since the users are not Sage employees.
     # However, this will ensure that they are added to the Tower workspace
     # until we find a permanent solution for listing external users.
