@@ -46,6 +46,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: Sage-Bionetworks-Workflows/py-orca
+          ref: tower-testing
           path: ./py-orca
       - name: Install py-orca dependencies
         run: pipenv install --dev --categories "py-orca"
