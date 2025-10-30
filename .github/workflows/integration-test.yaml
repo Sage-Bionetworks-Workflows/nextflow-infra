@@ -47,6 +47,8 @@ jobs:
         with:
           repository: Sage-Bionetworks-Workflows/py-orca
           path: ./py-orca
+      - name: Install py-orca dependencies
+        run: pipenv install --dev --categories "py-orca"
       - name: run py-orca demo.py
         run: python demo.py run --dataset_id ${{inputs.dataset_id}} --s3_prefix ${{inputs.s3_prefix}}
         working-directory: ./py-orca
