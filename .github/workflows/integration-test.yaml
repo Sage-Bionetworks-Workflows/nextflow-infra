@@ -15,9 +15,6 @@ on:
       s3_prefix:
         required: true
         type: string
-      synapse_token:
-        required: true
-        type: string
 
 jobs:
   deployment-validation:
@@ -33,8 +30,14 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install python dependencies
-        run: pip install --dev --categories "py-orca"
+      - name: Install dependencies
+        run: pipenv install --dev --categories "py-orca"
+      - name: Checkout py-orca repository
+        uses: actions/checkout@v5
+        with:
+          repository: Sage-Bionetworks-Workflows/py-orca
+          ref: tower-testing
+          path: ./py-orca
       - name: Assume AWS role
         uses: aws-actions/configure-aws-credentials@v5.1.0
         with:
@@ -42,15 +45,7 @@ jobs:
           role-to-assume: ${{ inputs.aws-role-to-assume }}
           role-session-name: GHA-${{ github.repository_owner }}-${{ github.event.repository.name }}-${{ github.run_id }}
           role-duration-seconds: ${{ inputs.aws-assume-role-duration }}
-      - name: Checkout py-orca repository
-        uses: actions/checkout@v5
-        with:
-          repository: Sage-Bionetworks-Workflows/py-orca
-          ref: tower-testing
-          path: ./py-orca
-      - name: Install py-orca dependencies
-        run: pipenv install --dev --categories "py-orca"
-      - name: run py-orca demo.py
+      - name: run validation
         run: python demo.py run --dataset_id "$DATASET_ID" --s3_prefix "$S3_PREFIX"
         working-directory: ./py-orca
         env:
