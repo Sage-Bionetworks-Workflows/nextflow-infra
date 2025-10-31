@@ -29,7 +29,7 @@ jobs:
   deploy-ampad:
     needs:
       - deploy-prod
-      - prod-py-orca-validation
+      - deployment-validation
     uses: "./.github/workflows/rw-deploy.yaml"
     secrets: inherit
     with:
