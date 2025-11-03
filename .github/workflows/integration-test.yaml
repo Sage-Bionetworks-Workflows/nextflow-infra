@@ -1,0 +1,56 @@
+name: integration-test
+on:
+  workflow_call:
+    inputs:
+      aws-role-to-assume:
+        required: true
+        type: string
+      aws-assume-role-duration:
+        required: false
+        type: number
+        default: 3600
+      dataset_id:
+        required: true
+        type: string
+      s3_prefix:
+        required: true
+        type: string
+
+jobs:
+  deployment-validation:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.job-environment }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout this repository
+        uses: actions/checkout@v5
+      - name: Set up python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pipenv install --dev --categories "py-orca"
+      - name: Checkout py-orca repository
+        uses: actions/checkout@v5
+        with:
+          repository: Sage-Bionetworks-Workflows/py-orca
+          ref: tower-testing
+          path: ./py-orca
+      - name: Assume AWS role
+        uses: aws-actions/configure-aws-credentials@v5.1.0
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ inputs.aws-role-to-assume }}
+          role-session-name: GHA-${{ github.repository_owner }}-${{ github.event.repository.name }}-${{ github.run_id }}
+          role-duration-seconds: ${{ inputs.aws-assume-role-duration }}
+      - name: run validation
+        run: python demo.py run --dataset_id "$DATASET_ID" --s3_prefix "$S3_PREFIX"
+        working-directory: ./py-orca
+        env:
+          # The URI must be in format syn://:<token>@
+          # Uses the Synapse orca-service user account's nextflow-infra-py-orca-test token
+          SYNAPSE_CONNECTION_URI: ${{ secrets.SYNAPSE_CONNECTION_URI }}
+          DATASET_ID: ${{ inputs.dataset_id }}
+          S3_PREFIX: ${{ inputs.s3_prefix }}

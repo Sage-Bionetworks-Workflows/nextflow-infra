@@ -1,0 +1,28 @@
+name: deploy-dev
+
+on:
+  push:
+    branches: ['dev']
+    paths-ignore:
+      - '**.md'
+
+jobs:
+  test:
+    uses: ./.github/workflows/test.yaml
+  aws-deploy:
+    uses: "./.github/workflows/rw-deploy.yaml"
+    secrets: inherit
+    with:
+      job-environment: "workflows-nextflow-dev"
+      sceptre-suffix: "dev"
+      tower-url: "https://tower-dev.sagebionetworks.org"
+      aws-role-to-assume: "arn:aws:iam::035458030717:role/sagebase-github-oidc-workflows-dev-nextflow-infra"
+      aws-assume-role-duration: 7200
+  deployment-validation:
+    uses: "./.github/workflows/integration-test.yaml"
+    secrets: inherit
+    with:
+      aws-role-to-assume: "arn:aws:iam::035458030717:role/sagebase-github-oidc-workflows-dev-nextflow-infra"
+      aws-assume-role-duration: 7200
+      dataset_id: "syn51514585"
+      s3_prefix: "s3://example-dev-project-tower-scratch/work"

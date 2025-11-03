@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [requires]
-python_version = "3.10"
+python_version >= "3.10"
 
 [packages]
 boto3 = "*"
@@ -21,3 +21,9 @@ sceptre = "*"
 sceptre-cmd-resolver = "*"
 sceptre-ssm-resolver = "*"
 sceptre-resolver-aws-secrets-manager = {file = "https://github.com/iAnomaly/sceptre-resolver-aws-secrets-manager/archive/v1.0.0.tar.gz"}
+
+[packages.py-orca]
+py-orca = {extras = ["all"], version = "*"}
+metaflow = "*"
+pyyaml = "*"
+s3fs = "*"
