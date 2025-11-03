@@ -26,10 +26,12 @@ jobs:
     steps:
       - name: Checkout this repository
         uses: actions/checkout@v5
-      - name: Set up python 3.12
+      - name: Set up python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Install pipenv
+        run: pip install -U pipenv
       - name: Install dependencies
         run: pipenv install --dev --categories "py-orca"
       - name: Checkout py-orca repository
