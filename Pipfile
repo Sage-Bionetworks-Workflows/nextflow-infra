@@ -7,23 +7,22 @@ name = "pypi"
 python_version = "3"
 
 [packages]
-boto3 = "*"
-requests = "*"
-types-requests = "*"
-pyyaml = "*"
-types-pyyaml = "*"
-cfn-lint = "*"
-sagetasks = "*"
+boto3 = "~=1.40"
+requests = "~=2.30"
+types-requests = "~=2.30"
+pyyaml = "~=6.0"
+types-pyyaml = "~=6.0"
+cfn-lint = "~=1.40"
+sagetasks = "~=0.4"
 
 [dev-packages]
-pre-commit = "*"
-sceptre = "*"
-sceptre-cmd-resolver = "*"
-sceptre-ssm-resolver = "*"
+pre-commit = "~=4.3"
+sceptre = "~=4.5"
+sceptre-cmd-resolver = "~=2.0"
+sceptre-ssm-resolver = "~=1.2"
 sceptre-resolver-aws-secrets-manager = {file = "https://github.com/iAnomaly/sceptre-resolver-aws-secrets-manager/archive/v1.0.0.tar.gz"}
 
 [packages.py-orca]
-py-orca = {extras = ["all"], version = "*"}
-metaflow = "*"
-pyyaml = "*"
-s3fs = "*"
+py-orca = {extras = ["all"], version = "~=1.5"}
+metaflow = "~=2.19"
+s3fs = "~=2025.10"
