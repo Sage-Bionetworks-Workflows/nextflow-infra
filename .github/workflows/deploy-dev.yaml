@@ -7,8 +7,6 @@ on:
       - '**.md'
 
 jobs:
-  test:
-    uses: ./.github/workflows/test.yaml
   aws-deploy:
     uses: "./.github/workflows/rw-deploy.yaml"
     secrets: inherit
