@@ -28,18 +28,17 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
-      - name: Set up python 3.10
-        uses: actions/setup-python@v4
+      - name: Set up python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-          cache: 'pipenv'
+          python-version: '3.12'
 
-      - name: Install python pipenv
-        run: curl https://raw.githubusercontent.com/pypa/pipenv/master/get-pipenv.py | python
+      - name: Install pipenv
+        run: pip install -U pipenv
 
-      - name: Install python dependencies
+      - name: Install dependencies
         run: pipenv install --dev
 
       - name: Assume AWS role
