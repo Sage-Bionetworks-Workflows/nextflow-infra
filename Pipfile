@@ -21,8 +21,3 @@ sceptre = "~=4.5"
 sceptre-cmd-resolver = "~=2.0"
 sceptre-ssm-resolver = "~=1.2"
 sceptre-resolver-aws-secrets-manager = {file = "https://github.com/iAnomaly/sceptre-resolver-aws-secrets-manager/archive/v1.0.0.tar.gz"}
-
-[packages.py-orca]
-py-orca = {extras = ["all"], version = "~=1.5"}
-metaflow = "~=2.19"
-s3fs = "~=2025.10"
