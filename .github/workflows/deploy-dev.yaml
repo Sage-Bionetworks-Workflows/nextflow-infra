@@ -19,7 +19,9 @@ jobs:
   deployment-validation:
     needs: deploy-dev
     uses: "./.github/workflows/integration-test.yaml"
-    secrets: inherit
+    secrets:
+      nextflowtower_connection_uri: ${{ secrets.NEXTFLOWTOWER_CONNECTION_URI_DEV }}
+      synapse_connection_uri: ${{ secrets.SYNAPSE_CONNECTION_URI }}
     with:
       aws-role-to-assume: "arn:aws:iam::035458030717:role/sagebase-github-oidc-workflows-dev-nextflow-infra"
       aws-assume-role-duration: 7200

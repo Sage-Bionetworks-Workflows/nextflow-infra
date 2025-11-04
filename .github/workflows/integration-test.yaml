@@ -1,6 +1,11 @@
 name: integration-test
 on:
   workflow_call:
+    secrets:
+      nextflowtower_connection_uri:
+        required: true
+      synapse_connection_uri:
+        required: true
     inputs:
       aws-role-to-assume:
         required: true
@@ -47,6 +52,7 @@ jobs:
         env:
           # The URI must be in format syn://:<token>@
           # Uses the Synapse orca-service user account's nextflow-infra-py-orca-test token
-          SYNAPSE_CONNECTION_URI: ${{ secrets.SYNAPSE_CONNECTION_URI }}
+          NEXTFLOWTOWER_CONNECTION_URI: ${{ secrets.nextflowtower_connection_uri }}
+          SYNAPSE_CONNECTION_URI: ${{ secrets.synapse_connection_uri }}
           DATASET_ID: ${{ inputs.dataset_id }}
           S3_PREFIX: ${{ inputs.s3_prefix }}
