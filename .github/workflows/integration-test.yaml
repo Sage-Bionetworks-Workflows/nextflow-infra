@@ -24,22 +24,17 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - name: Checkout this repository
-        uses: actions/checkout@v5
       - name: Set up python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install pipenv
-        run: pip install -U pipenv
       - name: Install dependencies
-        run: pipenv install --dev --categories "py-orca"
+        run: pip install 'py-orca[all]' 'metaflow' 'pyyaml' 's3fs'
       - name: Checkout py-orca repository
         uses: actions/checkout@v5
         with:
           repository: Sage-Bionetworks-Workflows/py-orca
           ref: tower-testing
-          path: ./py-orca
       - name: Assume AWS role
         uses: aws-actions/configure-aws-credentials@v5.1.0
         with:
@@ -49,7 +44,6 @@ jobs:
           role-duration-seconds: ${{ inputs.aws-assume-role-duration }}
       - name: run validation
         run: python demo.py run --dataset_id "$DATASET_ID" --s3_prefix "$S3_PREFIX"
-        working-directory: ./py-orca
         env:
           # The URI must be in format syn://:<token>@
           # Uses the Synapse orca-service user account's nextflow-infra-py-orca-test token
