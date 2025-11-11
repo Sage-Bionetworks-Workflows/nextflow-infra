@@ -3,7 +3,7 @@
 
 # (REQUIRED) Step 1: Update the stack name below by replacing "example" with your project name
 #                    Note that the stack name cannot contain more than 32 characters
-stack_name: nsf-eager-dev-project
+stack_name: nsf-eager-prod-project
 
 
 stack_tags:
