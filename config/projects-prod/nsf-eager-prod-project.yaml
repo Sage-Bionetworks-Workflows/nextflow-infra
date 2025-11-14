@@ -5,14 +5,12 @@
 #                    Note that the stack name cannot contain more than 32 characters
 stack_name: nsf-eager-prod-project
 
-
 stack_tags:
   # (REQUIRED) Step 2: Update all four values below
   Department: IBC
   Project: Infrastructure
   OwnerEmail: ziwei.pan@sagebase.org
   CostCenter: NSF - EAGER / 125900 # Valid values here: https://mips-api.finops.sageit.org/tags
-
 
 parameters:
   S3ReadWriteAccessArns:
