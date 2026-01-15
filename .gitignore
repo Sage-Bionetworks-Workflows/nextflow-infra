@@ -16,3 +16,6 @@
 
 # jetbrains
 .idea/
+
+# temp files
+temp/
