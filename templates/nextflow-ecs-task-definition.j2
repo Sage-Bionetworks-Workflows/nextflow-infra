@@ -313,11 +313,11 @@ Resources:
             - -c
             - /tower.sh
           Environment:
-            # - Name: MICRONAUT_ENVIRONMENTS
-            #   Value: !If
-            #     - HasTowerOidcClient
-            #     - prod,redis,cron,workspace,awsbatch-platform,auth-google,auth-oidc
-            #     - prod,redis,cron,workspace,awsbatch-platform,auth-google
+            - Name: MICRONAUT_ENVIRONMENTS
+              Value: !If
+                - HasTowerOidcClient
+                - prod,redis,cron,workspace,awsbatch-platform,auth-google,auth-oidc
+                - prod,redis,cron,workspace,awsbatch-platform,auth-google
             {%- for name, value in sceptre_user_data.environment.items() %}
             - Name: {{ name }}
               Value: {{ value }}
