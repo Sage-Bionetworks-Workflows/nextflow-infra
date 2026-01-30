@@ -268,7 +268,7 @@ Resources:
             - ContainerName: !Ref RedisContainerName
               Condition: START
       {%- endif %}
-          WorkingDirectory: /work
+          WorkingDirectory: "/"   # workaround for IT-2361
           EntryPoint:
             - /bin/sh
           Command:
