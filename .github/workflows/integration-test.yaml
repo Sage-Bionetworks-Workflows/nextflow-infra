@@ -34,7 +34,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install dependencies
-        run: pip install 'py-orca[all]' 'metaflow' 'pyyaml' 's3fs'
+        run: pip install 'py-orca[all]' 'metaflow' 'pyyaml' 's3fs' 'setuptools==81.0.0'
       - name: Checkout py-orca repository
         uses: actions/checkout@v5
         with:
