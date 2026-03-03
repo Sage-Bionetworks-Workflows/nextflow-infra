@@ -16,6 +16,7 @@ parameters:
     - "{{stack_group_config.tower_viewer_arn_prefix}}/lingling.peng@sagebase.org"
     - "{{stack_group_config.tower_viewer_arn_prefix}}/hallie.swan@sagebase.org"
     - "{{stack_group_config.tower_viewer_arn_prefix}}/lawrence.yi@sagebase.org"
+    - "{{stack_group_config.tower_viewer_arn_prefix}}/rchai@sagebase.org"
   AccountAdminArns:
     - "{{stack_group_config.sso_admin_role.arn}}"
     - !stack_output_external github-oidc-nextflow-infra::ProviderRoleArn
