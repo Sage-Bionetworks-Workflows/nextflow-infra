@@ -406,13 +406,19 @@ class TowerWorkspace:
         if self.has_launchers():
             # Check if manual compute environment is configured
             if manual_compute_env:
-                workspace_name = manual_compute_env["WorkspaceName"]
-                compute_env_name = manual_compute_env["ComputeEnvName"]
-                if workspace_name and compute_env_name:
+                source_workspace_name = manual_compute_env.get("WorkspaceName")
+                source_compute_env_name = manual_compute_env.get("ComputeEnvName")
+                if source_workspace_name and source_compute_env_name:
                     self.create_manual_compute_environment(
-                        workspace_name,
-                        compute_env_name,
+                        source_workspace_name,
+                        source_compute_env_name,
                     )
+                else:
+                    print(
+                        f"Warning: Manual compute environment config for workspace '{self.name}' "
+                        f"is missing WorkspaceName or ComputeEnvName. Creating standard compute environment."
+                    )
+                    self.create_compute_environment()
             else:
                 self.create_compute_environment()
 
@@ -891,6 +897,21 @@ class TowerWorkspace:
             )
             return None
 
+    def get_workspace_id_by_name(self, workspace_name: str) -> Optional[str]:
+        """Look up a workspace ID by name in the organization
+
+        Args:
+            workspace_name (str): Name of the workspace to look up
+
+        Returns:
+            Optional[str]: The workspace ID if found, None otherwise
+        """
+        workspace = self.org.workspaces.get(workspace_name)
+        if not workspace:
+            print(f"Warning: Workspace '{workspace_name}' not found.")
+            return None
+        return workspace.id
+
     def get_compute_env_queues(
         self, source_workspace_name: str, source_compute_env_name: str
     ) -> Optional[tuple[str, str]]:
@@ -903,9 +924,14 @@ class TowerWorkspace:
         Returns:
             Optional[tuple[str, str]]: Tuple of (head_queue, compute_queue) if found, None otherwise
         """
+        # Look up the source workspace ID
+        source_workspace_id = self.get_workspace_id_by_name(source_workspace_name)
+        if not source_workspace_id:
+            return None
+
         # Look up the source compute environment ID
         source_compute_env_id = self.get_compute_env_id_by_name(
-            source_workspace_name, source_compute_env_name
+            source_workspace_id, source_compute_env_name
         )
         if not source_compute_env_id:
             print(
@@ -916,7 +942,7 @@ class TowerWorkspace:
 
         # Retrieve the source compute environment details
         endpoint = f"/compute-envs/{source_compute_env_id}"
-        params = {"workspaceId": self.id}
+        params = {"workspaceId": source_workspace_id}
         try:
             source_comp_env = self.tower.request("GET", endpoint, params=params)
         except Exception as e:
@@ -944,20 +970,20 @@ class TowerWorkspace:
         return (head_queue, compute_queue)
 
     def get_compute_env_id_by_name(
-        self, workspace_name: str, compute_env_name: str
+        self, workspace_id: str, compute_env_name: str
     ) -> Optional[str]:
         """Look up a compute environment ID by name in a given workspace
 
         Args:
-            workspace_name (str): Name of the workspace containing the compute environment
+            workspace_id (str): ID of the workspace containing the compute environment
             compute_env_name (str): Name of the compute environment to look up
 
         Returns:
             Optional[str]: The compute environment ID if found, None otherwise
         """
-        # Look up the compute environment ID by name
+        # Look up the compute environment ID by name in the specified workspace
         endpoint = "/compute-envs"
-        params = {"workspaceId": self.id}
+        params = {"workspaceId": workspace_id}
         try:
             response = self.tower.request("GET", endpoint, params=params)
             for comp_env in response["computeEnvs"]:
@@ -966,12 +992,12 @@ class TowerWorkspace:
 
             print(
                 f"Warning: Compute environment '{compute_env_name}' not found "
-                f"in workspace '{workspace_name}'."
+                f"in workspace ID '{workspace_id}'."
             )
             return None
         except Exception as e:
             print(
-                f"Warning: Failed to list compute environments in workspace '{workspace_name}': {e}."
+                f"Warning: Failed to list compute environments in workspace ID '{workspace_id}': {e}."
             )
             return None
 
