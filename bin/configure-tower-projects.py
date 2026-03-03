@@ -289,7 +289,7 @@ class Projects:
             Dict[str, Dict[str, Optional[str]]]:
                 Mapping between projects/stacks and their manual compute
                 environment config
-                Each value is a dict with 'Workspace' and 'ComputeEnvName' keys
+                Each value is a dict with 'WorkspaceName' and 'ComputeEnvName' keys
         """
         manual_compute_env_per_workspace = dict()
         for config in self.load_projects():
@@ -297,7 +297,7 @@ class Projects:
             manual_compute_env = config["parameters"].get("ManualComputeEnv", {})
             if manual_compute_env:
                 manual_compute_env_per_workspace[stack_name] = {
-                    "Workspace": manual_compute_env.get("Workspace"),
+                    "WorkspaceName": manual_compute_env.get("WorkspaceName"),
                     "ComputeEnvName": manual_compute_env.get("ComputeEnvName"),
                 }
         return manual_compute_env_per_workspace
@@ -396,12 +396,12 @@ class TowerWorkspace:
         if self.has_launchers():
             # Check if manual compute environment is configured
             if manual_compute_env:
-                workspace = manual_compute_env["Workspace"]
-                compute_env = manual_compute_env["ComputeEnvName"]
-                if workspace and compute_env:
+                workspace_name = manual_compute_env["Workspace"]
+                compute_env_name = manual_compute_env["ComputeEnvName"]
+                if workspace_name and compute_env_name:
                     self.create_manual_compute_environment(
-                        workspace,
-                        compute_env,
+                        workspace_name,
+                        compute_env_name,
                     )
             else:
                 self.create_compute_environment()
@@ -797,49 +797,14 @@ class TowerWorkspace:
             Optional[str]: Identifier for the created manual compute environment,
                            or None if creation fails
         """
-        # Look up the source compute environment ID
-        source_compute_env_id = self.get_compute_env_id_by_name(
+        # Get queue configuration from source compute environment
+        queues = self.get_compute_env_queues(
             source_workspace_name, source_compute_env_name
         )
-        if not source_compute_env_id:
-            print(f"Skipping manual compute environment creation for '{self.name}'.")
+        if not queues:
             return None
 
-        # Get the source workspace for API calls
-        source_workspace = self.org.workspaces.get(source_workspace_name)
-        if not source_workspace:
-            print(
-                f"Warning: Source workspace '{source_workspace_name}' not found. "
-                f"Skipping manual compute environment creation for '{self.name}'."
-            )
-            return None
-
-        # Retrieve the source compute environment details
-        endpoint = f"/compute-envs/{source_compute_env_id}"
-        params = {"workspaceId": source_workspace.id}
-        try:
-            source_comp_env = self.tower.request("GET", endpoint, params=params)
-        except Exception as e:
-            print(
-                f"Warning: Failed to retrieve compute environment '{source_compute_env_name}' "
-                f"from workspace '{source_workspace_name}': {e}. "
-                f"Skipping manual compute environment creation for '{self.name}'."
-            )
-            return None
-
-        # Extract queue names from the source compute environment
-        config = source_comp_env.get("config", {})
-        # Batch Forge on-demand compute environments have both headQueue and computeQueue
-        # set to the same value (single queue). Spot environments have separate queues.
-        head_queue = config.get("headQueue")
-        compute_queue = config.get("computeQueue")
-
-        if not head_queue or not compute_queue:
-            print(
-                f"Warning: Could not find head queue or compute queue in source compute environment. "
-                f"Skipping manual compute environment creation for '{self.name}'."
-            )
-            return None
+        head_queue, compute_queue = queues
 
         # Create compute environment name
         comp_env_name = f"{self.stack_name}-manual-{CE_VERSION}"
@@ -915,6 +880,64 @@ class TowerWorkspace:
                 f"in workspace '{self.name}': {e}"
             )
             return None
+
+    def get_compute_env_queues(
+        self, source_workspace_name: str, source_compute_env_name: str
+    ) -> Optional[tuple[str, str]]:
+        """Retrieve head and compute queue names from a source compute environment
+
+        Args:
+            source_workspace_name (str): Name of the workspace containing the compute environment
+            source_compute_env_name (str): Name of the compute environment
+
+        Returns:
+            Optional[tuple[str, str]]: Tuple of (head_queue, compute_queue) if found, None otherwise
+        """
+        # Look up the source compute environment ID
+        source_compute_env_id = self.get_compute_env_id_by_name(
+            source_workspace_name, source_compute_env_name
+        )
+        if not source_compute_env_id:
+            print(f"Skipping manual compute environment creation for '{self.name}'.")
+            return None
+
+        # Get the source workspace for API calls
+        source_workspace = self.org.workspaces.get(source_workspace_name)
+        if not source_workspace:
+            print(
+                f"Warning: Source workspace '{source_workspace_name}' not found. "
+                f"Skipping manual compute environment creation for '{self.name}'."
+            )
+            return None
+
+        # Retrieve the source compute environment details
+        endpoint = f"/compute-envs/{source_compute_env_id}"
+        params = {"workspaceId": source_workspace.id}
+        try:
+            source_comp_env = self.tower.request("GET", endpoint, params=params)
+        except Exception as e:
+            print(
+                f"Warning: Failed to retrieve compute environment '{source_compute_env_name}' "
+                f"from workspace '{source_workspace_name}': {e}. "
+                f"Skipping manual compute environment creation for '{self.name}'."
+            )
+            return None
+
+        # Extract queue names from the source compute environment
+        config = source_comp_env.get("config", {})
+        # Batch Forge on-demand compute environments have both headQueue and computeQueue
+        # set to the same value (single queue). Spot environments have separate queues.
+        head_queue = config.get("headQueue")
+        compute_queue = config.get("computeQueue")
+
+        if not head_queue or not compute_queue:
+            print(
+                f"Warning: Could not find head queue or compute queue in source compute environment. "
+                f"Skipping manual compute environment creation for '{self.name}'."
+            )
+            return None
+
+        return (head_queue, compute_queue)
 
     def get_compute_env_id_by_name(
         self, workspace_name: str, compute_env_name: str
