@@ -300,7 +300,7 @@ class Projects:
         manual_compute_env_per_workspace = dict()
         for config in self.load_projects():
             stack_name = config["stack_name"]
-            manual_compute_envs = config["sceptre_user_data"].get(
+            manual_compute_envs = config.get("sceptre_user_data", {}).get(
                 "ManualComputeEnvs", []
             )
 
