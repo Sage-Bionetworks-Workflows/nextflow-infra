@@ -4,6 +4,7 @@ stack_name: exampleb-dev-project
 dependencies:
   - common/nextflow-forge-iam-policy.yaml
   - common/nextflow-launch-iam-policy.yaml
+  - projects-dev/shared-ce-project.yaml
 
 parameters:
   S3ReadWriteAccessArns:
