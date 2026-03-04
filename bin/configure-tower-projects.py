@@ -285,6 +285,13 @@ class Projects:
     def extract_manual_compute_env(self) -> Dict[str, List[Dict[str, str]]]:
         """Extract ManualComputeEnvs from a series of config files
 
+        Example config:
+            ManualComputeEnvs:
+              - WorkspaceName: source-workspace-name
+                ComputeEnvName: source-compute-env-name
+              - WorkspaceName: another-workspace
+                ComputeEnvName: another-compute-env
+
         Returns:
             Dict[str, List[Dict[str, str]]]:
                 Mapping between projects/stacks and their manual compute environment configs
@@ -414,18 +421,12 @@ class TowerWorkspace:
             # Check if manual compute environments are configured
             if self.manual_compute_envs:
                 for manual_compute_env in self.manual_compute_envs:
-                    source_workspace_name = manual_compute_env.get("WorkspaceName")
-                    source_compute_env_name = manual_compute_env.get("ComputeEnvName")
-                    if source_workspace_name and source_compute_env_name:
-                        self.create_manual_compute_environment(
-                            source_workspace_name,
-                            source_compute_env_name,
-                        )
-                    else:
-                        print(
-                            f"Warning: Manual compute environment config for workspace '{self.name}' "
-                            f"is missing WorkspaceName or ComputeEnvName. Skipping this entry."
-                        )
+                    source_workspace_name = manual_compute_env["WorkspaceName"]
+                    source_compute_env_name = manual_compute_env["ComputeEnvName"]
+                    self.create_manual_compute_environment(
+                        source_workspace_name,
+                        source_compute_env_name,
+                    )
             else:
                 self.create_compute_environment()
 
@@ -942,7 +943,7 @@ class TowerWorkspace:
         )
         if not source_compute_env_id:
             print(
-                f"Error: Failed to retrieve compute environment for '{source_compute_env_name}' "
+                f"Warning: Failed to retrieve compute environment for '{source_compute_env_name}' "
                 f"from workspace '{source_workspace_name}' "
             )
             return None
