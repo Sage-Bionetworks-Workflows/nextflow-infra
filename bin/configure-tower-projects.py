@@ -282,34 +282,41 @@ class Projects:
             )
         return users_per_project
 
-    def extract_manual_compute_env(self) -> Dict[str, Dict[str, Optional[str]]]:
-        """Extract ManualComputeEnv from a series of config files
+    def extract_manual_compute_env(self) -> Dict[str, List[Dict[str, str]]]:
+        """Extract ManualComputeEnvs from a series of config files
 
         Returns:
-            Dict[str, Dict[str, Optional[str]]]:
-                Mapping between projects/stacks and their manual compute
-                environment config
-                Each value is a dict with 'WorkspaceName' and 'ComputeEnvName' keys
+            Dict[str, List[Dict[str, str]]]:
+                Mapping between projects/stacks and their manual compute environment configs
+                Each value is a list of dicts with 'WorkspaceName' and 'ComputeEnvName' keys
         """
         manual_compute_env_per_workspace = dict()
         for config in self.load_projects():
             stack_name = config["stack_name"]
-            manual_compute_env = config["parameters"].get("ManualComputeEnv", {})
-            if manual_compute_env:
+            manual_compute_envs = config["parameters"].get("ManualComputeEnvs", [])
+
+            valid_envs = []
+            for manual_compute_env in manual_compute_envs:
                 workspace_name = manual_compute_env.get("WorkspaceName")
                 compute_env_name = manual_compute_env.get("ComputeEnvName")
 
                 # Only add if both WorkspaceName and ComputeEnvName are present
                 if workspace_name and compute_env_name:
-                    manual_compute_env_per_workspace[stack_name] = {
-                        "WorkspaceName": workspace_name,
-                        "ComputeEnvName": compute_env_name,
-                    }
+                    valid_envs.append(
+                        {
+                            "WorkspaceName": workspace_name,
+                            "ComputeEnvName": compute_env_name,
+                        }
+                    )
                 else:
                     print(
-                        f"Warning: ManualComputeEnv for '{stack_name}' is missing "
+                        f"Warning: ManualComputeEnvs entry for '{stack_name}' is missing "
                         f"WorkspaceName or ComputeEnvName. Skipping."
                     )
+
+            if valid_envs:
+                manual_compute_env_per_workspace[stack_name] = valid_envs
+
         return manual_compute_env_per_workspace
 
     def extract_tags(self) -> Dict[str, Dict[str, str]]:
@@ -386,7 +393,7 @@ class TowerWorkspace:
         users: Users = None,
         teams: Dict[int, str] = None,
         tags: Dict[str, str] = None,
-        manual_compute_env: Dict[str, Optional[str]] = None,
+        manual_compute_envs: List[Dict[str, str]] = None,
     ) -> None:
         self.org = org
         self.tower = org.tower
@@ -399,26 +406,26 @@ class TowerWorkspace:
         self.users = users
         self.teams = teams
         self.tags = tags or {}
-        self.manual_compute_env = manual_compute_env
+        self.manual_compute_envs = manual_compute_envs or []
         self.participants: Dict[str, dict] = dict()
         self.populate()
         self.cleanup_compute_environments()
         if self.has_launchers():
-            # Check if manual compute environment is configured
-            if manual_compute_env:
-                source_workspace_name = manual_compute_env.get("WorkspaceName")
-                source_compute_env_name = manual_compute_env.get("ComputeEnvName")
-                if source_workspace_name and source_compute_env_name:
-                    self.create_manual_compute_environment(
-                        source_workspace_name,
-                        source_compute_env_name,
-                    )
-                else:
-                    print(
-                        f"Warning: Manual compute environment config for workspace '{self.name}' "
-                        f"is missing WorkspaceName or ComputeEnvName. Creating standard compute environment."
-                    )
-                    self.create_compute_environment()
+            # Check if manual compute environments are configured
+            if self.manual_compute_envs:
+                for manual_compute_env in self.manual_compute_envs:
+                    source_workspace_name = manual_compute_env.get("WorkspaceName")
+                    source_compute_env_name = manual_compute_env.get("ComputeEnvName")
+                    if source_workspace_name and source_compute_env_name:
+                        self.create_manual_compute_environment(
+                            source_workspace_name,
+                            source_compute_env_name,
+                        )
+                    else:
+                        print(
+                            f"Warning: Manual compute environment config for workspace '{self.name}' "
+                            f"is missing WorkspaceName or ComputeEnvName. Skipping this entry."
+                        )
             else:
                 self.create_compute_environment()
 
@@ -823,7 +830,7 @@ class TowerWorkspace:
         head_queue, compute_queue = queues
 
         # Create compute environment name
-        comp_env_name = f"{self.stack_name}-manual-{CE_VERSION}"
+        comp_env_name = f"manual-{source_compute_env_name}"
 
         # Check if compute environment already exists
         list_endpoint = "/compute-envs"
@@ -892,7 +899,7 @@ class TowerWorkspace:
             return compute_env_id
         except Exception as e:
             print(
-                f"Error: Failed to create manual compute environment '{comp_env_name}' "
+                f"Warning: Failed to create manual compute environment '{comp_env_name}' "
                 f"in workspace '{self.name}': {e}"
             )
             return None
@@ -1215,7 +1222,7 @@ class TowerOrganization:
         """
         for name, users in self.list_projects():
             tags = self.tags_per_project[name]
-            manual_compute_env = self.manual_compute_env_per_project.get(name)
+            manual_compute_envs = self.manual_compute_env_per_project.get(name, [])
             if self.use_teams:
                 teams = self.teamids_per_project[name]
                 ws = TowerWorkspace(
@@ -1223,7 +1230,7 @@ class TowerOrganization:
                     name,
                     teams=teams,
                     tags=tags,
-                    manual_compute_env=manual_compute_env,
+                    manual_compute_envs=manual_compute_envs,
                 )
             else:
                 ws = TowerWorkspace(
@@ -1231,7 +1238,7 @@ class TowerOrganization:
                     name,
                     users=users,
                     tags=tags,
-                    manual_compute_env=manual_compute_env,
+                    manual_compute_envs=manual_compute_envs,
                 )
             self.workspaces[name] = ws
             # Adding a short delay between creating each workspace
