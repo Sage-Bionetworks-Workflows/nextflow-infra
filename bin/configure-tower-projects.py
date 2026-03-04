@@ -300,7 +300,9 @@ class Projects:
         manual_compute_env_per_workspace = dict()
         for config in self.load_projects():
             stack_name = config["stack_name"]
-            manual_compute_envs = config["parameters"].get("ManualComputeEnvs", [])
+            manual_compute_envs = config["sceptre_user_data"].get(
+                "ManualComputeEnvs", []
+            )
 
             valid_envs = []
             for manual_compute_env in manual_compute_envs:
@@ -914,11 +916,31 @@ class TowerWorkspace:
         Returns:
             Optional[str]: The workspace ID if found, None otherwise
         """
-        workspace = self.org.workspaces.get(workspace_name)
-        if not workspace:
-            print(f"Warning: Workspace '{workspace_name}' not found.")
+        endpoint = "/orgs"
+        try:
+            response = self.tower.request("GET", endpoint)
+            for org in response.get("organizations", []):
+                if org["name"] == self.org.name:
+                    org_id = org["orgId"]
+                    # Get workspaces for this organization
+                    ws_endpoint = f"/orgs/{org_id}/workspaces"
+                    ws_response = self.tower.request("GET", ws_endpoint)
+                    workspaces = ws_response.get("workspaces", [])
+                    for ws in workspaces:
+                        # Match by the Tower-valid name
+                        if ws["name"] == self.tower.get_valid_name(workspace_name):
+                            return str(ws["id"])
+                    break
+
+            print(
+                f"Warning: Workspace '{workspace_name}' not found in organization '{self.org.name}'."
+            )
             return None
-        return workspace.id
+        except Exception as e:
+            print(
+                f"Warning: Failed to query Tower for workspace '{workspace_name}': {e}"
+            )
+            return None
 
     def get_compute_env_queues(
         self, source_workspace_name: str, source_compute_env_name: str
@@ -961,8 +983,9 @@ class TowerWorkspace:
             )
             return None
 
-        # Extract queue names from the source compute environment
-        config = source_comp_env.get("config", {})
+        comp_env_data = source_comp_env.get("computeEnv", source_comp_env)
+        config = comp_env_data.get("config", {})
+
         # Batch Forge on-demand compute environments have both headQueue and computeQueue
         # set to the same value (single queue). Spot environments have separate queues.
         head_queue = config.get("headQueue")
@@ -971,7 +994,7 @@ class TowerWorkspace:
         if not head_queue or not compute_queue:
             print(
                 f"Warning: Could not find head queue or compute queue in source compute environment. "
-                f"Skipping manual compute environment creation for '{source_workspace_name}'."
+                f"Skipping manual compute environment creation for '{source_compute_env_name}'."
             )
             return None
 
