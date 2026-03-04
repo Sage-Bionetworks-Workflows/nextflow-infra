@@ -36,7 +36,7 @@ repos:
     rev: 6.1.0
     hooks:
       - id: flake8
-        args: ["--max-line-length", "88"]
+        args: ["--max-line-length", "120"]
   - repo: https://github.com/sirosen/check-jsonschema
     rev: 0.27.0
     hooks:
