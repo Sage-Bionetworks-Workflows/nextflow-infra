@@ -98,6 +98,7 @@ Resources:
     Type: AWS::IAM::AccessKey
     Properties:
       UserName: !Ref TowerForgeServiceUser
+      Status: Inactive
 
   TowerForgeServiceRole:
     Type: AWS::IAM::Role
