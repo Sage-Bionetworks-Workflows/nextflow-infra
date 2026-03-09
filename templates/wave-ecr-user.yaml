@@ -47,6 +47,7 @@ Resources:
     Type: 'AWS::IAM::AccessKey'
     Properties:
       UserName: !Ref WaveServiceUser
+      Status: Inactive
 
   WaveServiceUserAccessKeySecret:
     Type: AWS::SecretsManager::Secret
