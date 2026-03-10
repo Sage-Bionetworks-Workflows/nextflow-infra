@@ -823,14 +823,15 @@ class TowerWorkspace:
             Optional[str]: Identifier for the created manual compute environment,
                            or None if creation fails
         """
-        # Get queue configuration from source compute environment
-        queues = self.get_compute_env_queues(
+        compute_env_config = self.get_compute_env_config(
             source_workspace_name, source_compute_env_name
         )
-        if not queues:
+        if not compute_env_config:
             return None
 
-        head_queue, compute_queue = queues
+        head_queue = compute_env_config.get("headQueue")
+        compute_queue = compute_env_config.get("computeQueue")
+        execution_role = compute_env_config.get("executionRole")
 
         # Create compute environment name
         comp_env_name = f"manual-{source_compute_env_name}"
@@ -881,6 +882,7 @@ class TowerWorkspace:
                     "computeQueue": compute_queue,
                     "cliPath": "/home/ec2-user/miniconda/bin/aws",
                     "resourceLabelIds": label_ids,
+                    "executionRole": execution_role,
                 },
             },
         }
@@ -942,17 +944,17 @@ class TowerWorkspace:
             )
             return None
 
-    def get_compute_env_queues(
+    def get_compute_env_config(
         self, source_workspace_name: str, source_compute_env_name: str
-    ) -> Optional[tuple[str, str]]:
-        """Retrieve head and compute queue names from a source compute environment
+    ) -> Optional[dict]:
+        """Retrieve the compute environment config from a source compute environment
 
         Args:
             source_workspace_name (str): Name of the workspace containing the compute environment
             source_compute_env_name (str): Name of the compute environment
 
         Returns:
-            Optional[tuple[str, str]]: Tuple of (head_queue, compute_queue) if found, None otherwise
+            Optional[dict]: Dict of compute environment config if found, None otherwise
         """
         # Look up the source workspace ID
         source_workspace_id = self.get_workspace_id_by_name(source_workspace_name)
@@ -985,20 +987,7 @@ class TowerWorkspace:
 
         comp_env_data = source_comp_env.get("computeEnv", source_comp_env)
         config = comp_env_data.get("config", {})
-
-        # Batch Forge on-demand compute environments have both headQueue and computeQueue
-        # set to the same value (single queue). Spot environments have separate queues.
-        head_queue = config.get("headQueue")
-        compute_queue = config.get("computeQueue")
-
-        if not head_queue or not compute_queue:
-            print(
-                f"Warning: Could not find head queue or compute queue in source compute environment. "
-                f"Skipping manual compute environment creation for '{source_compute_env_name}'."
-            )
-            return None
-
-        return (head_queue, compute_queue)
+        return config
 
     def get_compute_env_id_by_name(
         self, workspace_id: str, compute_env_name: str
