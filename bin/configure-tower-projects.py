@@ -832,13 +832,7 @@ class TowerWorkspace:
         if source_ce_config:
             # Check if compute environment already exists
             existing_ce_id = self.check_existing_compute_env(compute_env_name)
-            if existing_ce_id:
-                print(
-                    f"Existing manual compute environment '{compute_env_name}' found "
-                    f"in workspace '{self.name}' with ID: {compute_env_id}"
-                )
-                compute_env_id = existing_ce_id
-            else:
+            if not existing_ce_id:
                 # Create credentials
                 credentials_id = self.create_credentials()
 
@@ -968,15 +962,7 @@ class TowerWorkspace:
                     print(
                         f"Warning: Failed to retrieve compute environment details for '{source_compute_env_name}' "
                         f"from workspace '{source_workspace_name}': {e}. "
-                        f"Skipping manual compute environment creation for '{source_workspace_name}'."
                     )
-            else:
-                print(
-                    f"Warning: Failed to retrieve compute environment for '{source_compute_env_name}' "
-                    f"from workspace '{source_workspace_name}' "
-                )
-        else:
-            print(f"Warning: Failed to retrieve workspace '{source_workspace_name}' ")
 
         return config
 
@@ -999,12 +985,12 @@ class TowerWorkspace:
             response = self.tower.request("GET", endpoint, params=params)
             for comp_env in response["computeEnvs"]:
                 if comp_env["name"] == compute_env_name:
+                    print(
+                        f"Compute environment '{compute_env_name}' already exist "
+                        f"in workspace ID '{workspace_id}'."
+                    )
                     return comp_env["id"]
 
-            print(
-                f"Warning: Compute environment '{compute_env_name}' not found "
-                f"in workspace ID '{workspace_id}'."
-            )
             return None
         except Exception as e:
             print(
@@ -1036,12 +1022,7 @@ class TowerWorkspace:
                         "AVAILABLE",
                         "CREATING",
                     ):
-                        print(
-                            f"Manual compute environment '{comp_env_name}' already exists "
-                            f"in workspace '{self.name}'."
-                        )
-                        return comp_env["id"]
-                    break
+                        return existing_ce_id
             return None
         except Exception as e:
             print(f"Warning: Failed to check existing compute environments: {e}")
