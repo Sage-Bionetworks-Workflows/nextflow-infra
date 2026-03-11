@@ -420,7 +420,7 @@ class TowerWorkspace:
         self.populate()
         self.cleanup_compute_environments()
         if self.has_launchers():
-            # Check if manual compute environments are configured
+            # Only create Batch Forge CE if no manual CEs are configured
             if self.manual_compute_envs:
                 for manual_compute_env in self.manual_compute_envs:
                     source_workspace_name = manual_compute_env["WorkspaceName"]
@@ -808,10 +808,10 @@ class TowerWorkspace:
         """Create a compute environment in manual config mode that references an
         existing Batch Forge compute environment
 
-        This function creates a new manual compute environment by extracting the
-        head queue and compute queue from an existing Batch Forge compute environment
+        This function creates a new manual compute environment by extracting the head queue,
+        compute queue and execution role from an existing Batch Forge compute environment
         in another workspace, then configuring a manual compute environment in the
-        current workspace that references those same queues.
+        current workspace that references those same queues and roles.
 
         Args:
             source_workspace_name (str): Name of the workspace containing the Batch
@@ -820,19 +820,23 @@ class TowerWorkspace:
                                            to reference
 
         Returns:
-            Optional[str]: Identifier for the created manual compute environment,
-                           or None if creation fails
+            Optional[str]: Identifier for an existing manual compute environment, a newly
+                 created manual compute environment or None
         """
         compute_env_id = None
-        comp_env_name = f"manual-{source_compute_env_name}"
+        compute_env_name = f"manual-{source_compute_env_name}"
 
         source_ce_config = self.get_compute_env_config(
             source_workspace_name, source_compute_env_name
         )
         if source_ce_config:
             # Check if compute environment already exists
-            existing_ce_id = self.check_existing_compute_env(comp_env_name)
+            existing_ce_id = self.check_existing_compute_env(compute_env_name)
             if existing_ce_id:
+                print(
+                    f"Existing manual compute environment '{compute_env_name}' found "
+                    f"in workspace '{self.name}' with ID: {compute_env_id}"
+                )
                 compute_env_id = existing_ce_id
             else:
                 # Create credentials
@@ -845,10 +849,13 @@ class TowerWorkspace:
                     label_ids.append(label_id)
 
                 # Build the manual compute environment configuration
+                source_ce_head_queue = source_ce_config.get("headQueue")
+                source_ce_compute_queue = source_ce_config.get("computeQueue")
+                source_ce_execution_role = source_ce_config.get("executionRole")
                 data = {
                     "labelIds": label_ids,
                     "computeEnv": {
-                        "name": comp_env_name,
+                        "name": compute_env_name,
                         "platform": "aws-batch",
                         "credentialsId": credentials_id,
                         "config": {
@@ -861,11 +868,11 @@ class TowerWorkspace:
                             "waveEnabled": True,
                             "nvnmeStorageEnabled": False,
                             "configMode": "Manual",
-                            "headQueue": source_ce_config.get("headQueue"),
-                            "computeQueue": source_ce_config.get("computeQueue"),
+                            "headQueue": source_ce_head_queue,
+                            "computeQueue": source_ce_compute_queue,
                             "cliPath": "/home/ec2-user/miniconda/bin/aws",
                             "resourceLabelIds": label_ids,
-                            "executionRole": source_ce_config.get("executionRole"),
+                            "executionRole": source_ce_execution_role,
                         },
                     },
                 }
@@ -879,7 +886,7 @@ class TowerWorkspace:
                     )
                     compute_env_id = response["computeEnvId"]
                     print(
-                        f"Created manual compute environment '{comp_env_name}' "
+                        f"Created manual compute environment '{compute_env_name}' "
                         f"in workspace '{self.name}' with ID: {compute_env_id}"
                     )
                     # Set as primary compute environment
@@ -887,7 +894,7 @@ class TowerWorkspace:
                         self.set_primary_compute_environment(compute_env_id)
                 except Exception as e:
                     print(
-                        f"Warning: Failed to create manual compute environment '{comp_env_name}' "
+                        f"Warning: Failed to create manual compute environment '{compute_env_name}' "
                         f"in workspace '{self.name}': {e}"
                     )
 
