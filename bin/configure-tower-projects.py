@@ -8,7 +8,7 @@ import os
 import re
 import time
 from collections import defaultdict
-from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
+from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple, Any
 
 import boto3  # type: ignore
 import yaml  # type: ignore
@@ -420,7 +420,7 @@ class TowerWorkspace:
         self.populate()
         self.cleanup_compute_environments()
         if self.has_launchers():
-            # Check if manual compute environments are configured
+            # Only create Batch Forge CE if no manual CEs are configured
             if self.manual_compute_envs:
                 for manual_compute_env in self.manual_compute_envs:
                     source_workspace_name = manual_compute_env["WorkspaceName"]
@@ -808,10 +808,10 @@ class TowerWorkspace:
         """Create a compute environment in manual config mode that references an
         existing Batch Forge compute environment
 
-        This function creates a new manual compute environment by extracting the
-        head queue and compute queue from an existing Batch Forge compute environment
+        This function creates a new manual compute environment by extracting the head queue,
+        compute queue and execution role from an existing Batch Forge compute environment
         in another workspace, then configuring a manual compute environment in the
-        current workspace that references those same queues.
+        current workspace that references those same queues and roles.
 
         Args:
             source_workspace_name (str): Name of the workspace containing the Batch
@@ -820,92 +820,79 @@ class TowerWorkspace:
                                            to reference
 
         Returns:
-            Optional[str]: Identifier for the created manual compute environment,
-                           or None if creation fails
+            Optional[str]: Identifier for an existing manual compute environment, a newly
+                 created manual compute environment or None
         """
-        # Get queue configuration from source compute environment
-        queues = self.get_compute_env_queues(
+        compute_env_id = None
+        compute_env_name = f"manual-{source_compute_env_name}"
+
+        source_ce_config = self.get_compute_env_config(
             source_workspace_name, source_compute_env_name
         )
-        if not queues:
-            return None
+        if source_ce_config:
+            # Check if compute environment already exists
+            existing_ce_id = self.check_existing_compute_env(compute_env_name)
+            if not existing_ce_id:
+                # Create credentials
+                credentials_id = self.create_credentials()
 
-        head_queue, compute_queue = queues
+                # Retrieve (or create) resource label IDs
+                label_ids = []
+                for key, value in self.tags.items():
+                    label_id = self.create_resource_label(key, value)
+                    label_ids.append(label_id)
 
-        # Create compute environment name
-        comp_env_name = f"manual-{source_compute_env_name}"
+                # Build the manual compute environment configuration
+                source_ce_head_queue = source_ce_config.get("headQueue")
+                source_ce_compute_queue = source_ce_config.get("computeQueue")
+                source_ce_execution_role = source_ce_config.get("executionRole")
+                data = {
+                    "labelIds": label_ids,
+                    "computeEnv": {
+                        "name": compute_env_name,
+                        "platform": "aws-batch",
+                        "credentialsId": credentials_id,
+                        "config": {
+                            "workDir": f"s3://{self.stack['TowerScratch']}/work",
+                            "preRunScript": "NXF_OPTS='-Xms7g -Xmx14g'",
+                            "postRunScript": None,
+                            "environment": None,
+                            "region": self.org.aws.region,
+                            "fusion2Enabled": False,
+                            "waveEnabled": True,
+                            "nvnmeStorageEnabled": False,
+                            "configMode": "Manual",
+                            "headQueue": source_ce_head_queue,
+                            "computeQueue": source_ce_compute_queue,
+                            "cliPath": "/home/ec2-user/miniconda/bin/aws",
+                            "resourceLabelIds": label_ids,
+                            "executionRole": source_ce_execution_role,
+                        },
+                    },
+                }
 
-        # Check if compute environment already exists
-        list_endpoint = "/compute-envs"
-        list_params = {"workspaceId": self.id}
-        response = self.tower.request("GET", list_endpoint, params=list_params)
-        for comp_env in response["computeEnvs"]:
-            if (
-                comp_env["platform"] == "aws-batch"
-                and comp_env["name"] == comp_env_name
-            ):
-                if comp_env["status"] in ("AVAILABLE", "CREATING"):
-                    print(
-                        f"Manual compute environment '{comp_env_name}' already exists "
-                        f"in workspace '{self.name}'."
+                # Create the compute environment
+                create_endpoint = "/compute-envs"
+                create_params = {"workspaceId": self.id}
+                try:
+                    response = self.tower.request(
+                        "POST", create_endpoint, params=create_params, json=data
                     )
-                    return comp_env["id"]
+                    compute_env_id = response["computeEnvId"]
+                    print(
+                        f"Created manual compute environment '{compute_env_name}' "
+                        f"in workspace '{self.name}' with ID: {compute_env_id}"
+                    )
+                    # Set as primary compute environment
+                    if compute_env_id:
+                        self.set_primary_compute_environment(compute_env_id)
+                except Exception as e:
+                    print(
+                        f"Warning: Failed to create manual compute environment '{compute_env_name}' "
+                        f"in workspace '{self.name}': {e}"
+                    )
 
-        # Create credentials
-        credentials_id = self.create_credentials()
-
-        # Retrieve (or create) resource label IDs
-        label_ids = []
-        for key, value in self.tags.items():
-            label_id = self.create_resource_label(key, value)
-            label_ids.append(label_id)
-
-        # Build the manual compute environment configuration
-        data = {
-            "labelIds": label_ids,
-            "computeEnv": {
-                "name": comp_env_name,
-                "platform": "aws-batch",
-                "credentialsId": credentials_id,
-                "config": {
-                    "workDir": f"s3://{self.stack['TowerScratch']}/work",
-                    "preRunScript": "NXF_OPTS='-Xms7g -Xmx14g'",
-                    "postRunScript": None,
-                    "environment": None,
-                    "region": self.org.aws.region,
-                    "fusion2Enabled": False,
-                    "waveEnabled": True,
-                    "nvnmeStorageEnabled": False,
-                    "configMode": "Manual",
-                    "headQueue": head_queue,
-                    "computeQueue": compute_queue,
-                    "cliPath": "/home/ec2-user/miniconda/bin/aws",
-                    "resourceLabelIds": label_ids,
-                },
-            },
-        }
-
-        # Create the compute environment
-        create_endpoint = "/compute-envs"
-        create_params = {"workspaceId": self.id}
-        try:
-            response = self.tower.request(
-                "POST", create_endpoint, params=create_params, json=data
-            )
-            compute_env_id = response["computeEnvId"]
-            print(
-                f"Created manual compute environment '{comp_env_name}' "
-                f"in workspace '{self.name}' with ID: {compute_env_id}"
-            )
-            # Set as primary compute environment
-            self.set_primary_compute_environment(compute_env_id)
-            return compute_env_id
-        except Exception as e:
-            print(
-                f"Warning: Failed to create manual compute environment '{comp_env_name}' "
-                f"in workspace '{self.name}': {e}"
-            )
-            return None
+        return compute_env_id
 
     def get_workspace_id_by_name(self, workspace_name: str) -> Optional[str]:
         """Look up a workspace ID by name in the organization
@@ -942,63 +929,42 @@ class TowerWorkspace:
             )
             return None
 
-    def get_compute_env_queues(
+    def get_compute_env_config(
         self, source_workspace_name: str, source_compute_env_name: str
-    ) -> Optional[tuple[str, str]]:
-        """Retrieve head and compute queue names from a source compute environment
+    ) -> Optional[Dict[str, Any]]:
+        """Retrieve the compute environment config from a source compute environment
 
         Args:
             source_workspace_name (str): Name of the workspace containing the compute environment
             source_compute_env_name (str): Name of the compute environment
 
         Returns:
-            Optional[tuple[str, str]]: Tuple of (head_queue, compute_queue) if found, None otherwise
+            Optional[Dict[str, Any]]: Dict of compute environment config if found, None otherwise
         """
+        config = None
+
         # Look up the source workspace ID
         source_workspace_id = self.get_workspace_id_by_name(source_workspace_name)
-        if not source_workspace_id:
-            return None
-
-        # Look up the source compute environment ID
-        source_compute_env_id = self.get_compute_env_id_by_name(
-            source_workspace_id, source_compute_env_name
-        )
-        if not source_compute_env_id:
-            print(
-                f"Warning: Failed to retrieve compute environment for '{source_compute_env_name}' "
-                f"from workspace '{source_workspace_name}' "
+        if source_workspace_id:
+            # Look up the source compute environment ID
+            source_compute_env_id = self.get_compute_env_id_by_name(
+                source_workspace_id, source_compute_env_name
             )
-            return None
+            if source_compute_env_id:
+                # Retrieve the source compute environment details
+                endpoint = f"/compute-envs/{source_compute_env_id}"
+                params = {"workspaceId": source_workspace_id}
+                try:
+                    source_comp_env = self.tower.request("GET", endpoint, params=params)
+                    comp_env_data = source_comp_env.get("computeEnv", source_comp_env)
+                    config = comp_env_data.get("config", {})
+                except Exception as e:
+                    print(
+                        f"Warning: Failed to retrieve compute environment details for '{source_compute_env_name}' "
+                        f"from workspace '{source_workspace_name}': {e}. "
+                    )
 
-        # Retrieve the source compute environment details
-        endpoint = f"/compute-envs/{source_compute_env_id}"
-        params = {"workspaceId": source_workspace_id}
-        try:
-            source_comp_env = self.tower.request("GET", endpoint, params=params)
-        except Exception as e:
-            print(
-                f"Warning: Failed to retrieve compute environment details for '{source_compute_env_name}' "
-                f"from workspace '{source_workspace_name}': {e}. "
-                f"Skipping manual compute environment creation for '{source_workspace_name}'."
-            )
-            return None
-
-        comp_env_data = source_comp_env.get("computeEnv", source_comp_env)
-        config = comp_env_data.get("config", {})
-
-        # Batch Forge on-demand compute environments have both headQueue and computeQueue
-        # set to the same value (single queue). Spot environments have separate queues.
-        head_queue = config.get("headQueue")
-        compute_queue = config.get("computeQueue")
-
-        if not head_queue or not compute_queue:
-            print(
-                f"Warning: Could not find head queue or compute queue in source compute environment. "
-                f"Skipping manual compute environment creation for '{source_compute_env_name}'."
-            )
-            return None
-
-        return (head_queue, compute_queue)
+        return config
 
     def get_compute_env_id_by_name(
         self, workspace_id: str, compute_env_name: str
@@ -1019,17 +985,47 @@ class TowerWorkspace:
             response = self.tower.request("GET", endpoint, params=params)
             for comp_env in response["computeEnvs"]:
                 if comp_env["name"] == compute_env_name:
+                    print(
+                        f"Compute environment '{compute_env_name}' already exist "
+                        f"in workspace ID '{workspace_id}'."
+                    )
                     return comp_env["id"]
 
-            print(
-                f"Warning: Compute environment '{compute_env_name}' not found "
-                f"in workspace ID '{workspace_id}'."
-            )
             return None
         except Exception as e:
             print(
                 f"Warning: Failed to list compute environments in workspace ID '{workspace_id}': {e}."
             )
+            return None
+
+    def check_existing_compute_env(self, comp_env_name: str) -> Optional[str]:
+        """Check if a compute environment already exists in the current workspace
+
+        Args:
+            comp_env_name (str): Name of the compute environment to check
+
+        Returns:
+            Optional[str]: The compute environment ID if it exists and is available, None otherwise
+        """
+        existing_ce_id = self.get_compute_env_id_by_name(self.id, comp_env_name)
+        if not existing_ce_id:
+            return None
+
+        # Verify it's an AWS Batch CE with appropriate status
+        endpoint = "/compute-envs"
+        params = {"workspaceId": self.id}
+        try:
+            response = self.tower.request("GET", endpoint, params=params)
+            for comp_env in response["computeEnvs"]:
+                if comp_env["id"] == existing_ce_id:
+                    if comp_env["platform"] == "aws-batch" and comp_env["status"] in (
+                        "AVAILABLE",
+                        "CREATING",
+                    ):
+                        return existing_ce_id
+            return None
+        except Exception as e:
+            print(f"Warning: Failed to check existing compute environments: {e}")
             return None
 
     def set_primary_compute_environment(self, compute_env_id: str) -> None:
