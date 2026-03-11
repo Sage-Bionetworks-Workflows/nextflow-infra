@@ -8,7 +8,7 @@ import os
 import re
 import time
 from collections import defaultdict
-from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
+from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple, Any
 
 import boto3  # type: ignore
 import yaml  # type: ignore
@@ -176,6 +176,7 @@ class Projects:
         """
         self.config_directory = config_directory
         self.users_per_project = self.extract_users()
+        self.manual_compute_env_per_project = self.extract_manual_compute_env()
         self.tags_per_project = self.extract_tags()
 
     def list_projects(self) -> Iterator[str]:
@@ -281,6 +282,52 @@ class Projects:
             )
         return users_per_project
 
+    def extract_manual_compute_env(self) -> Dict[str, List[Dict[str, str]]]:
+        """Extract ManualComputeEnvs from a series of config files
+
+        Example config:
+            ManualComputeEnvs:
+              - WorkspaceName: source-workspace-name
+                ComputeEnvName: source-compute-env-name
+              - WorkspaceName: another-workspace
+                ComputeEnvName: another-compute-env
+
+        Returns:
+            Dict[str, List[Dict[str, str]]]:
+                Mapping between projects/stacks and their manual compute environment configs
+                Each value is a list of dicts with 'WorkspaceName' and 'ComputeEnvName' keys
+        """
+        manual_compute_env_per_workspace = dict()
+        for config in self.load_projects():
+            stack_name = config["stack_name"]
+            manual_compute_envs = config.get("sceptre_user_data", {}).get(
+                "ManualComputeEnvs", []
+            )
+
+            valid_envs = []
+            for manual_compute_env in manual_compute_envs:
+                workspace_name = manual_compute_env.get("WorkspaceName")
+                compute_env_name = manual_compute_env.get("ComputeEnvName")
+
+                # Only add if both WorkspaceName and ComputeEnvName are present
+                if workspace_name and compute_env_name:
+                    valid_envs.append(
+                        {
+                            "WorkspaceName": workspace_name,
+                            "ComputeEnvName": compute_env_name,
+                        }
+                    )
+                else:
+                    print(
+                        f"Warning: ManualComputeEnvs entry for '{stack_name}' is missing "
+                        f"WorkspaceName or ComputeEnvName. Skipping."
+                    )
+
+            if valid_envs:
+                manual_compute_env_per_workspace[stack_name] = valid_envs
+
+        return manual_compute_env_per_workspace
+
     def extract_tags(self) -> Dict[str, Dict[str, str]]:
         """Extract AWS tags for each stack.
 
@@ -355,6 +402,7 @@ class TowerWorkspace:
         users: Users = None,
         teams: Dict[int, str] = None,
         tags: Dict[str, str] = None,
+        manual_compute_envs: List[Dict[str, str]] = None,
     ) -> None:
         self.org = org
         self.tower = org.tower
@@ -367,11 +415,22 @@ class TowerWorkspace:
         self.users = users
         self.teams = teams
         self.tags = tags or {}
+        self.manual_compute_envs = manual_compute_envs or []
         self.participants: Dict[str, dict] = dict()
         self.populate()
         self.cleanup_compute_environments()
         if self.has_launchers():
-            self.create_compute_environment()
+            # Only create Batch Forge CE if no manual CEs are configured
+            if self.manual_compute_envs:
+                for manual_compute_env in self.manual_compute_envs:
+                    source_workspace_name = manual_compute_env["WorkspaceName"]
+                    source_compute_env_name = manual_compute_env["ComputeEnvName"]
+                    self.create_manual_compute_environment(
+                        source_workspace_name,
+                        source_compute_env_name,
+                    )
+            else:
+                self.create_compute_environment()
 
     def has_launchers(self) -> bool:
         """Checks whether at least one user is capable of launching a workflow
@@ -743,6 +802,232 @@ class TowerWorkspace:
             compute_env_ids["EC2"] = response["computeEnvId"]
         return compute_env_ids
 
+    def create_manual_compute_environment(
+        self, source_workspace_name: str, source_compute_env_name: str
+    ) -> Optional[str]:
+        """Create a compute environment in manual config mode that references an
+        existing Batch Forge compute environment
+
+        This function creates a new manual compute environment by extracting the head queue,
+        compute queue and execution role from an existing Batch Forge compute environment
+        in another workspace, then configuring a manual compute environment in the
+        current workspace that references those same queues and roles.
+
+        Args:
+            source_workspace_name (str): Name of the workspace containing the Batch
+                                         Forge compute environment
+            source_compute_env_name (str): Name of the Batch Forge compute environment
+                                           to reference
+
+        Returns:
+            Optional[str]: Identifier for an existing manual compute environment, a newly
+                 created manual compute environment or None
+        """
+        compute_env_id = None
+        compute_env_name = f"manual-{source_compute_env_name}"
+
+        source_ce_config = self.get_compute_env_config(
+            source_workspace_name, source_compute_env_name
+        )
+        if source_ce_config:
+            # Check if compute environment already exists
+            existing_ce_id = self.check_existing_compute_env(compute_env_name)
+            if not existing_ce_id:
+                # Create credentials
+                credentials_id = self.create_credentials()
+
+                # Retrieve (or create) resource label IDs
+                label_ids = []
+                for key, value in self.tags.items():
+                    label_id = self.create_resource_label(key, value)
+                    label_ids.append(label_id)
+
+                # Build the manual compute environment configuration
+                source_ce_head_queue = source_ce_config.get("headQueue")
+                source_ce_compute_queue = source_ce_config.get("computeQueue")
+                source_ce_execution_role = source_ce_config.get("executionRole")
+                data = {
+                    "labelIds": label_ids,
+                    "computeEnv": {
+                        "name": compute_env_name,
+                        "platform": "aws-batch",
+                        "credentialsId": credentials_id,
+                        "config": {
+                            "workDir": f"s3://{self.stack['TowerScratch']}/work",
+                            "preRunScript": "NXF_OPTS='-Xms7g -Xmx14g'",
+                            "postRunScript": None,
+                            "environment": None,
+                            "region": self.org.aws.region,
+                            "fusion2Enabled": False,
+                            "waveEnabled": True,
+                            "nvnmeStorageEnabled": False,
+                            "configMode": "Manual",
+                            "headQueue": source_ce_head_queue,
+                            "computeQueue": source_ce_compute_queue,
+                            "cliPath": "/home/ec2-user/miniconda/bin/aws",
+                            "resourceLabelIds": label_ids,
+                            "executionRole": source_ce_execution_role,
+                        },
+                    },
+                }
+
+                # Create the compute environment
+                create_endpoint = "/compute-envs"
+                create_params = {"workspaceId": self.id}
+                try:
+                    response = self.tower.request(
+                        "POST", create_endpoint, params=create_params, json=data
+                    )
+                    compute_env_id = response["computeEnvId"]
+                    print(
+                        f"Created manual compute environment '{compute_env_name}' "
+                        f"in workspace '{self.name}' with ID: {compute_env_id}"
+                    )
+                    # Set as primary compute environment
+                    if compute_env_id:
+                        self.set_primary_compute_environment(compute_env_id)
+                except Exception as e:
+                    print(
+                        f"Warning: Failed to create manual compute environment '{compute_env_name}' "
+                        f"in workspace '{self.name}': {e}"
+                    )
+
+        return compute_env_id
+
+    def get_workspace_id_by_name(self, workspace_name: str) -> Optional[str]:
+        """Look up a workspace ID by name in the organization
+
+        Args:
+            workspace_name (str): Name of the workspace to look up
+
+        Returns:
+            Optional[str]: The workspace ID if found, None otherwise
+        """
+        endpoint = "/orgs"
+        try:
+            response = self.tower.request("GET", endpoint)
+            for org in response.get("organizations", []):
+                if org["name"] == self.org.name:
+                    org_id = org["orgId"]
+                    # Get workspaces for this organization
+                    ws_endpoint = f"/orgs/{org_id}/workspaces"
+                    ws_response = self.tower.request("GET", ws_endpoint)
+                    workspaces = ws_response.get("workspaces", [])
+                    for ws in workspaces:
+                        # Match by the Tower-valid name
+                        if ws["name"] == self.tower.get_valid_name(workspace_name):
+                            return str(ws["id"])
+                    break
+
+            print(
+                f"Warning: Workspace '{workspace_name}' not found in organization '{self.org.name}'."
+            )
+            return None
+        except Exception as e:
+            print(
+                f"Warning: Failed to query Tower for workspace '{workspace_name}': {e}"
+            )
+            return None
+
+    def get_compute_env_config(
+        self, source_workspace_name: str, source_compute_env_name: str
+    ) -> Optional[Dict[str, Any]]:
+        """Retrieve the compute environment config from a source compute environment
+
+        Args:
+            source_workspace_name (str): Name of the workspace containing the compute environment
+            source_compute_env_name (str): Name of the compute environment
+
+        Returns:
+            Optional[Dict[str, Any]]: Dict of compute environment config if found, None otherwise
+        """
+        config = None
+
+        # Look up the source workspace ID
+        source_workspace_id = self.get_workspace_id_by_name(source_workspace_name)
+        if source_workspace_id:
+            # Look up the source compute environment ID
+            source_compute_env_id = self.get_compute_env_id_by_name(
+                source_workspace_id, source_compute_env_name
+            )
+            if source_compute_env_id:
+                # Retrieve the source compute environment details
+                endpoint = f"/compute-envs/{source_compute_env_id}"
+                params = {"workspaceId": source_workspace_id}
+                try:
+                    source_comp_env = self.tower.request("GET", endpoint, params=params)
+                    comp_env_data = source_comp_env.get("computeEnv", source_comp_env)
+                    config = comp_env_data.get("config", {})
+                except Exception as e:
+                    print(
+                        f"Warning: Failed to retrieve compute environment details for '{source_compute_env_name}' "
+                        f"from workspace '{source_workspace_name}': {e}. "
+                    )
+
+        return config
+
+    def get_compute_env_id_by_name(
+        self, workspace_id: str, compute_env_name: str
+    ) -> Optional[str]:
+        """Look up a compute environment ID by name in a given workspace
+
+        Args:
+            workspace_id (str): ID of the workspace containing the compute environment
+            compute_env_name (str): Name of the compute environment to look up
+
+        Returns:
+            Optional[str]: The compute environment ID if found, None otherwise
+        """
+        # Look up the compute environment ID by name in the specified workspace
+        endpoint = "/compute-envs"
+        params = {"workspaceId": workspace_id}
+        try:
+            response = self.tower.request("GET", endpoint, params=params)
+            for comp_env in response["computeEnvs"]:
+                if comp_env["name"] == compute_env_name:
+                    print(
+                        f"Compute environment '{compute_env_name}' already exist "
+                        f"in workspace ID '{workspace_id}'."
+                    )
+                    return comp_env["id"]
+
+            return None
+        except Exception as e:
+            print(
+                f"Warning: Failed to list compute environments in workspace ID '{workspace_id}': {e}."
+            )
+            return None
+
+    def check_existing_compute_env(self, comp_env_name: str) -> Optional[str]:
+        """Check if a compute environment already exists in the current workspace
+
+        Args:
+            comp_env_name (str): Name of the compute environment to check
+
+        Returns:
+            Optional[str]: The compute environment ID if it exists and is available, None otherwise
+        """
+        existing_ce_id = self.get_compute_env_id_by_name(self.id, comp_env_name)
+        if not existing_ce_id:
+            return None
+
+        # Verify it's an AWS Batch CE with appropriate status
+        endpoint = "/compute-envs"
+        params = {"workspaceId": self.id}
+        try:
+            response = self.tower.request("GET", endpoint, params=params)
+            for comp_env in response["computeEnvs"]:
+                if comp_env["id"] == existing_ce_id:
+                    if comp_env["platform"] == "aws-batch" and comp_env["status"] in (
+                        "AVAILABLE",
+                        "CREATING",
+                    ):
+                        return existing_ce_id
+            return None
+        except Exception as e:
+            print(f"Warning: Failed to check existing compute environments: {e}")
+            return None
+
     def set_primary_compute_environment(self, compute_env_id: str) -> None:
         """Mark the given compute environment as the primary one (default)
 
@@ -780,6 +1065,7 @@ class TowerOrganization:
         self.projects = projects
         self.users_per_project = projects.users_per_project
         self.tags_per_project = projects.tags_per_project
+        self.manual_compute_env_per_project = projects.manual_compute_env_per_project
         self.teamids_per_project: Dict[str, Dict[int, str]] = dict()
         self.members: Dict[str, dict] = dict()
         self.populate()
@@ -956,11 +1242,24 @@ class TowerOrganization:
         """
         for name, users in self.list_projects():
             tags = self.tags_per_project[name]
+            manual_compute_envs = self.manual_compute_env_per_project.get(name, [])
             if self.use_teams:
                 teams = self.teamids_per_project[name]
-                ws = TowerWorkspace(self, name, teams=teams, tags=tags)
+                ws = TowerWorkspace(
+                    self,
+                    name,
+                    teams=teams,
+                    tags=tags,
+                    manual_compute_envs=manual_compute_envs,
+                )
             else:
-                ws = TowerWorkspace(self, name, users=users, tags=tags)
+                ws = TowerWorkspace(
+                    self,
+                    name,
+                    users=users,
+                    tags=tags,
+                    manual_compute_envs=manual_compute_envs,
+                )
             self.workspaces[name] = ws
             # Adding a short delay between creating each workspace
             # to allow time for compute environments to be deleted

@@ -356,15 +356,15 @@ Resources:
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
-          - Sid: DenyCrossProjectAccess
-            Effect: Deny
+          - Sid: AllowCrossProjectAccess
+            Effect: Allow
             Principal:
               AWS: "*"
             Action:
               - "s3:*"
             Condition:
               ArnLike:
-                aws:PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/TowerForge-*"
+                aws:PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/TowerForge-*-InstanceRole*"
             Resource:
               - !Sub "arn:aws:s3:::${TowerBucket}"
               - !Sub "arn:aws:s3:::${TowerBucket}/*"
@@ -493,15 +493,15 @@ Resources:
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
-          - Sid: DenyCrossProjectAccess
-            Effect: Deny
+          - Sid: AllowCrossProjectAccess
+            Effect: Allow
             Principal:
               AWS: "*"
             Action:
               - "s3:*"
             Condition:
               ArnLike:
-                aws:PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/TowerForge-*"
+                aws:PrincipalArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/TowerForge-*-InstanceRole*"
             Resource:
               - !Sub "arn:aws:s3:::${TowerScratch}"
               - !Sub "arn:aws:s3:::${TowerScratch}/*"
