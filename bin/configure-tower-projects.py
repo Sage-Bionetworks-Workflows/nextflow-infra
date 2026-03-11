@@ -8,7 +8,7 @@ import os
 import re
 import time
 from collections import defaultdict
-from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
+from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple, Any
 
 import boto3  # type: ignore
 import yaml  # type: ignore
@@ -946,7 +946,7 @@ class TowerWorkspace:
 
     def get_compute_env_config(
         self, source_workspace_name: str, source_compute_env_name: str
-    ) -> Optional[dict]:
+    ) -> Optional[dict[str, Any]]:
         """Retrieve the compute environment config from a source compute environment
 
         Args:
@@ -959,6 +959,7 @@ class TowerWorkspace:
         # Look up the source workspace ID
         source_workspace_id = self.get_workspace_id_by_name(source_workspace_name)
         if not source_workspace_id:
+            print(f"Warning: Failed to retrieve workspace '{source_workspace_name}' ")
             return None
 
         # Look up the source compute environment ID
