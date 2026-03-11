@@ -946,7 +946,7 @@ class TowerWorkspace:
 
     def get_compute_env_config(
         self, source_workspace_name: str, source_compute_env_name: str
-    ) -> Optional[dict[str, Any]]:
+    ) -> Optional[Dict[str, Any]]:
         """Retrieve the compute environment config from a source compute environment
 
         Args:
@@ -954,40 +954,39 @@ class TowerWorkspace:
             source_compute_env_name (str): Name of the compute environment
 
         Returns:
-            Optional[dict]: Dict of compute environment config if found, None otherwise
+            Optional[Dict[str, Any]]: Dict of compute environment config if found, None otherwise
         """
+        config = None
+
         # Look up the source workspace ID
         source_workspace_id = self.get_workspace_id_by_name(source_workspace_name)
-        if not source_workspace_id:
+        if source_workspace_id:
+            # Look up the source compute environment ID
+            source_compute_env_id = self.get_compute_env_id_by_name(
+                source_workspace_id, source_compute_env_name
+            )
+            if source_compute_env_id:
+                # Retrieve the source compute environment details
+                endpoint = f"/compute-envs/{source_compute_env_id}"
+                params = {"workspaceId": source_workspace_id}
+                try:
+                    source_comp_env = self.tower.request("GET", endpoint, params=params)
+                    comp_env_data = source_comp_env.get("computeEnv", source_comp_env)
+                    config = comp_env_data.get("config", {})
+                except Exception as e:
+                    print(
+                        f"Warning: Failed to retrieve compute environment details for '{source_compute_env_name}' "
+                        f"from workspace '{source_workspace_name}': {e}. "
+                        f"Skipping manual compute environment creation for '{source_workspace_name}'."
+                    )
+            else:
+                print(
+                    f"Warning: Failed to retrieve compute environment for '{source_compute_env_name}' "
+                    f"from workspace '{source_workspace_name}' "
+                )
+        else:
             print(f"Warning: Failed to retrieve workspace '{source_workspace_name}' ")
-            return None
 
-        # Look up the source compute environment ID
-        source_compute_env_id = self.get_compute_env_id_by_name(
-            source_workspace_id, source_compute_env_name
-        )
-        if not source_compute_env_id:
-            print(
-                f"Warning: Failed to retrieve compute environment for '{source_compute_env_name}' "
-                f"from workspace '{source_workspace_name}' "
-            )
-            return None
-
-        # Retrieve the source compute environment details
-        endpoint = f"/compute-envs/{source_compute_env_id}"
-        params = {"workspaceId": source_workspace_id}
-        try:
-            source_comp_env = self.tower.request("GET", endpoint, params=params)
-        except Exception as e:
-            print(
-                f"Warning: Failed to retrieve compute environment details for '{source_compute_env_name}' "
-                f"from workspace '{source_workspace_name}': {e}. "
-                f"Skipping manual compute environment creation for '{source_workspace_name}'."
-            )
-            return None
-
-        comp_env_data = source_comp_env.get("computeEnv", source_comp_env)
-        config = comp_env_data.get("config", {})
         return config
 
     def get_compute_env_id_by_name(
