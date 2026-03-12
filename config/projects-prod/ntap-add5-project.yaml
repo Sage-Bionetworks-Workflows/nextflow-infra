@@ -28,3 +28,10 @@ stack_tags:
   Project: Neurofibromatosis
   OwnerEmail: thomas.yu@sagebase.org
   CostCenter: ARPA-H with Leidos / 125200
+
+sceptre_user_data:
+  ManualComputeEnvs:    # use the shared project's forge batch CEs to run pipelines
+    - WorkspaceName: shared-ce-prod-project
+      ComputeEnvName: shared-ce-prod-project-ondemand-v13
+    - WorkspaceName: shared-ce-prod-project
+      ComputeEnvName: shared-ce-prod-project-spot-v13

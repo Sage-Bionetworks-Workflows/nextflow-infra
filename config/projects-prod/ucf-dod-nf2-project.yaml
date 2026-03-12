@@ -39,3 +39,10 @@ template:
 dependencies:
   - common/nextflow-forge-iam-policy.yaml
   - common/nextflow-launch-iam-policy.yaml
+
+sceptre_user_data:
+  ManualComputeEnvs:    # use the shared project's forge batch CEs to run pipelines
+    - WorkspaceName: shared-ce-prod-project
+      ComputeEnvName: shared-ce-prod-project-ondemand-v13
+    - WorkspaceName: shared-ce-prod-project
+      ComputeEnvName: shared-ce-prod-project-spot-v13
