@@ -15,7 +15,7 @@ import yaml  # type: ignore
 from sagetasks.nextflowtower.client import TowerClient  # type: ignore
 
 # Increment this version when updating compute environments
-CE_VERSION = "v12"
+CE_VERSION = "v13"
 
 REGION = "us-east-1"
 ORG_NAME = "Sage Bionetworks"
