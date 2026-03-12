@@ -15,13 +15,11 @@ parameters:
   S3ReadWriteAccessArns:
     # (REQUIRED) Step 3: Replace the email below with your '@sagebase.org' address
     - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/phil.snyder@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/rixing.xu@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/bryan.fauble@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/dan.lu@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/jenny.medina@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/lingling.peng@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/nextflow-tester@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/angie.bowen@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/jessica.vera@sagebase.org'
 
     # (Optional) Step 4: Uncomment and update the following line(s) to grant additional users with read/write access
     # - '{{stack_group_config.tower_viewer_arn_prefix}}/rixing.xu@sagebase.org'
