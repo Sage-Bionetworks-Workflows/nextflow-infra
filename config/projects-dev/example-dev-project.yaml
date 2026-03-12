@@ -31,7 +31,7 @@ stack_tags:
 
 sceptre_user_data:
   ManualComputeEnvs:    # use shared-ce-project's forge batch CEs to run pipelines
-    - WorkspaceName: shared-ce-project
-      ComputeEnvName: shared-ce-project-ondemand-v12
-    - WorkspaceName: shared-ce-project
-      ComputeEnvName: shared-ce-project-spot-v12
+    - WorkspaceName: shared-ce-dev-project
+      ComputeEnvName: shared-ce-dev-project-ondemand-v12
+    - WorkspaceName: shared-ce-dev-project
+      ComputeEnvName: shared-ce-dev-project-spot-v12
