@@ -7,7 +7,7 @@ stack_name: ampra-project
 stack_tags:
   # (REQUIRED) Step 2: Update all four values below
   Department: TECH
-  Project: AMP-RA
+  Project: AMP-AIM
   OwnerEmail: nextflow-admins@sagebase.org
   CostCenter: AMP-AIM AD Admin Supp / 101504 # Valid values here: https://github.com/Sage-Bionetworks/aws-infra/tree/master/templates/tags
 
