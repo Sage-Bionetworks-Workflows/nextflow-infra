@@ -2,6 +2,10 @@
 
 # (REQUIRED) Step 1: Update the stack name below by replacing "example" with your project name
 #                    Note that the stack name cannot contain more than 32 characters
+
+# (Optional) Set ignore to skip processing this project
+# ignore: true
+
 stack_name: example-project
 
 stack_tags:
