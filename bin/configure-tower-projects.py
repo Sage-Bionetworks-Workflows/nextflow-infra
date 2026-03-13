@@ -175,7 +175,9 @@ class Projects:
             config_directory (str): Directory containing project config files
         """
         self.config_directory = config_directory
-        self._cached_configs: Optional[List[dict]] = None  # Cache for loaded configs
+        self._cached_configs: Optional[
+            List[Dict[str, Any]]
+        ] = None  # Cache for loaded configs
         self.users_per_project = self.extract_users()
         self.manual_compute_env_per_project = self.extract_manual_compute_env()
         self.tags_per_project = self.extract_tags()
@@ -223,7 +225,7 @@ class Projects:
             else:
                 raise InvalidTowerProject(f"This config is invalid:\n{config}")
 
-    def load_projects(self) -> List[dict]:
+    def load_projects(self) -> List[Dict[str, Any]]:
         """Load all project configuration files from given directory
 
         Skips projects with 'ignore: true' attribute.
