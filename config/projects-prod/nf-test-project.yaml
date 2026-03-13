@@ -34,4 +34,35 @@ template:
 
 dependencies:
   - common/nextflow-forge-iam-policy.yaml
-  - common/nextflow-launch-iam-policy.yaml
+  S3ReadWriteAccessArns:
+# (REQUIRED) Step 3: Replace the email below with your '@sagebase.org' address
+- '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
+- '{{stack_group_config.tower_viewer_arn_prefix}}/robert.allaway@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/james.moon@sagebase.org'
+# Provides access to HTAN buckets in SciComp
+- 'arn:aws:sts::526515999252:assumed-role/AWSReservedSSO_S3ExternalCollab_40c062f682e7f3f5/robert.allaway@sagebase.org'
+
+# DO NOT EDIT ANYTHING BELOW THIS LINE ------------------------------------------------------------------------
+
+AccountAdminArns:
+- "{{stack_group_config.sso_admin_role.arn}}"
+- !stack_output_external sagebase-github-oidc-workflows-prod-nextflow-infra::ProviderRoleArn
+TemplateRootUrl: "https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com"
+TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
+TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
+
+template:
+path: tower-project.j2
+
+dependencies:
+- common/nextflow-forge-iam-policy.yaml
+- common/nextflow-launch-iam-policy.yaml
+- projects-prod/shared-ce-prod-project.yaml
+
+sceptre_user_data:
+  ManualComputeEnvs:    # use the shared project's forge batch CEs to run pipelines
+    - WorkspaceName: shared-ce-prod-project
+      ComputeEnvName: shared-ce-prod-project-ondemand-v13
+    - WorkspaceName: shared-ce-prod-project
+      ComputeEnvName: shared-ce-prod-project-spot-v13
+
