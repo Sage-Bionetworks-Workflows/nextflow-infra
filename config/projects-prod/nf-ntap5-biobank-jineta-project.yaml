@@ -43,4 +43,3 @@ template:
 dependencies:
   - common/nextflow-forge-iam-policy.yaml
   - common/nextflow-launch-iam-policy.yaml
-- projects-prod/shared-ce-prod-project.yaml
