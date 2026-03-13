@@ -4,6 +4,7 @@ stack_name: ntap-add5-project
 dependencies:
   - common/nextflow-forge-iam-policy.yaml
   - common/nextflow-launch-iam-policy.yaml
+  - projects-prod/shared-ce-prod-project.yaml
 
 parameters:
   S3ReadWriteAccessArns:
