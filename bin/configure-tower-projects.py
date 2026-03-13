@@ -225,6 +225,8 @@ class Projects:
     def load_projects(self) -> Iterator[dict]:
         """Load all project configuration files from given directory
 
+        Skips projects with 'ignore: true' attribute.
+
         Yields:
             Iterator[dict]:
                 Each element is a parsed YAML file as a dict
@@ -235,6 +237,13 @@ class Projects:
         for config_path in self.list_projects():
             with open(config_path) as config_file:
                 config = yaml.load(config_file, Loader=yaml.Loader)
+
+                # Skip projects with ignore: true
+                if config.get("ignore", False):
+                    stack_name = config.get("stack_name", config_path)
+                    print(f"Skipping ignored project: {stack_name}")
+                    continue
+
                 self.validate_config(config)
                 yield config
 
