@@ -175,6 +175,9 @@ class Projects:
             config_directory (str): Directory containing project config files
         """
         self.config_directory = config_directory
+        self._cached_configs: Optional[
+            List[Dict[str, Any]]
+        ] = None  # Cache for loaded configs
         self.users_per_project = self.extract_users()
         self.manual_compute_env_per_project = self.extract_manual_compute_env()
         self.tags_per_project = self.extract_tags()
@@ -222,15 +225,22 @@ class Projects:
             else:
                 raise InvalidTowerProject(f"This config is invalid:\n{config}")
 
-    def load_projects(self) -> Iterator[dict]:
+    def load_projects(self) -> List[Dict[str, Any]]:
         """Load all project configuration files from given directory
 
         Skips projects with 'ignore: true' attribute.
 
-        Yields:
-            Iterator[dict]:
-                Each element is a parsed YAML file as a dict
+        Results are cached after first load for performance.
+
+        Returns:
+            List[dict]: List of parsed YAML files as dicts
         """
+        # Return cached configs if available
+        if self._cached_configs is not None:
+            return self._cached_configs
+
+        # Load and cache configs on first call
+        configs = []
         # Ignore all Sceptre resolvers
         yaml.add_multi_constructor("!", lambda loader, suffix, node: None)
         # Load the tower-project.j2 config files into a list
@@ -245,7 +255,11 @@ class Projects:
                     continue
 
                 self.validate_config(config)
-                yield config
+                configs.append(config)
+
+        # Cache the loaded configs
+        self._cached_configs = configs
+        return configs
 
     def extract_emails(self, arns: Sequence[str]) -> List[str]:
         """Extract role session names (emails) from assumed-role ARNs
