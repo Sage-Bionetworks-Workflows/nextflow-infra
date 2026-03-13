@@ -1,3 +1,4 @@
+ignore: true
 template:
   path: tower-project.j2
 stack_name: genie-bpc-project
