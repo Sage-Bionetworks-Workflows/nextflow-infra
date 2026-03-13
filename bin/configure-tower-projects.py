@@ -784,31 +784,38 @@ class TowerWorkspace:
             Dict[str, Optional[str]]: Identifier for the compute environment
         """
         compute_env_ids: dict[str, Optional[str]] = {"SPOT": None, "EC2": None}
-        # Create compute environment names}"
+        # Create compute environment names
         comp_env_spot = f"{self.stack_name}-spot-{CE_VERSION}"
         comp_env_ec2 = f"{self.stack_name}-ondemand-{CE_VERSION}"
-        # Check if compute environment has already been created for this project
+        # Check if compute environments have already been created for this project
+        existing_spot_id = self.check_existing_compute_env(comp_env_spot)
+        if existing_spot_id:
+            compute_env_ids["SPOT"] = existing_spot_id
+        existing_ec2_id = self.check_existing_compute_env(comp_env_ec2)
+        if existing_ec2_id:
+            compute_env_ids["EC2"] = existing_ec2_id
+        # Create any missing compute environments for the project
         endpoint = "/compute-envs"
         params = {"workspaceId": self.id}
-        response = self.tower.request("GET", endpoint, params=params)
-        for comp_env in response["computeEnvs"]:
-            if comp_env["platform"] == "aws-batch" and (
-                comp_env["status"] == "AVAILABLE" or comp_env["status"] == "CREATING"
-            ):
-                if comp_env["name"] == comp_env_spot:
-                    compute_env_ids["SPOT"] = comp_env["id"]
-                elif comp_env["name"] == comp_env_ec2:
-                    compute_env_ids["EC2"] = comp_env["id"]
-        # Create any missing compute environments for the project
         if compute_env_ids["SPOT"] is None:
             data = self.generate_compute_environment(comp_env_spot, "SPOT")
             response = self.tower.request("POST", endpoint, params=params, json=data)
-            compute_env_ids["SPOT"] = response["computeEnvId"]
+            compute_env_id = response["computeEnvId"]
+            compute_env_ids["SPOT"] = compute_env_id
+            print(
+                f"Created batch forge compute environment '{comp_env_spot}' "
+                f"in workspace '{self.name}' with ID: '{compute_env_id}'"
+            )
             self.set_primary_compute_environment(response["computeEnvId"])
         if compute_env_ids["EC2"] is None:
             data = self.generate_compute_environment(comp_env_ec2, "EC2")
             response = self.tower.request("POST", endpoint, params=params, json=data)
-            compute_env_ids["EC2"] = response["computeEnvId"]
+            compute_env_id = response["computeEnvId"]
+            compute_env_ids["EC2"] = compute_env_id
+            print(
+                f"Created batch forge compute environment '{comp_env_ec2}' "
+                f"in workspace '{self.name}' with ID: '{compute_env_id}'"
+            )
         return compute_env_ids
 
     def create_manual_compute_environment(
@@ -994,10 +1001,6 @@ class TowerWorkspace:
             response = self.tower.request("GET", endpoint, params=params)
             for comp_env in response["computeEnvs"]:
                 if comp_env["name"] == compute_env_name:
-                    print(
-                        f"Compute environment '{compute_env_name}' already exist "
-                        f"in workspace ID '{workspace_id}'."
-                    )
                     return comp_env["id"]
 
             return None
@@ -1031,6 +1034,11 @@ class TowerWorkspace:
                         "AVAILABLE",
                         "CREATING",
                     ):
+                        print(
+                            f"Compute environment '{comp_env_name}' already exist "
+                            f"in workspace '{self.name}'."
+                        )
+
                         return existing_ce_id
             return None
         except Exception as e:
