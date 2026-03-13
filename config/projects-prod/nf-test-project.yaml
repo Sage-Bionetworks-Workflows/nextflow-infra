@@ -42,4 +42,3 @@ sceptre_user_data:
       ComputeEnvName: shared-ce-prod-project-ondemand-v13
     - WorkspaceName: shared-ce-prod-project
       ComputeEnvName: shared-ce-prod-project-spot-v13
-
