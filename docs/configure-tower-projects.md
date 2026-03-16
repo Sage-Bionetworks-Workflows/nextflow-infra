@@ -110,6 +110,8 @@ For each valid project configuration file in the specified directory:
    - Extracts user emails from S3 access ARNs in the config
    - Maps `S3ReadWriteAccessArns` users to Tower `maintain` role
    - Maps `S3ReadOnlyAccessArns` users to Tower `view` role
+   - If all users are mapped to `view` only (no launchers), compute environments
+     in the workspace will be deleted to free up AWS Batch CE capacity
    - Adds users as workspace participants with appropriate roles
    - Removes participants not in the config
 
@@ -137,7 +139,10 @@ When updating CE configurations:
 
 ## Skipping Projects
 
-To temporarily skip a project, add `ignore: true` to its config file:
+To temporarily skip a project without removing its config file, add `ignore: true`.
+This is useful when you want to pause Tower provisioning for a project while
+keeping its configuration for future use.  You must remember to disable
+this when you want the workspace to receive updates again.
 
 ```yaml
 ignore: true

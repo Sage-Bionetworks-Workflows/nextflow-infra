@@ -145,9 +145,10 @@ parameters:
 dependencies:
   - common/nextflow-forge-iam-policy.yaml
   - common/nextflow-launch-iam-policy.yaml
+  - projects-prod/shared-ce-prod-project.yaml
 
 stack_tags:
-  Department: IBC
+  Department: TECH
   Project: Infrastructure
   OwnerEmail: [email]@sagebase.org
   CostCenter: NO PROGRAM / 000000
