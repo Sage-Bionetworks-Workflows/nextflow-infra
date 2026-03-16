@@ -18,6 +18,10 @@ If you are not a Sage employee, you can open an issue on this repository.
 
 Read through the [contribution guidelines](CONTRIBUTING.md) for more information. Contributions are welcome from anyone!
 
+## Documentation
+
+- [configure-tower-projects.py](docs/configure-tower-projects.md) - Usage guide for the Tower workspace provisioning script
+
 ## License
 
 This repository is licensed under the [Apache License 2.0](LICENSE).
