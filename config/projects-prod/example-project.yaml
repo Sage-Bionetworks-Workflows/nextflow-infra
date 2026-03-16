@@ -2,6 +2,10 @@
 
 # (REQUIRED) Step 1: Update the stack name below by replacing "example" with your project name
 #                    Note that the stack name cannot contain more than 32 characters
+
+# (Optional) Set ignore to skip processing this project
+# ignore: true
+
 stack_name: example-project
 
 stack_tags:
@@ -59,6 +63,7 @@ template:
 dependencies:
   - common/nextflow-forge-iam-policy.yaml
   - common/nextflow-launch-iam-policy.yaml
+  - projects-prod/shared-ce-prod-project.yaml
 
 sceptre_user_data:
   ManualComputeEnvs:    # use the shared project's forge batch CEs to run pipelines
