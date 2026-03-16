@@ -108,12 +108,18 @@ For each valid project configuration file in the specified directory:
 
 3. **User Management**
    - Extracts user emails from S3 access ARNs in the config
+   - Adds users as workspace participants with appropriate roles
+   - Removes participants not in the config
    - Maps `S3ReadWriteAccessArns` users to Tower `maintain` role
    - Maps `S3ReadOnlyAccessArns` users to Tower `view` role
    - If all users are mapped to `view` only (no launchers), compute environments
-     in the workspace will be deleted to free up AWS Batch CE capacity
-   - Adds users as workspace participants with appropriate roles
-   - Removes participants not in the config
+     in the workspace will be deactivate and deleted to free up AWS Batch CE
+     capacity
+
+   > [!CAUTION]
+   > If you are using shared compute environments, do not deactivate your workspace
+     doing so will delete the shared compute environment and affect other workspaces
+     that depend on it.
 
 4. **Compute Environment Management**
    - Cleans up old compute environments (not matching current `CE_VERSION`)
