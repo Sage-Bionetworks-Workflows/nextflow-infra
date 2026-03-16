@@ -64,7 +64,7 @@ automatically trimmed to just the program code portion.
 
 ```yaml
 stack_tags:
-  Department: IBC
+  Department: TECH
   Project: Infrastructure
   OwnerEmail: [email]@sagebase.org
   CostCenter: Program Name / 312100
