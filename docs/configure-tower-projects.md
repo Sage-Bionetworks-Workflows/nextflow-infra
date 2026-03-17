@@ -113,16 +113,12 @@ For each valid project configuration file in the specified directory:
    - Maps `S3ReadWriteAccessArns` users to Tower `maintain` role
    - Maps `S3ReadOnlyAccessArns` users to Tower `view` role
    - If all users are mapped to `view` only (no launchers), compute environments
-     in the workspace will be deactivate and deleted to free up AWS Batch CE
-     capacity
-
-   > [!CAUTION]
-   > If you are using shared compute environments, do not deactivate your workspace
-     doing so will delete the shared compute environment and affect other workspaces
-     that depend on it.
+     in the workspace will be deleted to free up AWS Batch CE capacity, except
+     for any CEs referenced in `ManualComputeEnvs` which are protected from cleanup
 
 4. **Compute Environment Management**
    - Cleans up old compute environments (not matching current `CE_VERSION`)
+   - Compute environments referenced in `ManualComputeEnvs` are protected from cleanup
    - For workspaces with launchers:
      - If `ManualComputeEnvs` is configured: creates manual CEs referencing source CEs
      - Otherwise: creates Batch Forge CEs (SPOT and on-demand)

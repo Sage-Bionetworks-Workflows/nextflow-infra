@@ -123,7 +123,10 @@ ignore: true
 - If `ManualComputeEnvs` is configured, manual CEs referencing the specified
   source CEs are created instead.
 - If no users have launch permissions, no CEs are created and existing CEs are
-  cleaned up.
+  cleaned up, except for CEs referenced in `ManualComputeEnvs` which are
+  protected from cleanup.
+- Old CEs (not matching the current `CE_VERSION`) are automatically cleaned up
+  during each run.
 
 ## Minimal Example
 
