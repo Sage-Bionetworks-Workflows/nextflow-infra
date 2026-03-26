@@ -8,7 +8,7 @@ python_version = "3"
 
 [packages]
 boto3 = "~=1.40"
-requests = "~=2.30"
+requests = "~=2.33"
 types-requests = "~=2.30"
 pyyaml = "~=6.0"
 types-pyyaml = "~=6.0"
