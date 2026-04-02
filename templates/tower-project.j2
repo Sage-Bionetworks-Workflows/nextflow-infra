@@ -91,6 +91,14 @@ Conditions:
   SynapseIndexingEnabled: !Equals [!Ref AllowSynapseIndexing, "Enabled"]
 
 Resources:
+  TowerForgeServiceUser:
+    Type: AWS::IAM::User
+
+  TowerForgeServiceUserAccessKey:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref TowerForgeServiceUser
+
   TowerForgeServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -100,6 +108,10 @@ Resources:
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              AWS: !GetAtt TowerForgeServiceUser.Arn
           - Effect: Allow
             Action: sts:AssumeRole
             Principal:
@@ -544,6 +556,17 @@ Resources:
                 - !Sub "arn:aws:s3:::${TowerScratch}/*"
             - !Ref AWS::NoValue
 
+  TowerForgeServiceUserAccessKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: !Sub "AWS credentials for the ${TowerForgeServiceUser} IAM user"
+      SecretString: !Sub >-
+        {
+          "aws_access_key_id":      "${TowerForgeServiceUserAccessKey}",
+          "aws_secret_access_key":  "${TowerForgeServiceUserAccessKey.SecretAccessKey}"
+        }
+      KmsKeyId: !GetAtt EncryptionKeyStack.Outputs.Key
+
 Outputs:
   S3ReadWriteAccessArns:
     Condition: HasS3ReadWriteAccessArns
@@ -576,6 +599,16 @@ Outputs:
     Value: !GetAtt TowerScratch.Arn
     Export:
       Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerScratchArn"
+
+  TowerForgeServiceUser:
+    Value: !Ref TowerForgeServiceUser
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceUser"
+
+  TowerForgeServiceUserArn:
+    Value: !GetAtt TowerForgeServiceUser.Arn
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceUserArn"
 
   TowerForgeServiceRole:
     Value: !Ref TowerForgeServiceRole
@@ -621,3 +654,13 @@ Outputs:
     Value: !GetAtt TowerForgeBatchExecutionRole.Arn
     Export:
       Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeBatchExecutionRoleArn"
+
+  TowerForgeServiceUserAccessKeySecret:
+    Value: !Sub "${AWS::StackName}-TowerProjectConfiguration"
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceUserAccessKeySecret"
+
+  TowerForgeServiceUserAccessKeySecretArn:
+    Value: !Ref TowerForgeServiceUserAccessKeySecret
+    Export:
+      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceUserAccessKeySecretArn"
