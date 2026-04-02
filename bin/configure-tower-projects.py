@@ -618,16 +618,12 @@ class TowerWorkspace:
                 assert cred["provider"] == "aws"
                 assert cred["deleted"] is None
                 return cred["id"]
-        # Otherwise, create a new credentials entry for the project
-        secret_arn = self.stack["TowerForgeServiceUserAccessKeySecretArn"]
-        credentials = self.org.aws.get_secret_value(secret_arn)
+        # Otherwise, create a new credentials entry using role assumption
         data = {
             "credentials": {
                 "name": self.stack_name,
                 "provider": "aws",
                 "keys": {
-                    "accessKey": credentials["aws_access_key_id"],
-                    "secretKey": credentials["aws_secret_access_key"],
                     "assumeRoleArn": self.stack["TowerForgeServiceRoleArn"],
                 },
                 "description": f"Credentials for {self.stack_name}",
@@ -690,10 +686,16 @@ class TowerWorkspace:
         endpoint = "/compute-envs"
         params = {"workspaceId": self.id}
         response = self.tower.request("GET", endpoint, params=params)
+
+        # Build set of manual CE names to protect from cleanup
+        manual_ce_names = {ce["ComputeEnvName"] for ce in self.manual_compute_envs}
+
         for comp_env in response["computeEnvs"]:
             comp_env_id = comp_env["id"]
             comp_env_name = comp_env["name"]
-            if comp_env_name.endswith(CE_VERSION) and self.has_launchers():
+            if (
+                comp_env_name.endswith(CE_VERSION) and self.has_launchers()
+            ) or comp_env_name in manual_ce_names:
                 continue
             delete_endpoint = f"{endpoint}/{comp_env_id}"
             response = self.tower.request("DELETE", delete_endpoint, params=params)

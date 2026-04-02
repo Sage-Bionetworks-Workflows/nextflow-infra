@@ -2,30 +2,25 @@
 
 # (REQUIRED) Step 1: Update the stack name below by replacing "example" with your project name
 #                    Note that the stack name cannot contain more than 32 characters
-
-# (Optional) Set ignore to skip processing this project
-# ignore: true
-
-stack_name: example-project
+stack_name: ampra-project
 
 stack_tags:
   # (REQUIRED) Step 2: Update all four values below
-  Department: IBC
-  Project: Infrastructure
+  Department: TECH
+  Project: AMP-AIM
   OwnerEmail: nextflow-admins@sagebase.org
-  CostCenter: NO PROGRAM / 000000 # Valid values here: https://github.com/Sage-Bionetworks/aws-infra/tree/master/templates/tags
+  CostCenter: AMP-AIM AD Admin Supp / 101504 # Valid values here: https://github.com/Sage-Bionetworks/aws-infra/tree/master/templates/tags
 
 parameters:
   S3ReadWriteAccessArns:
     # (REQUIRED) Step 3: Replace the email below with your '@sagebase.org' address
     - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/phil.snyder@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/rixing.xu@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/bryan.fauble@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/dan.lu@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/jenny.medina@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/lingling.peng@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/nextflow-tester@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/angie.bowen@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/jessica.vera@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/bishoy.kamel@sagebase.org'
 
     # (Optional) Step 4: Uncomment and update the following line(s) to grant additional users with read/write access
     # - '{{stack_group_config.tower_viewer_arn_prefix}}/rixing.xu@sagebase.org'

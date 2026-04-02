@@ -4,6 +4,7 @@ stack_name: ntap-add5-project
 dependencies:
   - common/nextflow-forge-iam-policy.yaml
   - common/nextflow-launch-iam-policy.yaml
+  - projects-prod/shared-ce-prod-project.yaml
 
 parameters:
   S3ReadWriteAccessArns:
@@ -28,3 +29,10 @@ stack_tags:
   Project: Neurofibromatosis
   OwnerEmail: thomas.yu@sagebase.org
   CostCenter: ARPA-H with Leidos / 125200
+
+sceptre_user_data:
+  ManualComputeEnvs:    # use the shared project's forge batch CEs to run pipelines
+    - WorkspaceName: shared-ce-prod-project
+      ComputeEnvName: shared-ce-prod-project-ondemand-v13
+    - WorkspaceName: shared-ce-prod-project
+      ComputeEnvName: shared-ce-prod-project-spot-v13
