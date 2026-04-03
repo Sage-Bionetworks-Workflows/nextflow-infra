@@ -107,8 +107,7 @@ Resources:
           - Effect: Allow
             Action: sts:AssumeRole
             Principal:
-              AWS:
-                'Fn::ImportValue': !Sub '${AWS::Region}-nextflow-ecs-task-definition-TowerRoleArn'
+              AWS: !GetAtt TowerRole.Arn
 
   TowerForgeBatchHeadJobRole:
     Type: AWS::IAM::Role
@@ -134,21 +133,26 @@ Resources:
               Service:
                 - ecs-tasks.amazonaws.com
 
+  TowerRoleAssumePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: AssumeForgeServiceRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowAssumeForgeRole
+            Effect: Allow
+            Action: sts:AssumeRole
+            Resource: !GetAtt TowerForgeServiceRole.Arn
+      Roles:
+        - !Ref TowerRole
+
   TowerRole:
     Type: "AWS::IAM::Role"
     Properties:
       ManagedPolicyArns:
         - 'Fn::ImportValue': !Sub ${AWS::Region}-nextflow-forge-iam-policy-NextFlowForgePolicyArn
         - 'Fn::ImportValue': !Sub ${AWS::Region}-nextflow-launch-iam-policy-NextFlowLaunchPolicyArn
-      Policies:
-        - PolicyName: AssumeForgeServiceRole
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Sid: AllowAssumeForgeRole
-                Effect: Allow
-                Action: sts:AssumeRole
-                Resource: !GetAtt TowerForgeServiceRole.Arn
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
