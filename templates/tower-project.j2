@@ -147,6 +147,15 @@ Resources:
       ManagedPolicyArns:
         - 'Fn::ImportValue': !Sub ${AWS::Region}-nextflow-forge-iam-policy-NextFlowForgePolicyArn
         - 'Fn::ImportValue': !Sub ${AWS::Region}-nextflow-launch-iam-policy-NextFlowLaunchPolicyArn
+      Policies:
+        - PolicyName: AssumeForgeServiceRole
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: AllowAssumeForgeRole
+                Effect: Allow
+                Action: sts:AssumeRole
+                Resource: !Ref TowerForgeServiceRole
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
