@@ -116,6 +116,11 @@ Resources:
             Action: sts:AssumeRole
             Principal:
               AWS: !Ref AccountAdminArns
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              AWS: !ImportValue
+                'Fn::Sub': '${AWS::Region}-nextflow-ecs-task-definition-TowerRoleArn'
 
   TowerForgeBatchHeadJobRole:
     Type: AWS::IAM::Role
@@ -140,7 +145,7 @@ Resources:
             Principal:
               Service:
                 - ecs-tasks.amazonaws.com
-
+{#
   TowerRole:
     Type: "AWS::IAM::Role"
     Properties:
@@ -173,7 +178,7 @@ Resources:
               AWS:
                 - 'Fn::ImportValue': !Sub ${AWS::Region}-nextflow-ecs-service-shared-EcsServiceRoleArn
             Action: sts:AssumeRole
-
+#}
   TowerForgeBatchHeadJobPolicy:
     Type: AWS::IAM::Policy
     Properties:
@@ -619,12 +624,12 @@ Outputs:
     Value: !GetAtt TowerForgeServiceRole.Arn
     Export:
       Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceRoleArn"
-
+{#
   TowerRoleArn:
     Value: !GetAtt TowerRole.Arn
     Export:
       Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerRoleArn"
-
+#}
   TowerForgeBatchHeadJobRole:
     Value: !Ref TowerForgeBatchHeadJobRole
     Export:

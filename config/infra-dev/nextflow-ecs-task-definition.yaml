@@ -33,6 +33,9 @@ parameters:
     - thomas.yu@sagebase.org
     - khai.do@sagebase.org
   TowerConfigFileName: 'tower.yaml'
+  AccountAdminArns:
+    - '{{stack_group_config.sso_admin_role.arn}}'
+    - !stack_output_external sagebase-github-oidc-workflows-dev-nextflow-infra::ProviderRoleArn
 
 stack_tags:
   {{stack_group_config.default_stack_tags}}
