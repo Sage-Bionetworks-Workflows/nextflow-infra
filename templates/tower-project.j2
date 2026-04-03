@@ -104,6 +104,11 @@ Resources:
             Action: sts:AssumeRole
             Principal:
               AWS: !Ref AccountAdminArns
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              AWS:
+                'Fn::ImportValue': !Sub '${AWS::Region}-nextflow-ecs-task-definition-TowerRoleArn'
 
   TowerForgeBatchHeadJobRole:
     Type: AWS::IAM::Role
