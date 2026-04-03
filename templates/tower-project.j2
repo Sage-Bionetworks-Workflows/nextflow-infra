@@ -99,6 +99,7 @@ Resources:
         - !Ref TowerLaunchPolicyArn
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
+        Statement:
           - Effect: Allow
             Action: sts:AssumeRole
             Principal:
@@ -142,7 +143,7 @@ Resources:
               - Sid: AllowAssumeForgeRole
                 Effect: Allow
                 Action: sts:AssumeRole
-                Resource: !Ref TowerForgeServiceRole
+                Resource: !GetAtt TowerForgeServiceRole.Arn
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
