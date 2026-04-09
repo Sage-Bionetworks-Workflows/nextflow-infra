@@ -91,14 +91,6 @@ Conditions:
   SynapseIndexingEnabled: !Equals [!Ref AllowSynapseIndexing, "Enabled"]
 
 Resources:
-  TowerForgeServiceUser:
-    Type: AWS::IAM::User
-
-  TowerForgeServiceUserAccessKey:
-    Type: AWS::IAM::AccessKey
-    Properties:
-      UserName: !Ref TowerForgeServiceUser
-
   TowerForgeServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -111,11 +103,12 @@ Resources:
           - Effect: Allow
             Action: sts:AssumeRole
             Principal:
-              AWS: !GetAtt TowerForgeServiceUser.Arn
+              AWS: !Ref AccountAdminArns
           - Effect: Allow
             Action: sts:AssumeRole
             Principal:
-              AWS: !Ref AccountAdminArns
+              AWS:
+                'Fn::ImportValue': !Sub '${AWS::Region}-nextflow-ecs-task-definition-TowerRoleArn'
 
   TowerForgeBatchHeadJobRole:
     Type: AWS::IAM::Role
@@ -140,39 +133,6 @@ Resources:
             Principal:
               Service:
                 - ecs-tasks.amazonaws.com
-
-  TowerRole:
-    Type: "AWS::IAM::Role"
-    Properties:
-      ManagedPolicyArns:
-        - 'Fn::ImportValue': !Sub ${AWS::Region}-nextflow-forge-iam-policy-NextFlowForgePolicyArn
-        - 'Fn::ImportValue': !Sub ${AWS::Region}-nextflow-launch-iam-policy-NextFlowLaunchPolicyArn
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: ec2.amazonaws.com
-            Action: sts:AssumeRole
-          - Effect: Allow
-            Principal:
-              Service: ecs-tasks.amazonaws.com
-            Action: sts:AssumeRole
-          - Effect: Allow
-            Principal:
-              Service: eks.amazonaws.com
-            Action: sts:AssumeRole
-          - Sid: AllowEc2AssumeRole
-            Effect: Allow
-            Principal:
-              AWS: !Ref AccountAdminArns
-            Action: sts:AssumeRole
-          - Sid: AllowEcsServiceRole2AssumeRole
-            Effect: Allow
-            Principal:
-              AWS:
-                - 'Fn::ImportValue': !Sub ${AWS::Region}-nextflow-ecs-service-shared-EcsServiceRoleArn
-            Action: sts:AssumeRole
 
   TowerForgeBatchHeadJobPolicy:
     Type: AWS::IAM::Policy
@@ -556,17 +516,6 @@ Resources:
                 - !Sub "arn:aws:s3:::${TowerScratch}/*"
             - !Ref AWS::NoValue
 
-  TowerForgeServiceUserAccessKeySecret:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Description: !Sub "AWS credentials for the ${TowerForgeServiceUser} IAM user"
-      SecretString: !Sub >-
-        {
-          "aws_access_key_id":      "${TowerForgeServiceUserAccessKey}",
-          "aws_secret_access_key":  "${TowerForgeServiceUserAccessKey.SecretAccessKey}"
-        }
-      KmsKeyId: !GetAtt EncryptionKeyStack.Outputs.Key
-
 Outputs:
   S3ReadWriteAccessArns:
     Condition: HasS3ReadWriteAccessArns
@@ -600,16 +549,6 @@ Outputs:
     Export:
       Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerScratchArn"
 
-  TowerForgeServiceUser:
-    Value: !Ref TowerForgeServiceUser
-    Export:
-      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceUser"
-
-  TowerForgeServiceUserArn:
-    Value: !GetAtt TowerForgeServiceUser.Arn
-    Export:
-      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceUserArn"
-
   TowerForgeServiceRole:
     Value: !Ref TowerForgeServiceRole
     Export:
@@ -619,11 +558,6 @@ Outputs:
     Value: !GetAtt TowerForgeServiceRole.Arn
     Export:
       Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceRoleArn"
-
-  TowerRoleArn:
-    Value: !GetAtt TowerRole.Arn
-    Export:
-      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerRoleArn"
 
   TowerForgeBatchHeadJobRole:
     Value: !Ref TowerForgeBatchHeadJobRole
@@ -654,13 +588,3 @@ Outputs:
     Value: !GetAtt TowerForgeBatchExecutionRole.Arn
     Export:
       Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeBatchExecutionRoleArn"
-
-  TowerForgeServiceUserAccessKeySecret:
-    Value: !Sub "${AWS::StackName}-TowerProjectConfiguration"
-    Export:
-      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceUserAccessKeySecret"
-
-  TowerForgeServiceUserAccessKeySecretArn:
-    Value: !Ref TowerForgeServiceUserAccessKeySecret
-    Export:
-      Name: !Sub "${AWS::Region}-${AWS::StackName}-TowerForgeServiceUserAccessKeySecretArn"
