@@ -209,7 +209,9 @@ Resources:
               - Sid: AllowAssumeForgeRole
                 Effect: Allow
                 Action: sts:AssumeRole
-                Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/*-TowerForgeServiceRole-*'
+                Resource:
+                  - !Sub 'arn:aws:iam::${AWS::AccountId}:role/*-TowerForgeServiceRole-*'
+                  - 'arn:aws:iam::751556145034:role/*-TowerForgeServiceRole-*'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
