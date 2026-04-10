@@ -83,12 +83,18 @@ Parameters:
     Type: String
     Description: ARN for Tower Launch IAM policy
 
+  TowerRoleArn:
+    Type: String
+    Default: ""
+    Description: ARN of the TowerRole from the ECS task definition stack. If empty, imports from the default stack.
+
 Conditions:
   HasS3ReadWriteAccessArns:
     !Not [!Equals [!Join [",", !Ref S3ReadWriteAccessArns], ""]]
   HasS3ReadOnlyAccessArns:
     !Not [!Equals [!Join [",", !Ref S3ReadOnlyAccessArns], ""]]
   SynapseIndexingEnabled: !Equals [!Ref AllowSynapseIndexing, "Enabled"]
+  HasTowerRoleArn: !Not [!Equals [!Ref TowerRoleArn, ""]]
 
 Resources:
   TowerForgeServiceRole:
@@ -107,8 +113,10 @@ Resources:
           - Effect: Allow
             Action: sts:AssumeRole
             Principal:
-              AWS:
-                'Fn::ImportValue': !Sub '${AWS::Region}-nextflow-ecs-task-definition-TowerRoleArn'
+              AWS: !If
+                - HasTowerRoleArn
+                - !Ref TowerRoleArn
+                - 'Fn::ImportValue': !Sub '${AWS::Region}-nextflow-ecs-task-definition-TowerRoleArn'
 
   TowerForgeBatchHeadJobRole:
     Type: AWS::IAM::Role
