@@ -52,11 +52,7 @@ NONGPU_EC2_INSTANCE_TYPES = (
     "m6i.8xlarge", "r5a.8xlarge", "r6a.8xlarge", "r6i.8xlarge"
 )
 
-GPU_EC2_INSTANCE_TYPES = (
-    # Amazon linux 2023 AMIs:
-    #   https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-optimized_AMI.html
-    # GPU instance types:
-    #   https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-gpu.html
+    "g5.xlarge", "g5.2xlarge", "g5.4xlarge",
     "p4d.24xlarge", "p4de.24xlarge", "p5.48xlarge", "p5en.48xlarge",
     "p6-b200.48xlarge"
 )
