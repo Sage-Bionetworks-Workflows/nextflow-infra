@@ -61,9 +61,10 @@ GPU_EC2_INSTANCE_TYPES = (
     #   - use case: general-purpose GPU workloads (e.g. model inference with 
     #               medical imaging data or high-res volumetric scans)
     "g5.xlarge", "g5.2xlarge", "g5.4xlarge",
-    # instance with multiple NVIDIA A100 GPUs
+    # instances with multiple GPUs (NVIDIA A100 / H100 / B200)
     #   - use case: massive cutting-edge AI workloads that can be distributed
-    #               across many GPUs (e.g., LLM training)
+    #               across many GPUs (e.g. LLM training from scratch)
+    #   - note: expensive! do not use for standard challenge inference pipelines
     "p4d.24xlarge", "p4de.24xlarge", "p5.48xlarge", "p5en.48xlarge",
     "p6-b200.48xlarge"
 )
