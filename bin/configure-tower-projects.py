@@ -58,10 +58,10 @@ NONGPU_EC2_INSTANCE_TYPES = (
 #   https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-gpu.html
 GPU_EC2_INSTANCE_TYPES = (
     # instance with 1 NVIDIA A10G GPU
-    #   - use case: general-purpose GPU workloads (e.g. model inference with 
+    #   - use case: general-purpose GPU workloads (e.g. model inference with
     #               medical imaging data or high-res volumetric scans)
     "g5.xlarge", "g5.2xlarge", "g5.4xlarge",
-    # instances with multiple GPUs (NVIDIA A100 / H100 / B200)
+    # instance with multiple GPUs (NVIDIA A100 / H100 / B200)
     #   - use case: massive cutting-edge AI workloads that can be distributed
     #               across many GPUs (e.g. LLM training from scratch)
     #   - note: expensive! do not use for standard challenge inference pipelines
