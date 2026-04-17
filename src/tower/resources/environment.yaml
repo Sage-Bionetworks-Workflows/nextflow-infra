@@ -1,6 +1,4 @@
 TOWER_CONTACT_EMAIL: "!Ref 'TowerContactEmail'"
-TOWER_SMTP_HOST: "!Ref 'TowerSmtpHost'"
-TOWER_SMTP_PORT: "!Ref 'TowerSmtpPort'"
 TOWER_ENABLE_AWS_SES: "true"
 TOWER_DB_URL: "!Ref 'TowerDbUrl'"
 TOWER_DB_DRIVER: "org.mariadb.jdbc.Driver"
