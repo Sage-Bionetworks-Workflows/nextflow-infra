@@ -7,14 +7,6 @@ Parameters:
   TowerSmtpPort:
     Type: String
     Description: SMTP server port
-  TowerSmtpUser:
-    Type: String
-    Description: SMTP server username
-    NoEcho: 'true'
-  TowerSmtpPassword:
-    Type: String
-    Description: SMTP server password
-    NoEcho: 'true'
   TowerContactEmail:
     Type: String
     Description: Email for login emails
@@ -212,6 +204,14 @@ Resources:
                 Resource:
                   - !Sub 'arn:aws:iam::${AWS::AccountId}:role/*-TowerForgeServiceRole-*'
                   - 'arn:aws:iam::751556145034:role/*-TowerForgeServiceRole-*'
+        - PolicyName: SESEmailAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: AllowSendEmail
+                Effect: Allow
+                Action: ses:SendRawEmail
+                Resource: '*'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
