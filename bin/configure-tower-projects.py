@@ -52,11 +52,19 @@ NONGPU_EC2_INSTANCE_TYPES = (
     "m6i.8xlarge", "r5a.8xlarge", "r6a.8xlarge", "r6i.8xlarge"
 )
 
+# Amazon linux 2023 AMIs:
+#   https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-optimized_AMI.html
+# GPU instance types:
+#   https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-gpu.html
 GPU_EC2_INSTANCE_TYPES = (
-    # Amazon linux 2023 AMIs:
-    #   https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-optimized_AMI.html
-    # GPU instance types:
-    #   https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-gpu.html
+    # instance with 1 NVIDIA A10G GPU
+    #   - use case: general-purpose GPU workloads (e.g. model inference with
+    #               medical imaging data or high-res volumetric scans)
+    "g5.xlarge", "g5.2xlarge", "g5.4xlarge",
+    # instance with multiple GPUs (NVIDIA A100 / H100 / B200)
+    #   - use case: massive cutting-edge AI workloads that can be distributed
+    #               across many GPUs (e.g. LLM training from scratch)
+    #   - note: expensive! do not use for standard challenge inference pipelines
     "p4d.24xlarge", "p4de.24xlarge", "p5.48xlarge", "p5en.48xlarge",
     "p6-b200.48xlarge"
 )
