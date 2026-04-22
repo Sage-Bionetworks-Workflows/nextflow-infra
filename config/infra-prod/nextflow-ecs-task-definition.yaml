@@ -7,10 +7,6 @@ dependencies:
   - infra-prod/nextflow-elasticache-cluster.yaml
 
 parameters:
-  TowerSmtpHost: 'email-smtp.us-east-1.amazonaws.com'
-  TowerSmtpPort: '587'
-  TowerSmtpUser: !ssm 'smtp-username'
-  TowerSmtpPassword: !ssm 'smtp-password'
   TowerContactEmail: nextflow-admins@sagebase.org
   TowerServerUrl: https://tower.sagebionetworks.org
   TowerRedisUrl: !stack_output_external nextflow-elasticache-cluster::RedisEndpoint
