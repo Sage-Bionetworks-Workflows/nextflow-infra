@@ -32,7 +32,7 @@ jobs:
       - name: Set up python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.11'
       - name: Install dependencies
         run: pip install 'py-orca[all]' 'metaflow' 'pyyaml' 's3fs' 'setuptools==81.0.0'
       - name: Checkout py-orca repository
