@@ -3,7 +3,7 @@ template:
 stack_name: wave-ecr-user
 
 dependencies:
-  - infra-ampad/workflows-kms-key.yaml
+  - infra-sagebrain/workflows-kms-key.yaml
 
 stack_tags:
   {{stack_group_config.default_stack_tags}}
