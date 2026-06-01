@@ -42,6 +42,6 @@ jobs:
     secrets: inherit
     with:
       job-environment: "org-sagebase-sagebrain-workflows"
-      sceptre-suffix: "ampad"
+      sceptre-suffix: "sagebrain"
       tower-url: "https://tower.sagebionetworks.org"
       aws-role-to-assume: "arn:aws:iam::620117233256:role/github-oidc-nextflow-infra"
