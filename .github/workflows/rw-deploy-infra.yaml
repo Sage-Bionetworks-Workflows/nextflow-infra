@@ -8,9 +8,6 @@ on:
       sceptre-suffix:
         required: true
         type: string
-      tower-url:
-        required: true
-        type: string
       aws-role-to-assume:
         required: true
         type: string
@@ -58,22 +55,3 @@ jobs:
         run: >
           pipenv run sceptre --var-file=src/sceptre/variables/${{ inputs.sceptre-suffix }}.yaml
           launch infra-${{ inputs.sceptre-suffix }} --yes --prune
-
-      - name: Deploy projects configuration
-        run: >
-          pipenv run sceptre --var-file=src/sceptre/variables/${{ inputs.sceptre-suffix }}.yaml
-          launch projects-${{ inputs.sceptre-suffix }} --yes --prune
-
-      - name: Wait for Nextflow Tower to be up
-        uses: nev7n/wait_for_response@v1
-        with:
-          url: ${{ inputs.tower-url }}
-          responseCode: 200
-          timeout: 1800000  # 30 minutes
-          interval: 30000   # 30 seconds
-
-      - name: Configure projects in Tower
-        run: pipenv run bin/configure-tower-projects.py config/projects-${{ inputs.sceptre-suffix }}
-        env:
-          NXF_TOWER_TOKEN: ${{ secrets.TOWER_TOKEN }}
-          NXF_TOWER_API_URL: ${{ inputs.tower-url }}/api
