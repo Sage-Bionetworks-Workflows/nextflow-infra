@@ -7,6 +7,9 @@ on:
       synapse_connection_uri:
         required: true
     inputs:
+      job-environment:
+        required: true
+        type: string
       aws-role-to-assume:
         required: true
         type: string
