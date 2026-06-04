@@ -1,0 +1,5 @@
+notifications_email: aws-sagebrain-prod@sagebase.org
+compute_budget: "10000"
+storage_budget: "10000"
+security_budget: "500"
+other_budget: "500"

@@ -47,11 +47,11 @@ jobs:
       tower-url: "https://tower.sagebionetworks.org"
       aws-role-to-assume: "arn:aws:iam::751556145034:role/github-oidc-nextflow-infra"
   deploy-sagebrain:
-    needs: deploy-prod
-    uses: "./.github/workflows/rw-deploy.yaml"
+    needs: deploy-projects
+    uses: "./.github/workflows/rw-deploy-projects.yaml"
     secrets: inherit
     with:
       job-environment: "org-sagebase-sagebrain-workflows"
       sceptre-suffix: "sagebrain"
       tower-url: "https://tower.sagebionetworks.org"
-      aws-role-to-assume: "arn:aws:iam::620117233256:role/github-oidc-nextflow-infra"
+      aws-role-to-assume: "arn:aws:iam::620117233256:role/sagebase-github-oidc-sage-bionetworks-it-sagebrain-infra"
