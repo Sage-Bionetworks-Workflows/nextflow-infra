@@ -16,6 +16,7 @@ jobs:
       aws-role-to-assume: "arn:aws:iam::035458030717:role/sagebase-github-oidc-workflows-dev-nextflow-infra"
       aws-assume-role-duration: 3600
   deploy-projects:
+    needs: deploy-infra
     uses: "./.github/workflows/rw-deploy-projects.yaml"
     secrets: inherit
     with:

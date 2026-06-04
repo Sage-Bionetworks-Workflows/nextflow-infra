@@ -16,6 +16,7 @@ jobs:
       aws-role-to-assume: "arn:aws:iam::728882028485:role/sagebase-github-oidc-workflows-prod-nextflow-infra"
       aws-assume-role-duration: 3600
   deploy-projects:
+    needs: deploy-infra
     uses: "./.github/workflows/rw-deploy-projects.yaml"
     secrets: inherit
     with:
@@ -25,7 +26,7 @@ jobs:
       aws-role-to-assume: "arn:aws:iam::728882028485:role/sagebase-github-oidc-workflows-prod-nextflow-infra"
       aws-assume-role-duration: 3600
   deployment-validation:
-    needs: deploy-prod
+    needs: deploy-projects
     uses: "./.github/workflows/integration-test.yaml"
     secrets:
       nextflowtower_connection_uri: ${{ secrets.NEXTFLOWTOWER_CONNECTION_URI_PROD }}
@@ -36,7 +37,7 @@ jobs:
       dataset_id: "syn51514585"
       s3_prefix: "s3://example-project-tower-scratch/work"
   deploy-ampad:
-    needs: deploy-prod
+    needs: deploy-projects
     uses: "./.github/workflows/rw-deploy.yaml"
     secrets: inherit
     with:
