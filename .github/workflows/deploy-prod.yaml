@@ -8,7 +8,7 @@ on:
 
 jobs:
   deploy-infra:
-    uses: "./.github/workflows/rw-deploy.yaml"
+    uses: "./.github/workflows/rw-deploy-infra.yaml"
     secrets: inherit
     with:
       job-environment: "workflows-nextflow-prod"
@@ -16,7 +16,7 @@ jobs:
       aws-role-to-assume: "arn:aws:iam::728882028485:role/sagebase-github-oidc-workflows-prod-nextflow-infra"
       aws-assume-role-duration: 3600
   deploy-projects:
-    uses: "./.github/workflows/rw-deploy.yaml"
+    uses: "./.github/workflows/rw-deploy-projects.yaml"
     secrets: inherit
     with:
       job-environment: "workflows-nextflow-prod"

@@ -47,11 +47,15 @@ jobs:
           role-duration-seconds: ${{ inputs.aws-assume-role-duration }}
 
       - name: Deploy common configuration
+        env:
+          SCEPTRE_SUFFIX: ${{ inputs.sceptre-suffix }}
         run: >
-          pipenv run sceptre --var-file=src/sceptre/variables/${{ inputs.sceptre-suffix }}.yaml
+          pipenv run sceptre --var-file=src/sceptre/variables/${SCEPTRE_SUFFIX}.yaml
           launch common --yes --prune
 
       - name: Deploy infrastructure configuration
+        env:
+          SCEPTRE_SUFFIX: ${{ inputs.sceptre-suffix }}
         run: >
-          pipenv run sceptre --var-file=src/sceptre/variables/${{ inputs.sceptre-suffix }}.yaml
-          launch infra-${{ inputs.sceptre-suffix }} --yes --prune
+          pipenv run sceptre --var-file=src/sceptre/variables/${SCEPTRE_SUFFIX}.yaml
+          launch infra-${SCEPTRE_SUFFIX} --yes --prune
