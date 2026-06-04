@@ -1,0 +1,69 @@
+name: rw-deploy
+on:
+  workflow_call:
+    inputs:
+      job-environment:
+        required: true
+        type: string
+      sceptre-suffix:
+        required: true
+        type: string
+      tower-url:
+        required: true
+        type: string
+      aws-role-to-assume:
+        required: true
+        type: string
+      aws-assume-role-duration:
+        required: false
+        type: number
+        default: 3600
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.job-environment }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pipenv
+        run: pip install -U pipenv
+
+      - name: Install dependencies
+        run: pipenv install --dev
+
+      - name: Assume AWS role
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ inputs.aws-role-to-assume }}
+          role-session-name: GHA-${{ github.repository_owner }}-${{ github.event.repository.name }}-${{ github.run_id }}
+          role-duration-seconds: ${{ inputs.aws-assume-role-duration }}
+
+      - name: Deploy projects configuration
+        run: >
+          pipenv run sceptre --var-file=src/sceptre/variables/${{ inputs.sceptre-suffix }}.yaml
+          launch projects-${{ inputs.sceptre-suffix }} --yes --prune
+
+      - name: Wait for Nextflow Tower to be up
+        uses: nev7n/wait_for_response@v1
+        with:
+          url: ${{ inputs.tower-url }}
+          responseCode: 200
+          timeout: 1800000  # 30 minutes
+          interval: 30000   # 30 seconds
+
+      - name: Configure projects in Tower
+        run: pipenv run bin/configure-tower-projects.py config/projects-${{ inputs.sceptre-suffix }}
+        env:
+          NXF_TOWER_TOKEN: ${{ secrets.TOWER_TOKEN }}
+          NXF_TOWER_API_URL: ${{ inputs.tower-url }}/api

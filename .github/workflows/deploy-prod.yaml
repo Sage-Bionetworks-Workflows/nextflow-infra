@@ -7,29 +7,39 @@ on:
       - '**.md'
 
 jobs:
-  deploy-prod:
-    uses: "./.github/workflows/rw-deploy.yaml"
+  deploy-infra:
+    uses: "./.github/workflows/rw-deploy-infra.yaml"
+    secrets: inherit
+    with:
+      job-environment: "workflows-nextflow-prod"
+      sceptre-suffix: "prod"
+      aws-role-to-assume: "arn:aws:iam::728882028485:role/sagebase-github-oidc-workflows-prod-nextflow-infra"
+      aws-assume-role-duration: 3600
+  deploy-projects:
+    needs: deploy-infra
+    uses: "./.github/workflows/rw-deploy-projects.yaml"
     secrets: inherit
     with:
       job-environment: "workflows-nextflow-prod"
       sceptre-suffix: "prod"
       tower-url: "https://tower.sagebionetworks.org"
       aws-role-to-assume: "arn:aws:iam::728882028485:role/sagebase-github-oidc-workflows-prod-nextflow-infra"
-      aws-assume-role-duration: 7200
+      aws-assume-role-duration: 3600
   deployment-validation:
-    needs: deploy-prod
+    needs: deploy-projects
     uses: "./.github/workflows/integration-test.yaml"
     secrets:
       nextflowtower_connection_uri: ${{ secrets.NEXTFLOWTOWER_CONNECTION_URI_PROD }}
       synapse_connection_uri: ${{ secrets.SYNAPSE_CONNECTION_URI }}
     with:
+      job-environment: "workflows-nextflow-prod"
       aws-role-to-assume: "arn:aws:iam::728882028485:role/sagebase-github-oidc-workflows-prod-nextflow-infra"
       aws-assume-role-duration: 7200
       dataset_id: "syn51514585"
       s3_prefix: "s3://example-project-tower-scratch/work"
   deploy-ampad:
-    needs: deploy-prod
-    uses: "./.github/workflows/rw-deploy.yaml"
+    needs: deploy-projects
+    uses: "./.github/workflows/rw-deploy-projects.yaml"
     secrets: inherit
     with:
       job-environment: "org-sagebase-strides-ampad-workflows"
