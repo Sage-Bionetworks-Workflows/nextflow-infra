@@ -7,17 +7,14 @@ name = "pypi"
 python_version = "3"
 
 [packages]
-boto3 = "~=1.42"
-requests = "~=2.33"
+boto3 = "~=1.43"
+requests = "~=2.34"
 types-requests = "~=2.33"
 pyyaml = "~=6.0"
 types-pyyaml = "~=6.0"
-cfn-lint = "~=1.48"
 sagetasks = "~=0.4"
-
-[dev-packages]
-pre-commit = "~=4.5"
-sceptre = "~=4.6"
+pre-commit = "~=4.6"
+sceptre = "~=4.7"
 sceptre-cmd-resolver = "~=2.0"
 sceptre-ssm-resolver = "~=1.2"
 sceptre-resolver-aws-secrets-manager = {file = "https://github.com/iAnomaly/sceptre-resolver-aws-secrets-manager/archive/v1.0.0.tar.gz"}

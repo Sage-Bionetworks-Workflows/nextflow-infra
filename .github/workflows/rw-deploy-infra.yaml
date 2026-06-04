@@ -8,9 +8,6 @@ on:
       sceptre-suffix:
         required: true
         type: string
-      tower-url:
-        required: true
-        type: string
       aws-role-to-assume:
         required: true
         type: string
@@ -42,7 +39,7 @@ jobs:
         run: pipenv install --dev
 
       - name: Assume AWS role
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: us-east-1
           role-to-assume: ${{ inputs.aws-role-to-assume }}
@@ -50,30 +47,15 @@ jobs:
           role-duration-seconds: ${{ inputs.aws-assume-role-duration }}
 
       - name: Deploy common configuration
+        env:
+          SCEPTRE_SUFFIX: ${{ inputs.sceptre-suffix }}
         run: >
-          pipenv run sceptre --var-file=src/sceptre/variables/${{ inputs.sceptre-suffix }}.yaml
+          pipenv run sceptre --var-file="src/sceptre/variables/${SCEPTRE_SUFFIX}.yaml"
           launch common --yes --prune
 
       - name: Deploy infrastructure configuration
-        run: >
-          pipenv run sceptre --var-file=src/sceptre/variables/${{ inputs.sceptre-suffix }}.yaml
-          launch infra-${{ inputs.sceptre-suffix }} --yes --prune
-
-      - name: Deploy projects configuration
-        run: >
-          pipenv run sceptre --var-file=src/sceptre/variables/${{ inputs.sceptre-suffix }}.yaml
-          launch projects-${{ inputs.sceptre-suffix }} --yes --prune
-
-      - name: Wait for Nextflow Tower to be up
-        uses: nev7n/wait_for_response@v1
-        with:
-          url: ${{ inputs.tower-url }}
-          responseCode: 200
-          timeout: 1800000  # 30 minutes
-          interval: 30000   # 30 seconds
-
-      - name: Configure projects in Tower
-        run: pipenv run bin/configure-tower-projects.py config/projects-${{ inputs.sceptre-suffix }}
         env:
-          NXF_TOWER_TOKEN: ${{ secrets.TOWER_TOKEN }}
-          NXF_TOWER_API_URL: ${{ inputs.tower-url }}/api
+          SCEPTRE_SUFFIX: ${{ inputs.sceptre-suffix }}
+        run: >
+          pipenv run sceptre --var-file="src/sceptre/variables/${SCEPTRE_SUFFIX}.yaml"
+          launch "infra-${SCEPTRE_SUFFIX}" --yes --prune

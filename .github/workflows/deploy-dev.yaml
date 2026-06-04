@@ -7,22 +7,32 @@ on:
       - '**.md'
 
 jobs:
-  deploy-dev:
-    uses: "./.github/workflows/rw-deploy.yaml"
+  deploy-infra:
+    uses: "./.github/workflows/rw-deploy-infra.yaml"
+    secrets: inherit
+    with:
+      job-environment: "workflows-nextflow-dev"
+      sceptre-suffix: "dev"
+      aws-role-to-assume: "arn:aws:iam::035458030717:role/sagebase-github-oidc-workflows-dev-nextflow-infra"
+      aws-assume-role-duration: 3600
+  deploy-projects:
+    needs: deploy-infra
+    uses: "./.github/workflows/rw-deploy-projects.yaml"
     secrets: inherit
     with:
       job-environment: "workflows-nextflow-dev"
       sceptre-suffix: "dev"
       tower-url: "https://tower-dev.sagebionetworks.org"
       aws-role-to-assume: "arn:aws:iam::035458030717:role/sagebase-github-oidc-workflows-dev-nextflow-infra"
-      aws-assume-role-duration: 7200
+      aws-assume-role-duration: 3600
   deployment-validation:
-    needs: deploy-dev
+    needs: deploy-projects
     uses: "./.github/workflows/integration-test.yaml"
     secrets:
       nextflowtower_connection_uri: ${{ secrets.NEXTFLOWTOWER_CONNECTION_URI_DEV }}
       synapse_connection_uri: ${{ secrets.SYNAPSE_CONNECTION_URI }}
     with:
+      job-environment: "workflows-nextflow-dev"
       aws-role-to-assume: "arn:aws:iam::035458030717:role/sagebase-github-oidc-workflows-dev-nextflow-infra"
       aws-assume-role-duration: 7200
       dataset_id: "syn51514585"
