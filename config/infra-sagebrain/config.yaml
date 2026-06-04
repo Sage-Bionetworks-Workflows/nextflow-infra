@@ -1,0 +1,2 @@
+sso_admin_role:
+  arn: arn:aws:iam::620117233256:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_Administrator_796a395ce7a0eea6
