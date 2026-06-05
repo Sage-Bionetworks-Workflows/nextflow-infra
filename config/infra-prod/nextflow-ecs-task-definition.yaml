@@ -29,6 +29,9 @@ parameters:
     - thomas.yu@sagebase.org
     - khai.do@sagebase.org
   TowerConfigFileName: 'tower.yaml'
+  ExternalTowerForgeRoles:
+    - "arn:aws:iam::751556145034:role/*-TowerForgeServiceRole-*"   # ampad
+    - "arn:aws:iam::620117233256:role/*-TowerForgeServiceRole-*"   # sagebrain
 
 stack_tags:
   {{stack_group_config.default_stack_tags}}
