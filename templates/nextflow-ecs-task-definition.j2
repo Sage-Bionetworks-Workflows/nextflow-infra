@@ -156,9 +156,16 @@ Parameters:
     Type: String
     Description: Prefix used for CloudWatch log streams
     Default: 'tower'
+  ExternalTowerForgeRoles:
+    Type: CommaDelimitedList
+    Default: ""
+    Description: >
+      Comma-separated list of external TowerForgeServiceRole ARN patterns
+      that the TowerRole is allowed to assume (e.g., for cross-account access)
 Conditions:
   HasTowerOidcClient: !Not [!Equals [ !Ref TowerOidcClientId, "NULL"]]
   HasTowerRootUsers: !Not [!Equals [!Join [",", !Ref TowerRootUsers], ""]]
+  HasExternalTowerForgeRoles: !Not [!Equals [!Join [",", !Ref ExternalTowerForgeRoles], ""]]
 Resources:
   TowerTaskLogGroup:
     Type: AWS::Logs::LogGroup
@@ -197,7 +204,13 @@ Resources:
                 Action: sts:AssumeRole
                 Resource:
                   - !Sub 'arn:aws:iam::${AWS::AccountId}:role/*-TowerForgeServiceRole-*'
-                  - 'arn:aws:iam::751556145034:role/*-TowerForgeServiceRole-*'
+              - !If
+                - HasExternalTowerForgeRoles
+                - Sid: AllowAssumeExternalForgeRole
+                  Effect: Allow
+                  Action: sts:AssumeRole
+                  Resource: !Ref ExternalTowerForgeRoles
+                - !Ref AWS::NoValue
         - PolicyName: SESEmailAccess
           PolicyDocument:
             Version: '2012-10-17'
