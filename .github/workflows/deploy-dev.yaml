@@ -25,7 +25,7 @@ jobs:
       tower-url: "https://tower-dev.sagebionetworks.org"
       aws-role-to-assume: "arn:aws:iam::035458030717:role/sagebase-github-oidc-workflows-dev-nextflow-infra"
       aws-assume-role-duration: 3600
-  deployment-validation:
+  validate-dev:
     needs: deploy-projects
     uses: "./.github/workflows/integration-test.yaml"
     secrets:

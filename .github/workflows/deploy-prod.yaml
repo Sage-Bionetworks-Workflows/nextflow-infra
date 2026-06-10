@@ -25,7 +25,7 @@ jobs:
       tower-url: "https://tower.sagebionetworks.org"
       aws-role-to-assume: "arn:aws:iam::728882028485:role/sagebase-github-oidc-workflows-prod-nextflow-infra"
       aws-assume-role-duration: 3600
-  deployment-validation:
+  validate-prod:
     needs: deploy-projects
     uses: "./.github/workflows/integration-test.yaml"
     secrets:
@@ -38,7 +38,7 @@ jobs:
       dataset_id: "syn51514585"
       s3_prefix: "s3://example-project-tower-scratch/work"
   deploy-ampad:
-    needs: deploy-projects
+    needs: validate-prod
     uses: "./.github/workflows/rw-deploy-projects.yaml"
     secrets: inherit
     with:
@@ -46,3 +46,12 @@ jobs:
       sceptre-suffix: "ampad"
       tower-url: "https://tower.sagebionetworks.org"
       aws-role-to-assume: "arn:aws:iam::751556145034:role/github-oidc-nextflow-infra"
+  deploy-sagebrain:
+    needs: validate-prod
+    uses: "./.github/workflows/rw-deploy-projects.yaml"
+    secrets: inherit
+    with:
+      job-environment: "org-sagebase-sagebrain-workflows"
+      sceptre-suffix: "sagebrain"
+      tower-url: "https://tower.sagebionetworks.org"
+      aws-role-to-assume: "arn:aws:iam::620117233256:role/sagebase-github-oidc-sage-bionetworks-it-sagebrain-infra"

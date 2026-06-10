@@ -25,7 +25,7 @@ on:
         type: string
 
 jobs:
-  deployment-validation:
+  test:
     runs-on: ubuntu-latest
     environment: ${{ inputs.job-environment }}
     permissions:
