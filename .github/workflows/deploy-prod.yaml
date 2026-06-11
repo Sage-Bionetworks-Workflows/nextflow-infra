@@ -54,4 +54,4 @@ jobs:
       job-environment: "org-sagebase-sagebrain-workflows"
       sceptre-suffix: "sagebrain"
       tower-url: "https://tower.sagebionetworks.org"
-      aws-role-to-assume: "arn:aws:iam::620117233256:role/sagebase-github-oidc-sage-bionetworks-it-sagebrain-infra"
+      aws-role-to-assume: "arn:aws:iam::620117233256:role/sagebase-github-oidc-workflows-prod-nextflow-infra"
