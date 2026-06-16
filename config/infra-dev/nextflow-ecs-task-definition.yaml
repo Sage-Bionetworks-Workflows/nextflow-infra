@@ -18,10 +18,10 @@ parameters:
   TowerDbPassword: !aws_secrets_manager nextflow-aurora-mysql-migration-NextflowTowerDatabaseUserSecret::SecretString::password
   TowerGoogleClientId: !aws_secrets_manager nextflow/google_oauth_app::SecretString::client
   TowerGoogleSecret: !aws_secrets_manager nextflow/google_oauth_app::SecretString::secret
-  CronContainerImage: 'cr.seqera.io/enterprise/nf-tower-enterprise/backend:{{stack_group_config.tower_version}}'
-  FrontendContainerImage: 'cr.seqera.io/enterprise/nf-tower-enterprise/frontend:{{stack_group_config.tower_version}}'
-  BackendContainerImage: 'cr.seqera.io/enterprise/nf-tower-enterprise/backend:{{stack_group_config.tower_version}}'
-  MigrateDBContainerImage: 'cr.seqera.io/enterprise/nf-tower-enterprise/migrate-db:{{stack_group_config.tower_version}}'
+  CronContainerImage: 'cr.seqera.io/private/nf-tower-enterprise/backend:{{stack_group_config.tower_version}}'
+  FrontendContainerImage: 'cr.seqera.io/private/nf-tower-enterprise/frontend:{{stack_group_config.tower_version}}'
+  BackendContainerImage: 'cr.seqera.io/private/nf-tower-enterprise/backend:{{stack_group_config.tower_version}}'
+  MigrateDBContainerImage: 'cr.seqera.io/private/nf-tower-enterprise/migrate-db:{{stack_group_config.tower_version}}'
   EfsFileSystemId: !stack_output_external nextflow-efs-file-system::FileSystemId
   EfsVolumeMountPath: '/efs'
   TowerUserWorkspace: 'true'
