@@ -13,6 +13,7 @@ parameters:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/anh.nguyet.vu@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/jaclyn.beck@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/ram.ayyala@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/orion.banks@sagebase.org'
 
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
