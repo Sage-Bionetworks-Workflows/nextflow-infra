@@ -179,6 +179,11 @@ Resources:
             Resource:
               - !GetAtt TowerForgeBatchWorkJobRole.Arn
               - !GetAtt TowerForgeBatchExecutionRole.Arn
+          - Sid: HeadJobSecretAccess
+            Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource: "arn:aws:secretsmanager:*:*:secret:tower-*"
       Roles:
         - !Ref TowerForgeBatchHeadJobRole
 
