@@ -1,0 +1,36 @@
+template:
+  path: tower-project.j2
+stack_name: complementaire-project
+dependencies:
+  - common/nextflow-forge-iam-policy.yaml
+  - common/nextflow-launch-iam-policy.yaml
+  - projects-prod/shared-ce-prod-project.yaml
+
+sceptre_user_data:
+  ManualComputeEnvs:    # use the shared project's forge batch CEs to run pipelines
+    - WorkspaceName: shared-ce-prod-project
+      ComputeEnvName: shared-ce-prod-project-ondemand-v13
+    - WorkspaceName: shared-ce-prod-project
+      ComputeEnvName: shared-ce-prod-project-spot-v13
+
+parameters:
+  S3ReadWriteAccessArns:
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/jineta.banerjee@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/ram.ayyala@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/william.poehlman@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/ziwei.pan@sagebase.org'
+
+  AllowSynapseIndexing: Enabled
+  AccountAdminArns:
+    - '{{stack_group_config.sso_admin_role.arn}}'
+    - !stack_output_external sagebase-github-oidc-workflows-prod-nextflow-infra::ProviderRoleArn
+  TemplateRootUrl: 'https://{{stack_group_config.admincentral_cf_bucket}}.s3.amazonaws.com'
+  TowerForgePolicyArn: !stack_output_external nextflow-forge-iam-policy::NextFlowForgePolicyArn
+  TowerLaunchPolicyArn: !stack_output_external nextflow-launch-iam-policy::NextFlowLaunchPolicyArn
+
+stack_tags:
+  Department: SCCE
+  Project: Complement-ARIE
+  OwnerEmail: ziwei.pan@sagebase.org
+  CostCenter: Complement-ARIE - NYU - BP01 / 126600
