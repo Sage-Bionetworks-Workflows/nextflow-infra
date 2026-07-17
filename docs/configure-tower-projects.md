@@ -132,7 +132,7 @@ For each valid project configuration file in the specified directory:
 
 ## Compute Environment Versioning
 
-The script uses `CE_VERSION` (i.e. `v13`) to track compute environment versions.
+The script uses `CE_VERSION` (i.e. `v14`) to track compute environment versions.
 When updating CE configurations:
 
 1. Increment `CE_VERSION` in the script

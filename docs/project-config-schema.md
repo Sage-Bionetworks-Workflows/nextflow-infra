@@ -96,9 +96,9 @@ creating its own Batch Forge CEs.
 sceptre_user_data:
   ManualComputeEnvs:
     - WorkspaceName: shared-ce-prod-project
-      ComputeEnvName: shared-ce-prod-project-ondemand-v13
+      ComputeEnvName: shared-ce-prod-project-ondemand-v14
     - WorkspaceName: shared-ce-prod-project
-      ComputeEnvName: shared-ce-prod-project-spot-v13
+      ComputeEnvName: shared-ce-prod-project-spot-v14
 ```
 
 | Field | Description |
