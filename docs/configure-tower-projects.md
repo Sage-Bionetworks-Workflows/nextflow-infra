@@ -136,8 +136,13 @@ The script uses `CE_VERSION` (i.e. `v14`) to track compute environment versions.
 When updating CE configurations:
 
 1. Increment `CE_VERSION` in the script
-2. Run the script to create new CEs with the updated version
-3. Old CEs (not matching the version) are automatically cleaned up
+2. Update the hardcoded version suffix in every `ManualComputeEnvs`
+   `ComputeEnvName` reference in the project configs (e.g.
+   `shared-ce-prod-project-ondemand-v13` -> `-v14`). Projects reference the
+   shared workspace's Batch Forge CEs by name, so the old (now cleaned-up)
+   source CEs would otherwise no longer resolve.
+3. Run the script to create new CEs with the updated version
+4. Old CEs (not matching the version) are automatically cleaned up
 
 ## Skipping Projects
 
