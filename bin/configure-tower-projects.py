@@ -904,8 +904,6 @@ class TowerWorkspace:
                             "configMode": "Manual",
                             "headQueue": source_ce_head_queue,
                             "computeQueue": source_ce_compute_queue,
-                            "headJobCpus": 8,
-                            "headJobMemoryMb": 15000,
                             "cliPath": "/home/ec2-user/miniconda/bin/aws",
                             "resourceLabelIds": label_ids,
                             "executionRole": source_ce_execution_role,
