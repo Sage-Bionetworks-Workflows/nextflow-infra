@@ -75,9 +75,9 @@ Resources:
     Properties:
       Name: Nextflow-Tower-ALB
       Scheme: internet-facing
-      LoadBalancerAttributes:
-      - Key: idle_timeout.timeout_seconds
-        Value: '30'
+      # LoadBalancerAttributes:
+      # - Key: idle_timeout.timeout_seconds
+      #   Value: '30'
       Subnets: !Ref SubnetIds
       SecurityGroups:
         - !GetAtt EcsAlbSecurityGroup.GroupId
@@ -86,14 +86,14 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     DependsOn: EcsApplicationLoadBalancer
     Properties:
-      HealthCheckIntervalSeconds: 10
-      HealthCheckPath: /
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: /service-info
       HealthCheckProtocol: HTTP
-      HealthCheckTimeoutSeconds: 5
+      HealthCheckTimeoutSeconds: 10
       HealthyThresholdCount: 2
       Port: !Ref TowerUIContainerPort
       Protocol: HTTP
-      UnhealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
       VpcId: !Ref VpcId
 
   EcsAlbListener:
@@ -117,6 +117,7 @@ Resources:
       DesiredCount: 1
       ServiceName: Nextflow-Tower-Service
       TaskDefinition: !Ref TaskDefinitionArn
+      HealthCheckGracePeriodSeconds: 300
       CapacityProviderStrategy:
         - CapacityProvider: !Ref TowerCapacityProviderName
           Weight: 1
