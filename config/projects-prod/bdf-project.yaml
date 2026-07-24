@@ -3,7 +3,7 @@ stack_name: bdf-project
 stack_tags:
   Department: IBC
   Project: Infrastructure
-  OwnerEmail: ziwei.pan@sagebase.org
+  OwnerEmail: rixing.xu@sagebase.org
   CostCenter: ARPA-H with Leidos / 125200 # Valid values here: https://mips-api.finops.sageit.org/tags
 
 parameters:
