@@ -1279,11 +1279,29 @@ class TowerOrganization:
     def create_workspaces(self) -> Dict[str, TowerWorkspace]:
         """Create a workspace for each project
 
+        Workspaces that create their own Batch Forge compute environments
+        are processed first, followed by workspaces that reference CEs from
+        other workspaces via ManualComputeEnvs. This ensures that source CEs
+        exist before dependent workspaces try to reference them.
+
         Returns:
             Dict[str, TowerWorkspace]:
                 Mapping of project names and their corresponding workspaces
         """
-        for name, users in self.list_projects():
+        # Process source workspaces (no ManualComputeEnvs) before dependent ones
+        all_projects = list(self.list_projects())
+        source_projects = [
+            (name, users)
+            for name, users in all_projects
+            if name not in self.manual_compute_env_per_project
+        ]
+        dependent_projects = [
+            (name, users)
+            for name, users in all_projects
+            if name in self.manual_compute_env_per_project
+        ]
+
+        for name, users in source_projects + dependent_projects:
             tags = self.tags_per_project[name]
             manual_compute_envs = self.manual_compute_env_per_project.get(name, [])
             if self.use_teams:
