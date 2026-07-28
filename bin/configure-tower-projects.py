@@ -1301,7 +1301,8 @@ class TowerOrganization:
             if name in self.manual_compute_env_per_project
         ]
 
-        for name, users in source_projects + dependent_projects:
+        ordered_projects = source_projects + dependent_projects
+        for name, users in ordered_projects:
             tags = self.tags_per_project[name]
             manual_compute_envs = self.manual_compute_env_per_project.get(name, [])
             if self.use_teams:
