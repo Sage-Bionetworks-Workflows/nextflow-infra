@@ -10,7 +10,7 @@ parameters:
   S3ReadWriteAccessArns:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/jineta.banerjee@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/robert.allaway@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/christina.conrad@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/christina.parry@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/sasha.scott@sagebase.org'
     - "{{stack_group_config.tower_viewer_arn_prefix}}/anh.nguyet.vu@sagebase.org"
     - "{{stack_group_config.tower_viewer_arn_prefix}}/belinda.garana@sagebase.org"
