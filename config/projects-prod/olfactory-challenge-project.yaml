@@ -9,7 +9,6 @@ stack_tags:
 parameters:
   S3ReadOnlyAccessArns:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/jenny.medina@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/verena.chung@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/gaia.andreoletti@sagebase.org'
 
