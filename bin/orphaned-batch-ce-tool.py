@@ -415,8 +415,15 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     )
     parser.add_argument(
         "--endpoint",
-        default=os.environ.get("TOWER_API_ENDPOINT", DEFAULT_ENDPOINT),
-        help=f"Tower endpoint (default: {DEFAULT_ENDPOINT})",
+        default=(
+            os.environ.get("TOWER_API_ENDPOINT")
+            or os.environ.get("NXF_TOWER_API_URL")
+            or DEFAULT_ENDPOINT
+        ),
+        help=(
+            f"Tower endpoint (default: $TOWER_API_ENDPOINT, "
+            f"$NXF_TOWER_API_URL, or {DEFAULT_ENDPOINT})"
+        ),
     )
     parser.add_argument(
         "--token",
