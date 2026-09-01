@@ -70,8 +70,13 @@ DEFAULT_REGION = "us-east-1"
 TIMEOUT = 30
 TOWER_PROJECT_TAG = "TowerProject"
 
-# Batch Forge names the compute environment "TowerForge-<id>-<suffix>".
-FORGE_NAME_RE = re.compile(r"^TowerForge-(?P<ce_id>[^-]+)-.+$")
+# Batch Forge names the compute environment after the Tower CE ID. It may or
+# may not carry a suffix:
+#   TowerForge-<id>        (e.g. the on-demand compute environment)
+#   TowerForge-<id>-head   / TowerForge-<id>-work
+# The trailing "-<suffix>" is therefore optional; without it the whole
+# remainder is the Tower CE ID.
+FORGE_NAME_RE = re.compile(r"^TowerForge-(?P<ce_id>[^-]+)(?:-.+)?$")
 
 # Job-queue deletion polling (queues must be gone before the CE can delete).
 QUEUE_DELETE_POLL_SECONDS = 5
