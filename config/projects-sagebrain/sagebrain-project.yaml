@@ -10,10 +10,10 @@ parameters:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/jineta.banerjee@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/milan.vu@sagebase.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/anh.nguyet.vu@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/jaclyn.beck@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/ram.ayyala@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/orion.banks@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/ziwei.pan@sagebase.org'
 
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
