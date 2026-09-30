@@ -13,7 +13,7 @@ stack_tags:
   Department: Cancer Biology
   Project: Cancer Spatial Risk
   OwnerEmail: milen.nikolov@sagebase.org
-  CostCenter: ISB - BP01 / 126900 # Valid values here: https://github.com/Sage-Bionetworks/aws-infra/tree/master/templates/tags
+  CostCenter: Spatial Cancer Risk - ISB - BP01 / 126900 # Valid values here: https://github.com/Sage-Bionetworks/aws-infra/tree/master/templates/tags
 
 parameters:
   S3ReadWriteAccessArns:
