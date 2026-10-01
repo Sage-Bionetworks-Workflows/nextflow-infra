@@ -29,14 +29,13 @@ jobs:
     needs: deploy-projects
     uses: "./.github/workflows/integration-test.yaml"
     secrets:
-      nextflowtower_connection_uri: ${{ secrets.NEXTFLOWTOWER_CONNECTION_URI_PROD }}
-      synapse_connection_uri: ${{ secrets.SYNAPSE_CONNECTION_URI }}
+      tower-token: ${{ secrets.TOWER_TOKEN }}
     with:
       job-environment: "workflows-nextflow-prod"
-      aws-role-to-assume: "arn:aws:iam::728882028485:role/sagebase-github-oidc-workflows-prod-nextflow-infra"
-      aws-assume-role-duration: 7200
-      dataset_id: "syn51514585"
-      s3_prefix: "s3://example-project-tower-scratch/work"
+      tower-url: "https://tower.sagebionetworks.org"
+      workspace: "Sage-Bionetworks/example-project"
+      compute-env: "manual-shared-ce-prod-project-spot-v13"
+      work-dir: "s3://example-project-tower-scratch/work"
   deploy-ampad:
     needs: validate-prod
     uses: "./.github/workflows/rw-deploy-projects.yaml"
