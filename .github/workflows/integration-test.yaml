@@ -2,60 +2,67 @@ name: integration-test
 on:
   workflow_call:
     secrets:
-      nextflowtower_connection_uri:
-        required: true
-      synapse_connection_uri:
+      tower-token:
+        description: Seqera Platform (Tower) access token with permission to launch pipelines in the target workspace
         required: true
     inputs:
       job-environment:
         required: true
         type: string
-      aws-role-to-assume:
+      tower-url:
+        description: Base URL of the Seqera Platform (Tower) instance (without a trailing /api)
         required: true
         type: string
-      aws-assume-role-duration:
+      workspace:
+        description: Target workspace as OrganizationName/WorkspaceName (or a numeric workspace ID)
+        required: true
+        type: string
+      compute-env:
+        description: Name of the compute environment in the workspace to launch nf-canary on
+        required: true
+        type: string
+      work-dir:
+        description: S3 work directory for the pipeline run
+        required: true
+        type: string
+      pipeline-url:
+        description: Git URL of the nf-canary pipeline to launch
         required: false
-        type: number
-        default: 3600
-      dataset_id:
-        required: true
         type: string
-      s3_prefix:
-        required: true
+        default: https://github.com/seqeralabs/nf-canary
+      revision:
+        description: Git revision (branch or tag) of the pipeline to launch
+        required: false
         type: string
+        default: main
 
 jobs:
   test:
     runs-on: ubuntu-latest
     environment: ${{ inputs.job-environment }}
     permissions:
-      id-token: write
       contents: read
     steps:
-      - name: Set up python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Install dependencies
-        run: pip install 'py-orca[all]' 'metaflow' 'pyyaml' 's3fs' 'setuptools==81.0.0'
-      - name: Checkout py-orca repository
-        uses: actions/checkout@v5
-        with:
-          repository: Sage-Bionetworks-Workflows/py-orca
-          ref: tower-testing
-      - name: Assume AWS role
-        uses: aws-actions/configure-aws-credentials@v5.1.0
-        with:
-          aws-region: us-east-1
-          role-to-assume: ${{ inputs.aws-role-to-assume }}
-          role-session-name: GHA-${{ github.repository_owner }}-${{ github.event.repository.name }}-${{ github.run_id }}
-          role-duration-seconds: ${{ inputs.aws-assume-role-duration }}
-      - name: run validation
-        run: python demo.py run --dataset_id "$DATASET_ID" --s3_prefix "$S3_PREFIX"
+      - name: Install tw CLI
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --proto-redir '=https' -fsSL https://github.com/seqeralabs/tower-cli/releases/latest/download/tw-linux-x86_64 -o tw
+          chmod +x tw
+          sudo mv tw /usr/local/bin/tw
+          tw --version
+      - name: Launch nf-canary and wait for success
+        run: >
+          tw launch "$PIPELINE_URL"
+          --workspace "$WORKSPACE"
+          --compute-env "$COMPUTE_ENV"
+          --work-dir "$WORK_DIR"
+          --revision "$REVISION"
+          --wait SUCCEEDED
         env:
-          # The URI must be in format syn://:<token>@
-          # Uses the Synapse orca-service user account's nextflow-infra-py-orca-test token
-          NEXTFLOWTOWER_CONNECTION_URI: ${{ secrets.nextflowtower_connection_uri }}
-          SYNAPSE_CONNECTION_URI: ${{ secrets.synapse_connection_uri }}
-          DATASET_ID: ${{ inputs.dataset_id }}
-          S3_PREFIX: ${{ inputs.s3_prefix }}
+          TOWER_ACCESS_TOKEN: ${{ secrets.tower-token }}
+          TOWER_API_ENDPOINT: ${{ inputs.tower-url }}/api
+          PIPELINE_URL: ${{ inputs.pipeline-url }}
+          WORKSPACE: ${{ inputs.workspace }}
+          COMPUTE_ENV: ${{ inputs.compute-env }}
+          WORK_DIR: ${{ inputs.work-dir }}
+          REVISION: ${{ inputs.revision }}

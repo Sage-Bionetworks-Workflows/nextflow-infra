@@ -29,11 +29,10 @@ jobs:
     needs: deploy-projects
     uses: "./.github/workflows/integration-test.yaml"
     secrets:
-      nextflowtower_connection_uri: ${{ secrets.NEXTFLOWTOWER_CONNECTION_URI_DEV }}
-      synapse_connection_uri: ${{ secrets.SYNAPSE_CONNECTION_URI }}
+      tower-token: ${{ secrets.TOWER_TOKEN }}
     with:
       job-environment: "workflows-nextflow-dev"
-      aws-role-to-assume: "arn:aws:iam::035458030717:role/sagebase-github-oidc-workflows-dev-nextflow-infra"
-      aws-assume-role-duration: 7200
-      dataset_id: "syn51514585"
-      s3_prefix: "s3://example-dev-project-tower-scratch/work"
+      tower-url: "https://tower-dev.sagebionetworks.org"
+      workspace: "Sage-Bionetworks/example-dev-project"
+      compute-env: "manual-shared-ce-dev-project-spot-v13"
+      work-dir: "s3://example-dev-project-tower-scratch/work"
