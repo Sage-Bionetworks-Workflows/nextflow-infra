@@ -410,7 +410,7 @@ Resources:
           PortMappings:
             - ContainerPort: !Ref BackendContainerPort
               HostPort: !Ref BackendHostPort
-          Essential: false
+          Essential: true
           Links:
           {%- if sceptre_user_data.EnableRedisDocker is defined and sceptre_user_data.EnableRedisDocker %}
             - redis
