@@ -18,21 +18,22 @@ stack_tags:
 parameters:
   S3ReadWriteAccessArns:
     # (REQUIRED) Step 3: Replace the email below with your '@sagebase.org' address
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/adam.taylor@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/milen.nikolov@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/chelsea.nayan@sagebase.org'
 
     # (Optional) Step 4: Uncomment and update the following line(s) to grant additional users with read/write access
     - '{{stack_group_config.tower_viewer_arn_prefix}}/thorsson@systemsbiology.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/baguilar@systemsbiology.org'
+    - 'arn:aws:iam::426577889437:user/vesteinn.thorsson.admin'
 
   S3DenyDeleteAccessArns:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/thorsson@systemsbiology.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/baguilar@systemsbiology.org'
+    - 'arn:aws:iam::426577889437:user/vesteinn.thorsson.admin'
 
   # (Optional) Step 5: Uncomment and update the following line(s) to grant additional users with read-only access
-  # S3ReadOnlyAccessArns:
-  #   - '{{stack_group_config.tower_viewer_arn_prefix}}/rixing.xu@sagebase.org'
+  S3ReadOnlyAccessArns:
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/rixing.xu@sagebase.org'
 
   # (Optional) Step 6: Uncomment the following line to disable the feature allowing Synapse to index files
   #                    in the long-term (archival) S3 bucket (by default, this feature is enabled)
