@@ -26,11 +26,6 @@ parameters:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/baguilar@systemsbiology.org'
     - 'arn:aws:iam::426577889437:user/vesteinn.thorsson.admin'
 
-  S3DenyDeleteAccessArns:
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/thorsson@systemsbiology.org'
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/baguilar@systemsbiology.org'
-    - 'arn:aws:iam::426577889437:user/vesteinn.thorsson.admin'
-
   # (Optional) Step 5: Uncomment and update the following line(s) to grant additional users with read-only access
   S3ReadOnlyAccessArns:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/rixing.xu@sagebase.org'
