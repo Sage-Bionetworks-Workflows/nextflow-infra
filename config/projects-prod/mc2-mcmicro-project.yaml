@@ -7,7 +7,6 @@ dependencies:
 
 parameters:
   S3ReadOnlyAccessArns:
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/adam.taylor@sagebase.org'
     - arn:aws:iam::292075781285:user/cy101
     - arn:aws:iam::292075781285:user/jmuhlich
     # The following roles don't exist since the users are not Sage employees.
