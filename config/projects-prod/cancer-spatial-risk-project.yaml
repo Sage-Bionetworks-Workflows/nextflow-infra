@@ -12,7 +12,7 @@ stack_tags:
   # (REQUIRED) Step 2: Update all four values below
   Department: Cancer Biology
   Project: Cancer Spatial Risk
-  OwnerEmail: milen.nikolov@sagebase.org
+  OwnerEmail: aditi.gopalan@sagebase.org
   CostCenter: Spatial Cancer Risk - ISB - BP01 / 126900 # Valid values here: https://mips-api.finops.sageit.org/tags
 
 parameters:
