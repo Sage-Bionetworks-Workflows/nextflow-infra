@@ -11,7 +11,6 @@ stack_tags:
 parameters:
   S3ReadWriteAccessArns:
     - "{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org"
-    - "{{stack_group_config.tower_viewer_arn_prefix}}/adam.taylor@sagebase.org"
     - "{{stack_group_config.tower_viewer_arn_prefix}}/bryan.fauble@sagebase.org"
     - "{{stack_group_config.tower_viewer_arn_prefix}}/rixing.xu@sagebase.org"
     # The following roles don't exist since the users are not Sage employees.

@@ -7,7 +7,7 @@ dependencies:
 
 parameters:
   S3ReadWriteAccessArns:
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/adam.taylor@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/aditi.gopalan@sagebase.org'
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
     - '{{stack_group_config.sso_admin_role.arn}}'
