@@ -12,7 +12,7 @@ stack_tags:
   # (REQUIRED) Step 2: Update all four values below
   Department: Cancer Biology
   Project: Cancer Spatial Risk
-  OwnerEmail: aditi.gopalan@sagebase.org
+  OwnerEmail: milen.nikolov@sagebase.org
   CostCenter: Spatial Cancer Risk - ISB - BP01 / 126900 # Valid values here: https://mips-api.finops.sageit.org/tags
 
 parameters:
@@ -20,6 +20,7 @@ parameters:
     # (REQUIRED) Step 3: Replace the email below with your '@sagebase.org' address
     - '{{stack_group_config.tower_viewer_arn_prefix}}/milen.nikolov@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/chelsea.nayan@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/aditi.gopalan@sagebase.org'
 
     # (Optional) Step 4: Uncomment and update the following line(s) to grant additional users with read/write access
     - '{{stack_group_config.tower_viewer_arn_prefix}}/thorsson@systemsbiology.org'
