@@ -20,6 +20,9 @@ parameters:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/ram.ayyala@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/william.poehlman@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/ziwei.pan@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/richard.abdill@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/orion.banks@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/aditya.nath@sagebase.org'
 
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
