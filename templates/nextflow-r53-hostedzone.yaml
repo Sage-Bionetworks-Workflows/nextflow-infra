@@ -1,0 +1,98 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: >
+  Route 53 public hosted zone for Nextflow Tower with DNS query logging
+  to CloudWatch Logs. Based on aws-infra R53-hostedzone.yaml (v0.2.20).
+  Must be deployed in us-east-1, which is the only region where Route 53
+  can deliver query logs.
+
+Parameters:
+
+  Department:
+    Type: String
+    Description: The department for this resource (i.e. Computational Oncology)
+
+  Project:
+    Type: String
+    Description: The name of the project that this resource is used for (i.e. Resilience)
+
+  OwnerEmail:
+    Type: String
+    Description: The owner's email address
+
+  DnsDomainName:
+    Type: String
+    Description: A fully qualified domain name (i.e. tower.sagebionetworks.org)
+
+  QueryLogRetentionInDays:
+    Type: Number
+    Description: Number of days to retain Route 53 DNS query logs
+    Default: 365
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653]
+
+Resources:
+
+  QueryLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      # Route 53 requires query log groups to live under /aws/route53/
+      LogGroupName: !Sub '/aws/route53/${DnsDomainName}'
+      RetentionInDays: !Ref QueryLogRetentionInDays
+
+  QueryLogResourcePolicy:
+    Type: AWS::Logs::ResourcePolicy
+    Properties:
+      PolicyName: !Sub '${AWS::StackName}-route53-query-logging'
+      PolicyDocument: !Sub |
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "Route53QueryLogsToCloudWatchLogs",
+              "Effect": "Allow",
+              "Principal": { "Service": "route53.amazonaws.com" },
+              "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
+              "Resource": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${QueryLogGroup}:*",
+              "Condition": {
+                "StringEquals": { "aws:SourceAccount": "${AWS::AccountId}" },
+                "ArnLike": { "aws:SourceArn": "arn:${AWS::Partition}:route53:::hostedzone/*" }
+              }
+            }
+          ]
+        }
+
+  HostedZone:
+    Type: AWS::Route53::HostedZone
+    # Route 53 validates that it can write to the log group when the
+    # query logging config is created, so the policy must exist first
+    DependsOn: QueryLogResourcePolicy
+    Properties:
+      HostedZoneConfig:
+        Comment: !Sub 'Hosted zone for ${DnsDomainName}'
+      Name: !Sub '${DnsDomainName}.'
+      QueryLoggingConfig:
+        # Route 53 rejects the ':*' suffix included in GetAtt LogGroup.Arn
+        CloudWatchLogsLogGroupArn: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${QueryLogGroup}'
+      HostedZoneTags:
+        - Key: Name
+          Value: !Ref AWS::StackName
+        - Key: Department
+          Value: !Ref Department
+        - Key: Project
+          Value: !Ref Project
+        - Key: OwnerEmail
+          Value: !Ref OwnerEmail
+
+Outputs:
+
+  HostedZoneId:
+    Value: !Ref HostedZone
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-HostedZoneId'
+
+  QueryLogGroupName:
+    Value: !Ref QueryLogGroup
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-QueryLogGroupName'
