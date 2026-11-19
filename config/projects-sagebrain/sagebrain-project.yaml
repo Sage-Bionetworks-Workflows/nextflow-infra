@@ -16,7 +16,6 @@ parameters:
     - '{{stack_group_config.tower_viewer_arn_prefix}}/ziwei.pan@sagebase.org'
     # Note the below user is an external collaborator, not a Sage employee.
     - arn:aws:iam::061709504811:user/krisztian
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/pkrisz5@gmail.com'
 
   AllowSynapseIndexing: Enabled
   AccountAdminArns:
