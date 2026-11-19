@@ -329,6 +329,16 @@ Resources:
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !Sub "arn:aws:s3:::${TowerBucket}"
+              - !Sub "arn:aws:s3:::${TowerBucket}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
           - Sid: AllowCrossProjectAccess
             Effect: Allow
             Principal:
@@ -466,6 +476,16 @@ Resources:
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !Sub "arn:aws:s3:::${TowerScratch}"
+              - !Sub "arn:aws:s3:::${TowerScratch}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
           - Sid: AllowCrossProjectAccess
             Effect: Allow
             Principal:
