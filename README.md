@@ -21,6 +21,7 @@ Read through the [contribution guidelines](CONTRIBUTING.md) for more information
 ## Documentation
 
 - [configure-tower-projects.py](docs/configure-tower-projects.md) - Usage guide for the Tower workspace provisioning script
+- [Launching workflows programmatically with seqerakit](docs/launching-workflows-with-seqerakit.md) - How to trigger and monitor Nextflow runs on Tower from Python or YAML using [`seqerakit`](https://github.com/seqeralabs/seqera-kit)
 
 ## License
 
