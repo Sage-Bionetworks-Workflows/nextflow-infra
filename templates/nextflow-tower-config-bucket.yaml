@@ -77,7 +77,16 @@ Resources:
             - "Jeremy_Muhlich@hms.harvard.edu"
             - "dpozhida@systemsbiology.org"
             - "pkrisz5@gmail.com"
+            - "vesteinn.thorsson@isbscience.org"
+            - "pkrisz5@gmail.com"
             - "meik@bioinformaticscore.com"
+         trustedEmails:
+           - "benjamin_vincent@med.unc.edu"
+           - "dbortone@email.unc.edu"
+           - "steven_vensko@med.unc.edu"
+           - "clarence@hms.harvard.edu"
+           - "Jeremy_Muhlich@hms.harvard.edu"
+           - "dpozhida@systemsbiology.org"
           scm:
             providers:
               github:
