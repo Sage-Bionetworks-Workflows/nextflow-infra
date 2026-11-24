@@ -18,7 +18,7 @@ parameters:
     - arn:aws:iam::061709504811:user/krisztian
     - '{{stack_group_config.tower_viewer_arn_prefix}}/pkrisz5@gmail.com'
     # Note the below user is an external collaborator, not a Sage employee.
-    # TODO: add IAM user ARN (arn:aws:iam::<account>:user/<name>) once provided by AWS
+    - arn:aws:iam::061709504811:user/meik
     - '{{stack_group_config.tower_viewer_arn_prefix}}/meik@bioinformaticscore.com'
 
   AllowSynapseIndexing: Enabled
