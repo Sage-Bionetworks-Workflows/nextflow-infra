@@ -69,6 +69,8 @@ Resources:
                 - "*@sagebionetworks.org"
                 - "cheimann@isbscience.org"
                 - "vesteinn.thorsson@isbscience.org"
+                - "pkrisz5@gmail.com"
+                - "meik@bioinformaticscore.com"
           trustedEmails:
             - "benjamin_vincent@med.unc.edu"
             - "dbortone@email.unc.edu"
@@ -76,7 +78,6 @@ Resources:
             - "clarence@hms.harvard.edu"
             - "Jeremy_Muhlich@hms.harvard.edu"
             - "dpozhida@systemsbiology.org"
-            - "pkrisz5@gmail.com"
           scm:
             providers:
               github:
