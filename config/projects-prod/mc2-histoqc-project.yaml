@@ -22,5 +22,5 @@ parameters:
 stack_tags:
   Department: SCCE
   Project: MC2
-  OwnerEmail: adam.taylor@sagebase.org
+  OwnerEmail: aditi.gopalan@sagebase.org
   CostCenter: MC2 Digital Pathology Supplement / 123102

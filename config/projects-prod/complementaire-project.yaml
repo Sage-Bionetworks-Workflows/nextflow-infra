@@ -15,11 +15,13 @@ sceptre_user_data:
 
 parameters:
   S3ReadWriteAccessArns:
-    - '{{stack_group_config.tower_viewer_arn_prefix}}/thomas.yu@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/jineta.banerjee@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/ram.ayyala@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/william.poehlman@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/ziwei.pan@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/richard.abdill@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/orion.banks@sagebase.org'
+    - '{{stack_group_config.tower_viewer_arn_prefix}}/aditya.nath@sagebase.org'
     - '{{stack_group_config.tower_viewer_arn_prefix}}/andrew.lamb@sagebase.org'
 
   AllowSynapseIndexing: Enabled
